@@ -1,0 +1,2 @@
+-r requirements.txt
+forbiddenfruit==0.1.0

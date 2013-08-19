@@ -1,9 +1,15 @@
+# Ignored file extensions
 *~
 *.pyc
-.coverage
 *.egg-info/
+*.whl
+
+# Directories
+build/
 dist/
 .tox/
+
+# Other stuff we don't care about
+.coverage
 .DS_Store
 .build.log
-build/

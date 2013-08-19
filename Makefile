@@ -13,6 +13,8 @@ test: unit functional integration acceptance $(EXTRA_TEST_TASKS)
 unit: setup
 	@make run_test suite=unit
 
+# It was part of our functional tests. Removed temporarely:
+# @pip wheel --quiet --wheel-dir=tests/functional/fixtures/project1/.curds/my-curd -r tests/functional/fixtures/project1/development.txt
 functional: setup
 	@make run_test suite=functional
 
@@ -32,7 +34,7 @@ setup: clean
 	fi
 	@if [ -z $$SKIP_DEPS ]; then \
 		echo "Installing dependencies..."; \
-		pip install --quiet --index-url 'http://yipit:90794720b29311e29e960800200c9a66@localshop.yipit.com/simple/' -r development.txt; \
+		pip install --quiet -r development.txt; \
 	fi
 
 run_test:
@@ -43,7 +45,7 @@ run_test:
 			echo "======================================="; \
 			echo "* Running \033[0;32m$(suite)\033[0m test suite *"; \
 			echo "======================================="; \
-			nosetests --stop --with-coverage --cover-package=$(PACKAGE) \
+			nosetests --rednose --stop --with-coverage --cover-package=$(PACKAGE) \
 				--cover-branches --verbosity=$(TESTS_VERBOSITY) -s tests/$(suite) ; \
 		fi \
 	fi
@@ -64,5 +66,3 @@ publish:
 		echo "Read more about it here: https://github.com/Yipit/yipit/blob/master/docs/rfc/RFC00007-maintaining-python-packages.md"; \
 		exit 1; \
 	fi
-
-release:
