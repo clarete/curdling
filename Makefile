@@ -35,7 +35,7 @@ acceptance: setup
 dummypypi_start:
 	@echo "Running the dummy pypi server..."
 	@make dummypypi_stop
-	@(cd tests/dummypypi && python -m SimpleHTTPServer >/dev/null 2>&1 & disown $!) && \
+	@(cd tests/dummypypi && python -m SimpleHTTPServer >/dev/null 2>&1 &) && \
 		while :; do `curl http://localhost:$(DUMMY_PYPI_PORT) > /dev/null 2>&1` && break; done
 
 dummypypi_stop:
