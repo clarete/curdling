@@ -22,7 +22,7 @@ integration: setup
 	@make run_test suite=integration
 
 acceptance: setup
-	@make run_test suite=acceptance
+	@cucumber tests/
 
 setup: clean
 	@if [ -z $$VIRTUAL_ENV ]; then \
