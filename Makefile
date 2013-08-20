@@ -21,8 +21,8 @@ unit: setup
 functional: setup
 	-@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
 
-	@(cd tests/dummypypi && python -m SimpleHTTPServer &) && \
-		while :; do `curl http://localhost:$(DUMMY_PYPI_PORT) 2>/dev/null >/dev/null` && break; done
+	@(cd tests/dummypypi && python -m SimpleHTTPServer > /dev/null 2>&1 & disown $!) && \
+		while :; do `curl http://localhost:$(DUMMY_PYPI_PORT) > /dev/null 2>&1` && break; done
 
 	@make run_test suite=functional
 
