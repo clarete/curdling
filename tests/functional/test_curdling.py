@@ -44,8 +44,24 @@ def test_has_curd(stat):
     # Then I see that my curd was properly retrieved
     curd.should.be.a(Curd)
     curd.uid.should.equal('my-curd')
-    curd.path.should.equal(path)
+    curd.path.should.equal(os.path.join(path, curd_id))
     curd.created.should.equal(datetime(2013, 8, 19, 16, 20))
+
+    # Cleaning things up
+    os.system('rm -rf {}'.format(curd.path))
+
+
+def test_no_curd():
+    "CurdManager.get() should return None when it can't find a specific curd"
+
+    # Given that I have an instance of a curd manager
+    curd_manager = CurdManager()
+
+    # When I try to get a curd I know that does not exist
+    curd = curd_manager.get(FIXTURE('project1', '.curds'), 'I-know-you-dont-exist')
+
+    # Then I see it returns None
+    curd.should.be.none
 
 
 def test_new_curd():
@@ -61,8 +77,7 @@ def test_new_curd():
     uid = hash_files(requirements)
 
     # When I create the new curd
-    path = FIXTURE('project1', '.curds')
-    curd = curd_manager.new(path, requirements)
+    curd = curd_manager.new(FIXTURE('project1', '.curds'), requirements)
 
     # Then I see the curd was downloaded correctly created
     os.path.isdir(FIXTURE('project1', '.curds')).should.be.true
@@ -72,3 +87,29 @@ def test_new_curd():
         .should.be.true)
     (os.path.isfile(FIXTURE('project1', '.curds', uid, 'forbiddenfruit-0.1.0-py27-none-any.whl'))
         .should.be.true)
+
+    # Cleaning things up
+    os.system('rm -rf {}'.format(curd.path))
+
+
+def test_find_cached_curds():
+    "It should be possible to find cached curds"
+
+    # Given that I have a newly created curd
+    curd_manager = CurdManager({'index-url': 'http://localhost:8000/simple'})
+    requirements = FIXTURE('project1', 'requirements.txt'),
+    curd1 = curd_manager.new(FIXTURE('project1', '.curds'), requirements)
+
+    # When I try to get the same curd instead of creating it
+    with patch('curdling.pip') as pip:
+        curd2 = curd_manager.new(FIXTURE('project1', '.curds'), requirements)
+
+        # Then I see that the pip command was not called in the second time
+        pip.wheel.called.should.be.false
+
+    # Then I see curd1 and curd2 are just the same object
+    curd1.should_not.be.none
+    curd1.should.equal(curd2)
+
+    # Cleaning things up
+    os.system('rm -rf {}'.format(curd1.path))

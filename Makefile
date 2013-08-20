@@ -73,6 +73,5 @@ publish:
 	else \
 		echo "You should create a file called \`.pypirc' under your home dir."; \
 		echo "That's the right place to configure \`pypi' repos."; \
-		echo "Read more about it here: https://github.com/Yipit/yipit/blob/master/docs/rfc/RFC00007-maintaining-python-packages.md"; \
 		exit 1; \
 	fi
