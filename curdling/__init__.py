@@ -19,6 +19,9 @@ class CurdManager(object):
         self.path = path
         self.settings = (settings or {})
 
+        # Just making sure the target directory exists
+        os.path.isdir(path) or os.makedirs(path)
+
     def get(self, uid):
         return (os.path.exists(os.path.join(self.path, uid))
                 and Curd(self.path, uid)
@@ -57,6 +60,11 @@ class CurdManager(object):
         for reqfile in requirements:
             params.update({'r': reqfile})
             pip.install(**params)
+
+    def available(self):
+        return (os.path.isdir(self.path)
+                and [Curd(self.path, cid) for cid in os.listdir(self.path)]
+                or [])
 
 
 class Curd(object):

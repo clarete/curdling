@@ -1,18 +1,21 @@
 import os
 
+from shutil import rmtree
 from datetime import datetime
 from curdling import CurdManager, Curd, hash_files
 
+from sure import scenario
 from mock import patch
+from . import FIXTURE
 
 
-# Those are functional tests, I need to do some IO and all the files I have are
-# located in the `fixtures` folder. The following line is just a shortcut to
-# build absolute paths pointing to things inside of that folder.
-FIXTURE = lambda *p: os.path.join(os.path.dirname(__file__), 'fixtures', *p)
+def cleandir(context):
+    for curd in os.listdir(FIXTURE('project1', '.curds')):
+        rmtree(FIXTURE('project1', '.curds', curd))
 
 
-def test_hashing_files():
+@scenario(cleandir)
+def test_hashing_files(context):
     "It should be possible to get a uniq hash that identifies a list of files"
 
     # Given that I have a list of files and a mocked content for each one
@@ -28,31 +31,6 @@ def test_hashing_files():
     hashed.should.equal('682f87d84c80d0a85c9179de681b3474906113b3')
 
 
-@patch('os.stat')
-def test_has_curd(stat):
-    "It should be possible to find curds saved locally"
-
-    # Given that I have a curd hash, a curd manager and a path to a curdcache
-    curd_id = 'my-curd'
-    curd_manager = CurdManager(
-        FIXTURE('project1', '.curds'),
-        {'index-url': 'http://localhost:8000/simple'})
-    stat.return_value.st_ctime = 1376943600  # mocking the created prop
-
-    # When I retrieve the unknown curd
-    path = FIXTURE('project1', '.curds')
-    curd = curd_manager.get(curd_id)
-
-    # Then I see that my curd was properly retrieved
-    curd.should.be.a(Curd)
-    curd.uid.should.equal('my-curd')
-    curd.path.should.equal(os.path.join(path, curd_id))
-    curd.created.should.equal(datetime(2013, 8, 19, 16, 20))
-
-    # Cleaning things up
-    os.system('rm -rf {}'.format(curd.path))
-
-
 def test_no_curd():
     "CurdManager.get() should return None when it can't find a specific curd"
 
@@ -66,7 +44,8 @@ def test_no_curd():
     curd.should.be.none
 
 
-def test_new_curd():
+@scenario(cleandir)
+def test_new_curd(context):
     "It should be possible to create new curds based on requirements files"
 
     # Given that I have a file that contains a list of dependencies of a fake
@@ -92,11 +71,38 @@ def test_new_curd():
     (os.path.isfile(FIXTURE('project1', '.curds', uid, 'forbiddenfruit-0.1.0-py27-none-any.whl'))
         .should.be.true)
 
-    # Cleaning things up
-    os.system('rm -rf {}'.format(curd.path))
+
+@scenario(cleandir)
+def test_has_curd(context):
+    "It should be possible to find curds saved locally"
+
+    # Given that I have a curd hash, a curd manager linked to a curdcache
+    curd_id = '682f87d84c80d0a85c9179de681b3474906113b3'
+    path = FIXTURE('project1', '.curds')
+    settings = {'index-url': 'http://localhost:8000/simple'}
+    manager = CurdManager(path, settings)
+    requirements = (
+        FIXTURE('project1', 'requirements.txt'),
+        FIXTURE('project1', 'development.txt'),
+    )
+    curd = manager.new(requirements)
+
+    # When I retrieve the unknown curd
+    curd = manager.get(curd.uid)
+
+    # Then I see that my curd was properly retrieved
+    curd.should.be.a(Curd)
+    curd.uid.should.equal(curd_id)
+    curd.path.should.equal(os.path.join(path, curd_id))
+
+    # mocking the created prop
+    with patch('os.stat') as stat:
+        stat.return_value.st_ctime = 1376943600
+        curd.created.should.equal(datetime(2013, 8, 19, 16, 20))
 
 
-def test_find_cached_curds():
+@scenario(cleandir)
+def test_find_cached_curds(context):
     "It should be possible to find cached curds"
 
     # Given that I have a newly created curd
@@ -117,5 +123,19 @@ def test_find_cached_curds():
     curd1.should_not.be.none
     curd1.should.equal(curd2)
 
-    # Cleaning things up
-    os.system('rm -rf {}'.format(curd1.path))
+
+@scenario(cleandir)
+def test_list_curds(context):
+    "It should be possible to list available curds in a manager"
+
+    # Given that I have a newly created curd
+    manager = CurdManager(
+        FIXTURE('project1', '.curds'),
+        {'index-url': 'http://localhost:8000/simple'})
+    curd1 = manager.new((FIXTURE('project1', 'requirements.txt'),))
+
+    # When I list all the curds
+    curds = manager.available()
+
+    # Then I see that the curd1 that I just created is inside of the list
+    curds.should.contain(curd1)
