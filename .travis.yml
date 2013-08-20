@@ -1,0 +1,22 @@
+language: python
+python: "2.7"
+
+install: pip install -r development.txt
+script: make
+
+notifications:
+  email:
+    recipients:
+      - lincoln@yipit.com
+    on_success: change
+    on_failure: always
+  irc:
+    channels:
+      - "irc.freenode.org#yipit"
+    template:
+      - "%{repository}#%{build_number} (%{branch} - %{commit} : %{author}): %{message}"
+      - "Change view : %{compare_url}"
+      - "Build details : %{build_url}"
+    on_success: change
+    on_failure: always
+    skip_join: true
