@@ -1,9 +1,12 @@
 PACKAGE=curdling
+
 CUSTOM_PIP_INDEX=localshop
+
 TESTS_VERBOSITY=2
-# </variables>
 
 EXTRA_TEST_TASKS=
+
+DUMMY_PYPI_PORT=8000
 
 
 all: test
@@ -16,7 +19,14 @@ unit: setup
 # It was part of our functional tests. Removed temporarely:
 # @pip wheel --quiet --wheel-dir=tests/functional/fixtures/project1/.curds/my-curd -r tests/functional/fixtures/project1/development.txt
 functional: setup
+	-@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
+
+	@(cd tests/dummypypi && python -m SimpleHTTPServer &) && \
+		while :; do `curl http://localhost:$(DUMMY_PYPI_PORT) 2>/dev/null >/dev/null` && break; done
+
 	@make run_test suite=functional
+
+	@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
 
 integration: setup
 	@make run_test suite=integration

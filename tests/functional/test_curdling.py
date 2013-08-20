@@ -1,7 +1,7 @@
 import os
 
 from datetime import datetime
-from curdling import Curd, hash_files, get_curd, new_curd
+from curdling import CurdManager, Curd, hash_files
 
 from mock import patch
 
@@ -25,20 +25,21 @@ def test_hashing_files():
     hashed = hash_files(file_list)
 
     # Then I see that the hash is right
-    hashed.should.equal('284bf7a273bb72dd92e7d171fbd1dddceeb3eef3')
+    hashed.should.equal('682f87d84c80d0a85c9179de681b3474906113b3')
 
 
 @patch('os.stat')
 def test_has_curd(stat):
     "It should be possible to find curds saved locally"
 
-    # Given that I have a curd hash and a path to a curdcache
+    # Given that I have a curd hash, a curd manager and a path to a curdcache
     curd_id = 'my-curd'
+    curd_manager = CurdManager({'index-url': 'http://localhost:8000/simple'})
     stat.return_value.st_ctime = 1376943600  # mocking the created prop
 
     # When I retrieve the unknown curd
     path = FIXTURE('project1', '.curds')
-    curd = get_curd(path, curd_id)
+    curd = curd_manager.get(path, curd_id)
 
     # Then I see that my curd was properly retrieved
     curd.should.be.a(Curd)
@@ -52,6 +53,7 @@ def test_new_curd():
 
     # Given that I have a file that contains a list of dependencies of a fake
     # project
+    curd_manager = CurdManager({'index-url': 'http://localhost:8000/simple'})
     requirements = (
         FIXTURE('project1', 'requirements.txt'),
         FIXTURE('project1', 'development.txt'),
@@ -60,13 +62,13 @@ def test_new_curd():
 
     # When I create the new curd
     path = FIXTURE('project1', '.curds')
-    curd = new_curd(path, requirements)
+    curd = curd_manager.new(path, requirements)
 
     # Then I see the curd was downloaded correctly created
     os.path.isdir(FIXTURE('project1', '.curds')).should.be.true
     os.path.isdir(FIXTURE('project1', '.curds', uid)).should.be.true
 
-    (os.path.isfile(FIXTURE('project1', '.curds', uid, 'pep8-1.4-py27-none-any.whl'))
+    (os.path.isfile(FIXTURE('project1', '.curds', uid, 'gherkin-0.1.0-py27-none-any.whl'))
         .should.be.true)
     (os.path.isfile(FIXTURE('project1', '.curds', uid, 'forbiddenfruit-0.1.0-py27-none-any.whl'))
         .should.be.true)

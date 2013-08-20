@@ -14,15 +14,26 @@ def hash_files(file_list):
     ).hexdigest()
 
 
-def get_curd(path, uid):
-    return Curd(path, uid)
+class CurdManager(object):
+    def __init__(self, settings):
+        self.settings = settings
 
+    def get(self, path, uid):
+        return Curd(path, uid)
 
-def new_curd(path, requirements):
-    uid = hash_files(requirements)
-    for reqfile in requirements:
-        pip.wheel(wheel_dir=os.path.join(path, uid), r=reqfile)
-    return get_curd(path, uid)
+    def new(self, path, requirements):
+        uid = hash_files(requirements)
+        params = {
+            'wheel_dir': os.path.join(path, uid),
+        }
+
+        if 'index-url' in self.settings:
+            params.update({'index_url': self.settings['index-url']})
+
+        for reqfile in requirements:
+            params.update({'r': reqfile})
+            pip.wheel(**params)
+        return self.get(path, uid)
 
 
 class Curd(object):
