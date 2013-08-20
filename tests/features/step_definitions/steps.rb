@@ -10,7 +10,7 @@ fixture = lambda { |*p|
 After do |scenario|
   @current_directory = nil
   Dir.entries(fixture.call).each {|entry|
-    FileUtils.rm_rf entry unless entry.start_with? "."
+    FileUtils.rm_rf(fixture.call entry) unless entry.start_with? "."
   }
 end
 

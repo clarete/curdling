@@ -11,7 +11,7 @@ DUMMY_PYPI_PORT=8000
 
 all: test
 
-test: unit functional integration acceptance $(EXTRA_TEST_TASKS)
+test: unit functional acceptance $(EXTRA_TEST_TASKS)
 
 unit: setup
 	@make run_test suite=unit
