@@ -16,23 +16,23 @@ test: unit functional integration acceptance $(EXTRA_TEST_TASKS)
 unit: setup
 	@make run_test suite=unit
 
-# It was part of our functional tests. Removed temporarely:
-# @pip wheel --quiet --wheel-dir=tests/functional/fixtures/project1/.curds/my-curd -r tests/functional/fixtures/project1/development.txt
-functional: setup
-	-@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
-
-	@(cd tests/dummypypi && python -m SimpleHTTPServer > /dev/null 2>&1 & disown $!) && \
-		while :; do `curl http://localhost:$(DUMMY_PYPI_PORT) > /dev/null 2>&1` && break; done
-
+functional: setup dummypypi
 	@make run_test suite=functional
-
 	@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
 
-integration: setup
-	@make run_test suite=integration
+acceptance: setup dummypypi
+	@export CURDIR=`pwd` && \
+	 source `which virtualenvwrapper.sh` && \
+	 mktmpenv -r requirements.txt >/dev/null && \
+	 cd $$CURDIR && \
+	 cucumber tests && \
+	 deactivate
+	@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
 
-acceptance: setup
-	@cucumber tests/
+dummypypi:
+	-@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
+	@(cd tests/dummypypi && python -m SimpleHTTPServer > /dev/null 2>&1 & disown $!) && \
+		while :; do `curl http://localhost:$(DUMMY_PYPI_PORT) > /dev/null 2>&1` && break; done
 
 setup: clean
 	@if [ -z $$VIRTUAL_ENV ]; then \

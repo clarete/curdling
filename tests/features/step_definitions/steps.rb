@@ -6,6 +6,13 @@ fixture = lambda { |*p|
   File.absolute_path(File.join(File.dirname(__FILE__), "..", "fixtures", *p))
 }
 
+# Removing the fixtures created temporarily
+After do |scenario|
+  @current_directory = nil
+  Dir.entries(fixture.call).each {|entry|
+    FileUtils.rm_rf entry unless entry.start_with? "."
+  }
+end
 
 Given(/^that I have a project called "(.*?)"$/) do |arg1|
   # Changes the current path of the test to the arg1
@@ -46,4 +53,8 @@ Then(/^I should see:$/) do |string|
     puts @output
     raise
   end
+end
+
+Then(/^I ensure that "(.*?)" is installed$/) do |arg1|
+  (`pip freeze`.include? arg1).should be_true
 end

@@ -15,25 +15,26 @@ def hash_files(file_list):
 
 
 class CurdManager(object):
-    def __init__(self, settings=None):
+    def __init__(self, path, settings=None):
+        self.path = path
         self.settings = (settings or {})
 
-    def get(self, path, uid):
-        return (os.path.exists(os.path.join(path, uid))
-                and Curd(path, uid)
+    def get(self, uid):
+        return (os.path.exists(os.path.join(self.path, uid))
+                and Curd(self.path, uid)
                 or None)
 
-    def new(self, path, requirements):
+    def new(self, requirements):
         uid = hash_files(requirements)
 
         # Trying to use the cache
-        curd = self.get(path, uid)
+        curd = self.get(uid)
         if curd:
             return curd
 
         # No cached curd, let's move on and build our own
         params = {
-            'wheel_dir': os.path.join(path, uid),
+            'wheel_dir': os.path.join(self.path, uid),
         }
 
         if 'index-url' in self.settings:
@@ -44,7 +45,18 @@ class CurdManager(object):
             params.update({'r': reqfile})
             pip.wheel(**params)
 
-        return self.get(path, uid)
+        return self.get(uid)
+
+    def install(self, requirements):
+        params = {
+            'use_wheel': True,
+            'no_index': True,
+            'find_links': os.path.join(self.path, hash_files(requirements)),
+        }
+
+        for reqfile in requirements:
+            params.update({'r': reqfile})
+            pip.install(**params)
 
 
 class Curd(object):

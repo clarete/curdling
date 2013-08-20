@@ -34,12 +34,14 @@ def test_has_curd(stat):
 
     # Given that I have a curd hash, a curd manager and a path to a curdcache
     curd_id = 'my-curd'
-    curd_manager = CurdManager({'index-url': 'http://localhost:8000/simple'})
+    curd_manager = CurdManager(
+        FIXTURE('project1', '.curds'),
+        {'index-url': 'http://localhost:8000/simple'})
     stat.return_value.st_ctime = 1376943600  # mocking the created prop
 
     # When I retrieve the unknown curd
     path = FIXTURE('project1', '.curds')
-    curd = curd_manager.get(path, curd_id)
+    curd = curd_manager.get(curd_id)
 
     # Then I see that my curd was properly retrieved
     curd.should.be.a(Curd)
@@ -55,10 +57,10 @@ def test_no_curd():
     "CurdManager.get() should return None when it can't find a specific curd"
 
     # Given that I have an instance of a curd manager
-    curd_manager = CurdManager()
+    curd_manager = CurdManager(FIXTURE('project1', '.curds'))
 
     # When I try to get a curd I know that does not exist
-    curd = curd_manager.get(FIXTURE('project1', '.curds'), 'I-know-you-dont-exist')
+    curd = curd_manager.get('I-know-you-dont-exist')
 
     # Then I see it returns None
     curd.should.be.none
@@ -69,7 +71,9 @@ def test_new_curd():
 
     # Given that I have a file that contains a list of dependencies of a fake
     # project
-    curd_manager = CurdManager({'index-url': 'http://localhost:8000/simple'})
+    curd_manager = CurdManager(
+        FIXTURE('project1', '.curds'),
+        {'index-url': 'http://localhost:8000/simple'})
     requirements = (
         FIXTURE('project1', 'requirements.txt'),
         FIXTURE('project1', 'development.txt'),
@@ -77,7 +81,7 @@ def test_new_curd():
     uid = hash_files(requirements)
 
     # When I create the new curd
-    curd = curd_manager.new(FIXTURE('project1', '.curds'), requirements)
+    curd = curd_manager.new(requirements)
 
     # Then I see the curd was downloaded correctly created
     os.path.isdir(FIXTURE('project1', '.curds')).should.be.true
@@ -96,13 +100,15 @@ def test_find_cached_curds():
     "It should be possible to find cached curds"
 
     # Given that I have a newly created curd
-    curd_manager = CurdManager({'index-url': 'http://localhost:8000/simple'})
+    curd_manager = CurdManager(
+        FIXTURE('project1', '.curds'),
+        {'index-url': 'http://localhost:8000/simple'})
     requirements = FIXTURE('project1', 'requirements.txt'),
-    curd1 = curd_manager.new(FIXTURE('project1', '.curds'), requirements)
+    curd1 = curd_manager.new(requirements)
 
     # When I try to get the same curd instead of creating it
     with patch('curdling.pip') as pip:
-        curd2 = curd_manager.new(FIXTURE('project1', '.curds'), requirements)
+        curd2 = curd_manager.new(requirements)
 
         # Then I see that the pip command was not called in the second time
         pip.wheel.called.should.be.false
