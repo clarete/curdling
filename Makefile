@@ -16,23 +16,32 @@ test: unit functional acceptance $(EXTRA_TEST_TASKS)
 unit: setup
 	@make run_test suite=unit
 
-functional: setup dummypypi
+functional: setup
+	@make dummypypi_start
 	@make run_test suite=functional
-	@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
+	@make dummypypi_stop
 
-acceptance: setup dummypypi
+acceptance: setup
+	@make dummypypi_start
 	@export CURDIR=`pwd` && \
 	 source `which virtualenvwrapper.sh` && \
 	 mktmpenv -r requirements.txt >/dev/null && \
 	 cd $$CURDIR && \
 	 cucumber tests && \
 	 deactivate
-	@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
+	@make dummypypi_stop
 
-dummypypi:
-	-@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
-	@(cd tests/dummypypi && python -m SimpleHTTPServer > /dev/null 2>&1 & disown $!) && \
+
+dummypypi_start:
+	@echo "Running the dummy pypi server..."
+	@make dummypypi_stop
+	@(cd tests/dummypypi && python -m SimpleHTTPServer >/dev/null 2>&1 & disown $!) && \
 		while :; do `curl http://localhost:$(DUMMY_PYPI_PORT) > /dev/null 2>&1` && break; done
+
+dummypypi_stop:
+	@echo "Stopping the dummy pypi server..."
+	-@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
+
 
 setup: clean
 	@if [ -z $$VIRTUAL_ENV ]; then \
