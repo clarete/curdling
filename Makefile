@@ -24,7 +24,7 @@ functional: setup
 acceptance: setup
 	@make dummypypi_start
 	@export CURDIR=`pwd` && \
-	 source `which virtualenvwrapper.sh` && \
+	 [ "`which virtualenvwrapper.sh 2>/dev/null`" ] && source `which virtualenvwrapper.sh` && \
 	 mktmpenv -r requirements.txt >/dev/null && \
 	 cd $$CURDIR && \
 	 cucumber tests && \
