@@ -30,6 +30,9 @@ class Server(Flask):
         )
 
         curd = self.manager.get(uid)
+        if not curd:
+            return 'Not Found', 404
+
         for wheel in curd.members():
             tar.add(os.path.join(curd.path, wheel), arcname=wheel)
 
