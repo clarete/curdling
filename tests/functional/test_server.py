@@ -1,6 +1,8 @@
 import os
 import shutil
+import tarfile
 
+from StringIO import StringIO
 from json import loads
 from flask import url_for
 
@@ -79,3 +81,13 @@ def test_retrieve_curd(context):
     # Then I see I received a tar package containing the wheel of the package
     # described inside of the `requirements` file
     result.status_code.should.equal(200)
+    result.mimetype.should.equal('application/tar')
+
+    # And I see that the tar file received contains the right package list
+    tar = tarfile.open(
+        name='{}.tar'.format(uid),
+        mode='r',
+        fileobj=StringIO(result.data))
+    [info.name for info in tar].should.equal([
+        'gherkin-0.1.0-py27-none-any.whl',
+    ])

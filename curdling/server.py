@@ -1,3 +1,6 @@
+import os
+import tarfile
+from StringIO import StringIO
 from json import dumps
 from flask import Flask, url_for
 
@@ -19,7 +22,20 @@ class Server(Flask):
         } for c in self.manager.available()])
 
     def curd(self, uid):
+        fobj = StringIO()
+        tar = tarfile.open(
+            name='{}.tar'.format(uid),
+            mode='w',
+            fileobj=fobj,
+        )
+
         curd = self.manager.get(uid)
-        return dumps({
-            'uid': curd.uid,
-        })
+        for wheel in curd.members():
+            tar.add(os.path.join(curd.path, wheel), arcname=wheel)
+
+        tar.close()
+        fobj.seek(0)
+
+        response = self.make_response(fobj.read())
+        response.mimetype = 'application/tar'
+        return response
