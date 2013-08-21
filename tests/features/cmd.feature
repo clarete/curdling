@@ -12,7 +12,8 @@ Feature: Command Line API
     When I run "python -m curdling"
     Then I should see:
       """
-      usage: __main__.py [-h] [-H] [-r REMOTE_CACHE_URL] [-p PYPI_URL] [-s SERVER]
+      usage: __main__.py [-h] [-H] [-r REMOTE_CACHE_URL] [-p PYPI_URL]
+                         [-p2 PYPI_URL_2] [-s SERVER]
                          FILE [FILE ...]
       __main__.py: error: too few arguments
       """

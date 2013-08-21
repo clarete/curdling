@@ -23,17 +23,27 @@ class CurdManager(object):
         self.path = path
         self.settings = (settings or {})
 
+        # Saves the mapping of uids to files
+        self.mapping = {}
+
+        # Installs the curd directory if it does not exist
+        self.install_folder()
+
+    def install_folder(self):
         # Just making sure the target directory exists
-        os.path.isdir(path) or os.makedirs(path)
+        os.path.isdir(self.path) or os.makedirs(self.path)
+
+    def add(self, requirements):
+        uid = hash_files(requirements)
+        self.mapping[uid] = requirements
+        return uid
 
     def get(self, uid):
         return (os.path.exists(os.path.join(self.path, uid))
                 and Curd(self.path, uid)
                 or None)
 
-    def new(self, requirements):
-        uid = hash_files(requirements)
-
+    def new(self, uid):
         # Trying to use the cache
         curd = self.get(uid)
         if curd:
@@ -47,21 +57,24 @@ class CurdManager(object):
         if 'index-url' in self.settings:
             params.update({'index_url': self.settings['index-url']})
 
+        if 'extra-index-url' in self.settings:
+            params.update({'extra_index_url': self.settings['extra-index-url']})
+
         # Iterating over all the requirement files we have here
-        for reqfile in requirements:
+        for reqfile in self.mapping[uid]:
             params.update({'r': reqfile})
             pip.wheel(**params)
 
         return self.get(uid)
 
-    def install(self, requirements):
+    def install(self, uid):
         params = {
             'use_wheel': True,
             'no_index': True,
-            'find_links': os.path.join(self.path, hash_files(requirements)),
+            'find_links': os.path.join(self.path, uid),
         }
 
-        for reqfile in requirements:
+        for reqfile in self.mapping[uid]:
             params.update({'r': reqfile})
             pip.install(**params)
 

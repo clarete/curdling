@@ -21,8 +21,13 @@ def main():
 
     parser.add_argument(
         '-p', '--pypi-url',
-        help=('The address for a pypi installation '
-              'that will be used if no `-r` is passed'))
+        help=('The address for a pypi server. Will be forwarded to pip '
+              'as the argument `--index-url`'))
+
+    parser.add_argument(
+        '-p2', '--pypi-url-2',
+        help=('A fallback address for a pypi server. Will be forwarded to pip '
+              'as the argument `--extra-index-url`'))
 
     parser.add_argument(
         '-s', '--server',
@@ -34,26 +39,32 @@ def main():
 
     args = parser.parse_args()
 
-    uid = hash_files(args.files)
-
     path = os.path.join(os.getcwd(), '.curds')
 
     settings = {}
 
     # The user doesn't need anything else, but the hash of the files
     if args.show_hash:
-        return print(uid)
+        return print(hash_files(args.files))
 
     if args.pypi_url:
         settings['index-url'] = args.pypi_url
 
-    # Default command, just curdle!
-    manager = CurdManager(path, settings)
+    if args.pypi_url_2:
+        settings['extra-index-url'] = args.pypi_url_2
 
+    # Creating the manager that points to the `.curds` directory inside of the
+    # current path. After that we add the files received from the command line
+    # arguments.
+    manager = CurdManager(path, settings)
+    uid = manager.add(args.files)
+
+    # Accessing the local cache
     curd = manager.get(uid)
     if not curd:
         print('[info] No cache found')
 
+    # Acessing the remote cache
     if not curd and not args.remote_cache_url:
         print('[info] No external cache informed, using pip to curdle')
     elif not curd:
@@ -61,15 +72,19 @@ def main():
         manager.settings.update({'cache-url': args.remote_cache_url})
         curd = manager.retrieve(uid)
 
+    # Building our own curd
     if not curd:
         print('[info] Curdling')
-        curd = manager.new(args.files)
+        curd = manager.new(uid)
 
+    # Spawning the server!
     if args.server:
-        # Spawning the server!
         host, port = args.server.split(':')
-        Server(manager, __name__).run(debug=True, host=host, port=int(port))
-    else:
-        # Installing the curdled dependencies
-        print('[info] Installing curdled packages')
-        manager.install(args.files)
+        try:
+            Server(manager, __name__).run(debug=True, host=host, port=int(port))
+        except KeyboardInterrupt:
+            return
+
+    # Installing the curdled dependencies
+    print('[info] Installing curdled packages')
+    manager.install(uid)

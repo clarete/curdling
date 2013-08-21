@@ -17,10 +17,6 @@ fixture = lambda { |*p|
 
 # Removing the fixtures created temporarily
 After do |scenario|
-  if scenario.failed?
-    debugger
-  end
-
   @current_directory = nil
   Dir.entries(fixture.call).each {|entry|
     FileUtils.rm_rf(fixture.call entry) unless entry.start_with? "."

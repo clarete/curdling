@@ -6,7 +6,7 @@ from StringIO import StringIO
 from json import loads
 from flask import url_for
 
-from curdling import CurdManager, hash_files
+from curdling import CurdManager
 from curdling.server import Server
 
 from sure import scenario
@@ -38,15 +38,14 @@ def test_hit_the_first_page(context):
 def test_list_available_curds(context):
     "It should be possible to list available curds"
 
-    requirements = FIXTURE('project1', 'requirements.txt'),
-    uid = hash_files(requirements)
     manager = CurdManager(
         FIXTURE('project1', '.curds'),
         {'index-url': 'http://localhost:8000/simple'})
+    uid = manager.add([FIXTURE('project1', 'requirements.txt')])
 
     # Given that I have a manager with a curd and an http client
     client = Server(manager, __name__).test_client()
-    curd = manager.new(requirements)
+    curd = manager.new(uid)
 
     # When I try to list all the available curds
     result = client.get('/')
@@ -62,15 +61,14 @@ def test_list_available_curds(context):
 def test_retrieve_curd(context):
     "It should be possible to download tar packages with curds"
 
-    requirements = FIXTURE('project1', 'requirements.txt'),
-    uid = hash_files(requirements)
     manager = CurdManager(
         FIXTURE('project1', '.curds'),
         {'index-url': 'http://localhost:8000/simple'})
+    uid = manager.add([FIXTURE('project1', 'requirements.txt')])
 
     # Given that I have an http client that exposes the server API that
     # currently contains a curd
-    curd = manager.new(requirements)
+    curd = manager.new(uid)
     app = Server(manager, __name__)
     client = app.test_client()
 

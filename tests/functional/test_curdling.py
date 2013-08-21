@@ -17,7 +17,8 @@ def setup_server(context):
     manager = CurdManager(
         FIXTURE('project2', '.curds'),
         {'index-url': 'http://localhost:8000/simple'})
-    context.uid = manager.new([FIXTURE('project2', 'requirements.txt')]).uid
+    context.uid = manager.add([FIXTURE('project2', 'requirements.txt')])
+    manager.new(context.uid)
 
     # Retrieving the response of the server without spinning the whole http
     # stuff up. I crave a usable asynchronous API for python!
@@ -76,17 +77,17 @@ def test_new_curd(context):
 
     # Given that I have a file that contains a list of dependencies of a fake
     # project
-    curd_manager = CurdManager(
+    manager = CurdManager(
         FIXTURE('project1', '.curds'),
         {'index-url': 'http://localhost:8000/simple'})
     requirements = (
         FIXTURE('project1', 'requirements.txt'),
         FIXTURE('project1', 'development.txt'),
     )
-    uid = hash_files(requirements)
+    uid = manager.add(requirements)
 
     # When I create the new curd
-    curd = curd_manager.new(requirements)
+    curd = manager.new(uid)
 
     # Then I see the curd was downloaded correctly created
     os.path.isdir(FIXTURE('project1', '.curds')).should.be.true
@@ -107,11 +108,10 @@ def test_has_curd(context):
     path = FIXTURE('project1', '.curds')
     settings = {'index-url': 'http://localhost:8000/simple'}
     manager = CurdManager(path, settings)
-    requirements = (
+    curd = manager.new(manager.add([
         FIXTURE('project1', 'requirements.txt'),
         FIXTURE('project1', 'development.txt'),
-    )
-    curd = manager.new(requirements)
+    ]))
 
     # When I retrieve the unknown curd
     curd = manager.get(curd.uid)
@@ -132,15 +132,15 @@ def test_find_cached_curds(context):
     "It should be possible to find cached curds"
 
     # Given that I have a newly created curd
-    curd_manager = CurdManager(
+    manager = CurdManager(
         FIXTURE('project1', '.curds'),
         {'index-url': 'http://localhost:8000/simple'})
-    requirements = FIXTURE('project1', 'requirements.txt'),
-    curd1 = curd_manager.new(requirements)
+    uid = manager.add([FIXTURE('project1', 'requirements.txt')])
+    curd1 = manager.new(uid)
 
     # When I try to get the same curd instead of creating it
     with patch('curdling.pip') as pip:
-        curd2 = curd_manager.new(requirements)
+        curd2 = manager.new(uid)
 
         # Then I see that the pip command was not called in the second time
         pip.wheel.called.should.be.false
@@ -158,7 +158,8 @@ def test_list_curds(context):
     manager = CurdManager(
         FIXTURE('project1', '.curds'),
         {'index-url': 'http://localhost:8000/simple'})
-    curd1 = manager.new((FIXTURE('project1', 'requirements.txt'),))
+    curd1 = manager.new(manager.add([
+        FIXTURE('project1', 'requirements.txt')]))
 
     # When I list all the curds
     curds = manager.available()
