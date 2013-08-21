@@ -1,7 +1,9 @@
 language: python
 python: "2.7"
 
-install: pip install -r development.txt
+install:
+  - pip install -U pip
+  - pip install -r development.txt
 script: make
 
 notifications:

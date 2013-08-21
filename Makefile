@@ -33,14 +33,12 @@ acceptance: setup
 
 
 dummypypi_start:
-	@echo "Running the dummy pypi server..."
 	@make dummypypi_stop
 	@(cd tests/dummypypi && python -m SimpleHTTPServer >/dev/null 2>&1 &) && \
 		while :; do `curl http://localhost:$(DUMMY_PYPI_PORT) > /dev/null 2>&1` && break; done
 
 dummypypi_stop:
-	@echo "Stopping the dummy pypi server..."
-	-@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill
+	-@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill -9 2>/dev/null
 
 
 setup: clean
