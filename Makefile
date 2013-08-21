@@ -18,7 +18,7 @@ unit: setup
 
 functional: setup
 	@make dummypypi_start
-	@make run_test suite=functional
+	@TZ=EST+5EDT make run_test suite=functional
 	@make dummypypi_stop
 
 acceptance: setup
