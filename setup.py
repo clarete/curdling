@@ -30,26 +30,31 @@ def parse_requirements():
 
     return pkgs, links
 
+
 local_file = lambda f: \
     open(os.path.join(os.path.dirname(__file__), f)).read()
 
 install_requires, dependency_links = parse_requirements()
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     setup(
         name="curdling",
         version='0.0.1',
         description="curdling",
         long_description=local_file('README.md'),
-        author='Yipit Coders',
-        author_email='coders@yipit.com',
+        author='Lincoln Clarete',
+        author_email='lincoln@yipit.com',
         url='https://github.com/Yipit/curdling',
         packages=find_packages(exclude=['*tests*']),
         install_requires=install_requires,
         dependency_links=dependency_links,
+        entry_points={
+            'console_scripts': [
+                'curdling = curdling.cmdline:main',
+            ]
+        },
         classifiers=[
             'Programming Language :: Python',
         ],
-        zip_safe=False,
     )
