@@ -12,7 +12,7 @@ Feature: Command Line API
     When I run "python -m curdling"
     Then I should see:
       """
-      usage: __main__.py [-h] [-H] [-r REMOTE_CACHE_URL] [-p PYPI_URL]
+      usage: __main__.py [-h] [-H] [-r REMOTE_CACHE_URL] [-p PYPI_URL] [-s SERVER]
                          FILE [FILE ...]
       __main__.py: error: too few arguments
       """
@@ -33,7 +33,7 @@ Feature: Command Line API
       65193a9f55493e79b4e2441372eb631bdcfbec53
       """
 
-  Scenario: Installing packages using curdling
+  Scenario: Installing packages using curdled packages installed through pip
     Given that I have a project called "ProjectZ"
     And a file called "ProjectZ/requirements.txt" with:
       """
@@ -50,3 +50,26 @@ Feature: Command Line API
       """
     And I ensure that "gherkin==0.1.0" is installed
     And I ensure that "forbiddenfruit==0.1.0" is installed
+
+
+  Scenario: Installing packages through a remotely cached curd
+    Given that I have a project called "CurdCache"
+    And a file called "CurdCache/requirements.txt" with:
+      """
+      gherkin==0.1.0
+      """
+    And I run the server with "python -m curdling -p http://localhost:8000/simple -s localhost:8001 requirements.txt"
+    And that I have a project called "CacheConsumer"
+    And a file called "CacheConsumer/requirements.txt" with:
+      """
+      gherkin==0.1.0
+      """
+    When I run "python -m curdling -r http://localhost:8001 requirements.txt"
+    Then I should see:
+      """
+      [info] No cache found
+      [info] Looking for curds in the given url
+      [info] Installing curdled packages
+      """
+    And I ensure that "gherkin==0.1.0" is installed
+    And I shutdown the server

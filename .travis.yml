@@ -5,6 +5,8 @@ install:
   - pip install -U pip==1.4.1
   - pip install -U setuptools==0.9.8
   - pip install -r development.txt
+  - gem install cucumber
+
 script: make
 
 notifications:
