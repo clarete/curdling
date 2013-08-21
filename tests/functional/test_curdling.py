@@ -3,10 +3,36 @@ import os
 from shutil import rmtree
 from datetime import datetime
 from curdling import CurdManager, Curd, hash_files
+from curdling.server import Server
 
 from sure import scenario
-from mock import patch
+from mock import patch, Mock
 from . import FIXTURE
+
+
+def setup_server(context):
+    # Setting up a manager that uses our dummy pypi server running on the port
+    # 8000. This will create a curd to be served in the next step by our
+    # server.
+    manager = CurdManager(
+        FIXTURE('project2', '.curds'),
+        {'index-url': 'http://localhost:8000/simple'})
+    context.uid = manager.new([FIXTURE('project2', 'requirements.txt')]).uid
+
+    # Retrieving the response of the server without spinning the whole http
+    # stuff up. I crave a usable asynchronous API for python!
+    server = Server(manager, __name__)
+    client = server.test_client()
+
+    # Creating a patched urlopen to replace the original one by this fake one
+    # that contains the output read using the test client
+    url = '/{}'.format(context.uid)
+    response = Mock()
+    response.getcode.return_value = 200
+    response.bosta = 200
+    response.read.side_effect = lambda: client.get(url).data
+
+    context.patch = patch('curdling.urllib2.urlopen', lambda p: response)
 
 
 def cleandir(context):
@@ -139,3 +165,24 @@ def test_list_curds(context):
 
     # Then I see that the curd1 that I just created is inside of the list
     curds.should.contain(curd1)
+
+
+@scenario([cleandir, setup_server])
+def test_retrieve_remote_curd(context):
+    "It should be possible to retrieve remote curds and install them locally"
+
+    # Given that I have curdle manager (with a curd) configured with a remote
+    # cache url
+    manager = CurdManager(
+        FIXTURE('project1', '.curds'),
+        {'cache-url': 'http://localhost:8001'})  # where does this addr come
+                                                 # from? See `setup_server()`
+
+    # When I retrieve a curd
+    with context.patch:                       # Both context.{patch,uid} come from
+        curd = manager.retrieve(context.uid)  # from `setup_server()`
+
+    # Then I see the curd was correctly retrieved
+    os.path.isdir(curd.path).should.be.true
+    (os.path.isfile(os.path.join(curd.path, 'gherkin-0.1.0-py27-none-any.whl'))
+     .should.be.true)

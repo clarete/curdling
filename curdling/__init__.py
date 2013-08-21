@@ -1,6 +1,10 @@
 import io
 import os
 import hashlib
+import urllib2
+import urlparse
+import tarfile
+from StringIO import StringIO
 from datetime import datetime
 from sh import pip
 
@@ -65,6 +69,31 @@ class CurdManager(object):
         return (os.path.isdir(self.path)
                 and [Curd(self.path, cid) for cid in os.listdir(self.path)]
                 or [])
+
+    def retrieve(self, uid):
+        # Making sure our target directory exists
+        path = os.path.join(self.path, uid)
+        os.mkdir(path)
+
+        # Retrieving the tar file
+        url = urlparse.urljoin(self.settings['cache-url'], uid)
+        response = urllib2.urlopen(url)
+        tarcontent = response.read()
+
+        # Opening the tar StringIO'ed content. Bad things might happen here if
+        # the data does not represent a valid tar file
+        tar = tarfile.open(
+            name='{}.tar'.format(uid),
+            mode='r',
+            fileobj=StringIO(tarcontent),
+        )
+
+        # Extracting each file to our target directory
+        for entry in tar:
+            tar.extract(entry, path=path)
+
+        tar.close()
+        return self.get(uid)
 
 
 class Curd(object):
