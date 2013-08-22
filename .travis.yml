@@ -2,10 +2,11 @@ language: python
 python: "2.7"
 
 install:
-  - pip install -U pip==1.4.1
-  - pip install -U setuptools==0.9.8
+  - pip install -U virtualenvwrapper
+  - pip install -U pip==1.4.1 setuptools==0.9.8
   - pip install -r development.txt
-  - gem install cucumber
+  - gem install bundler
+  - bundle install
 
 script: make
 

@@ -1,3 +1,5 @@
+SHELL=bash
+
 PACKAGE=curdling
 
 CUSTOM_PIP_INDEX=localshop
@@ -23,13 +25,12 @@ functional: setup
 
 acceptance: setup
 	@make dummypypi_start
-	export CURDIR=`pwd` && \
-	 if [ "`which virtualenvwrapper.sh 2>/dev/null`" ]; then \
-		source `which virtualenvwrapper.sh`; fi && \
-	 mktmpenv -r requirements.txt >/dev/null && \
-	 cd $$CURDIR && \
-	 cucumber tests && \
-	 deactivate
+	export CURDIR=`pwd`				&& \
+	source `which virtualenvwrapper.sh` 		&& \
+	mktmpenv -r requirements.txt >/dev/null		&& \
+	cd $$CURDIR					&& \
+	cucumber tests					&& \
+	deactivate
 	@make dummypypi_stop
 
 
