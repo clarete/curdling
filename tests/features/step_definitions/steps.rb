@@ -72,7 +72,10 @@ Then(/^I ensure that "(.*?)" is installed$/) do |arg1|
 end
 
 Given(/^I run the server with "(.*?)"$/) do |cmd|
-  @server_pid = spawn({"PYTHONPATH" => Dir.pwd}, cmd, :chdir=>@current_directory, :err=>:out, :out=>STDOUT)
+  @server_pid = spawn({"PYTHONPATH" => Dir.pwd}, cmd,
+                      :pgroup=>true,
+                      :chdir=>@current_directory,
+                      :err=>:out, :out=>STDOUT)
 
   # Making sure the server has enough time to be spawn
   url = "http://localhost:8001"
@@ -83,6 +86,6 @@ Given(/^I run the server with "(.*?)"$/) do |cmd|
 end
 
 Given(/^I shutdown the server$/) do
-  Process.kill("TERM", @server_pid)
+  Process.kill("INT", -@server_pid)
   Process.wait
 end
