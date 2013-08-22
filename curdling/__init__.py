@@ -6,7 +6,7 @@ import urlparse
 import tarfile
 from StringIO import StringIO
 from datetime import datetime
-from sh import pip
+from sh import ErrorReturnCode, pip
 
 
 def hash_files(file_list):
@@ -16,6 +16,10 @@ def hash_files(file_list):
         'sha1',
         ''.join(io.open(f).read() for f in file_list),
     ).hexdigest()
+
+
+class CurdException(Exception):
+    pass
 
 
 class CurdManager(object):
@@ -52,6 +56,7 @@ class CurdManager(object):
         # No cached curd, let's move on and build our own
         params = {
             'wheel_dir': os.path.join(self.path, uid),
+            'quiet': True,
         }
 
         if 'index-url' in self.settings:
@@ -63,7 +68,14 @@ class CurdManager(object):
         # Iterating over all the requirement files we have here
         for reqfile in self.mapping[uid]:
             params.update({'r': reqfile})
-            pip.wheel(**params)
+            try:
+                pip.wheel(**params)
+            except ErrorReturnCode as exc:
+                # Pip shows the full path for the log file. It will make it
+                # harder to test things
+                raise CurdException(exc.stdout
+                    .replace(os.path.expanduser('~'), '${HOME}')
+                    .strip())
 
         return self.get(uid)
 

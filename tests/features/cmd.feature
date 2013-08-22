@@ -52,7 +52,6 @@ Feature: Command Line API
     And I ensure that "gherkin==0.1.0" is installed
     And I ensure that "forbiddenfruit==0.1.0" is installed
 
-
   Scenario: Installing packages through a remotely cached curd
     Given that I have a project called "CurdCache"
     And a file called "CurdCache/requirements.txt" with:
@@ -74,3 +73,22 @@ Feature: Command Line API
       """
     And I ensure that "gherkin==0.1.0" is installed
     And I shutdown the server
+
+  Scenario: Trying to install an unreache package
+    Given that I have a project called "ProjectK"
+    And a file called "ProjectK/requirements.txt" with:
+      """
+      gherkin==0.1.0
+      python-dateutil==0.1.0
+      """
+    When I run "python -m curdling -p http://localhost:8000/simple requirements.txt"
+    Then I should see:
+      """
+      [info] No cache found
+      [info] No external cache informed, using pip to curdle
+      [info] Curdling
+      [error]
+      Could not find any downloads that satisfy the requirement python-dateutil==0.1.0 (from -r requirements.txt (line 2))
+      No distributions at all found for python-dateutil==0.1.0 (from -r requirements.txt (line 2))
+      Storing complete log in ${HOME}/.pip/pip.log
+      """

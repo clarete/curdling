@@ -4,7 +4,7 @@ from sh import pip
 import argparse
 import os
 
-from . import hash_files, CurdManager
+from . import hash_files, CurdException, CurdManager
 from .server import Server
 
 
@@ -75,7 +75,12 @@ def main():
     # Building our own curd
     if not curd:
         print('[info] Curdling')
-        curd = manager.new(uid)
+        try:
+            curd = manager.new(uid)
+        except CurdException as exc:
+            print('[error]')
+            print(exc)
+            return
 
     # Spawning the server!
     if args.server:

@@ -91,7 +91,7 @@ def test_curd_manager_add_files():
 
 @patch('curdling.pip')
 def test_curd_manager_new(pip):
-    "It should be possible to create a new curds through the `CurdManager`"
+    "It should be possible to create new curds through the `CurdManager`"
 
     # Since we're testing creating a new curd, we don't really need to be
     # careful with the IO performed by the following methods. Let's just kill
@@ -119,18 +119,22 @@ def test_curd_manager_new(pip):
             r='file1.txt',
             wheel_dir='/path/to/the/curd/container/my-curd',
             extra_index_url='http://pip2.org',
-            index_url='http://pip1.org'),
+            index_url='http://pip1.org',
+            quiet=True,
+        ),
         call(
             r='file2.txt',
             wheel_dir='/path/to/the/curd/container/my-curd',
             extra_index_url='http://pip2.org',
-            index_url='http://pip1.org'),
-        ])
+            index_url='http://pip1.org',
+            quiet=True,
+        )
+    ])
 
 
 @patch('curdling.pip')
 def test_curd_manager_install(pip):
-    "It should be possible install packages from wheels stored in curds"
+    "It should be possible to install packages from wheels stored in curds"
 
     # Since we're testing installing a newly created curd, we don't really need
     # to be careful with the IO performed by the following methods. Let's just
