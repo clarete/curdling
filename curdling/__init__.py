@@ -18,6 +18,14 @@ def hash_files(file_list):
     ).hexdigest()
 
 
+def pip_error(msg):
+    # Pip shows the full path for the log file. It will make it
+    # harder to test things
+    return CurdException(msg
+        .replace(os.path.expanduser('~'), '${HOME}')
+        .strip())
+
+
 class CurdException(Exception):
     pass
 
@@ -71,11 +79,7 @@ class CurdManager(object):
             try:
                 pip.wheel(**params)
             except ErrorReturnCode as exc:
-                # Pip shows the full path for the log file. It will make it
-                # harder to test things
-                raise CurdException(exc.stdout
-                    .replace(os.path.expanduser('~'), '${HOME}')
-                    .strip())
+                raise pip_error(exc.stdout)
 
         return self.get(uid)
 
@@ -84,11 +88,15 @@ class CurdManager(object):
             'use_wheel': True,
             'no_index': True,
             'find_links': os.path.join(self.path, uid),
+            'quiet': True,
         }
 
         for reqfile in self.mapping[uid]:
             params.update({'r': reqfile})
-            pip.install(**params)
+            try:
+                pip.install(**params)
+            except ErrorReturnCode as exc:
+                raise pip_error(exc.stdout)
 
     def available(self):
         return (os.path.isdir(self.path)

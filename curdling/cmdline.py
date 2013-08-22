@@ -92,4 +92,9 @@ def main():
 
     # Installing the curdled dependencies
     print('[info] Installing curdled packages')
-    manager.install(uid)
+    try:
+        manager.install(uid)
+    except CurdException as exc:
+        print('[error]')
+        print(exc)
+        return
