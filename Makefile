@@ -14,7 +14,7 @@ all: test
 test: unit functional acceptance $(EXTRA_TEST_TASKS)
 
 unit: setup
-	@make run_test suite=unit
+	@TZ=EST+5EDT make run_test suite=unit
 
 functional: setup
 	@make dummypypi_start
