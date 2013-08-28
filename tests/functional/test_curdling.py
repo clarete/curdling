@@ -136,6 +136,7 @@ def test_find_cached_curds(context):
         FIXTURE('project1', '.curds'),
         {'index-url': 'http://localhost:8000/simple'})
     uid = manager.add([FIXTURE('project1', 'requirements.txt')])
+
     curd1 = manager.new(uid)
 
     # When I try to get the same curd instead of creating it

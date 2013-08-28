@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from mock import patch, call
 from curdling import CurdManager, Curd, hash_files
@@ -70,13 +71,8 @@ def test_curd_members(listdir):
 def test_curd_manager_add_files():
     "It should be possible to add new combinations of files to be hashed"
 
-    # We don't need that check
-    class MyManager(CurdManager):
-        def install_folder(self):
-            pass
-
     # Given that I have a manager
-    manager = MyManager('/path/to/the/curd/container')
+    manager = CurdManager('/path/to/the/curd/container')
 
     # When I add new files
     uid = manager.add(['f1.txt', 'f2.txt'])
@@ -100,8 +96,8 @@ def test_curd_manager_new(pip):
         def get(self, uid):
             return None
 
-        def install_folder(self):
-            pass
+        def curd_path(self, uid):
+            return os.path.join(self.path, uid)
 
     # Given that I have a manager (with pre-added curd ids)
     manager = MyManager('/path/to/the/curd/container', {
@@ -143,8 +139,8 @@ def test_curd_manager_install(pip):
         def get(self, uid):
             return None
 
-        def install_folder(self):
-            pass
+        def curd_path(self, uid):
+            return os.path.join(self.path, uid)
 
     # Given that I have a manager (with pre-added curd ids)
     manager = MyManager('/path/to/the/curd/container')
@@ -160,11 +156,13 @@ def test_curd_manager_install(pip):
             use_wheel=True,
             no_index=True,
             find_links='/path/to/the/curd/container/my-curd',
+            quiet=True,
         ),
         call(
             r='file2.txt',
             use_wheel=True,
             no_index=True,
             find_links='/path/to/the/curd/container/my-curd',
+            quiet=True,
         )
     ])

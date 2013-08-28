@@ -38,12 +38,10 @@ class CurdManager(object):
         # Saves the mapping of uids to files
         self.mapping = {}
 
-        # Installs the curd directory if it does not exist
-        self.install_folder()
-
-    def install_folder(self):
-        # Just making sure the target directory exists
-        os.path.isdir(self.path) or os.makedirs(self.path)
+    def curd_path(self, uid):
+        path = os.path.join(self.path, uid)
+        os.path.isdir(path) or os.makedirs(path)
+        return path
 
     def add(self, requirements):
         uid = hash_files(requirements)
@@ -62,10 +60,10 @@ class CurdManager(object):
             return curd
 
         # No cached curd, let's move on and build our own
-        params = {
-            'wheel_dir': os.path.join(self.path, uid),
-            'quiet': True,
-        }
+        params = {}
+        params['wheel_dir'] = self.curd_path(uid)
+        params['quiet'] = True
+        # params['upgrade'] = True
 
         if 'index-url' in self.settings:
             params.update({'index_url': self.settings['index-url']})
@@ -77,9 +75,15 @@ class CurdManager(object):
         for reqfile in self.mapping[uid]:
             params.update({'r': reqfile})
             try:
-                pip.wheel(**params)
+                cmd = pip.wheel(**params)
+
+                # A *nasty* hack to workaround the problem described https:
+                # here://github.com/pypa/pip/pull/1162
+                if 'due to a pre-existing build directory' in cmd.stdout:
+                    raise pip_error(exc.stdout + exc.stderr)
+
             except ErrorReturnCode as exc:
-                raise pip_error(exc.stdout)
+                raise pip_error(exc.stdout + exc.stderr)
 
         return self.get(uid)
 
@@ -87,7 +91,7 @@ class CurdManager(object):
         params = {
             'use_wheel': True,
             'no_index': True,
-            'find_links': os.path.join(self.path, uid),
+            'find_links': self.curd_path(uid),
             'quiet': True,
         }
 
@@ -104,10 +108,6 @@ class CurdManager(object):
                 or [])
 
     def retrieve(self, uid):
-        # Making sure our target directory exists
-        path = os.path.join(self.path, uid)
-        os.mkdir(path)
-
         # Retrieving the tar file
         url = urlparse.urljoin(self.settings['cache-url'], uid)
         response = urllib2.urlopen(url)
@@ -123,7 +123,7 @@ class CurdManager(object):
 
         # Extracting each file to our target directory
         for entry in tar:
-            tar.extract(entry, path=path)
+            tar.extract(entry, path=self.curd_path(uid))
 
         tar.close()
         return self.get(uid)
