@@ -37,8 +37,9 @@ def setup_server(context):
 
 
 def cleandir(context):
-    for curd in os.listdir(FIXTURE('project1', '.curds')):
-        rmtree(FIXTURE('project1', '.curds', curd))
+    if os.path.isdir(FIXTURE('project1', '.curds')):
+        for curd in os.listdir(FIXTURE('project1', '.curds')):
+            rmtree(FIXTURE('project1', '.curds', curd))
 
 
 @scenario(cleandir)
@@ -58,7 +59,8 @@ def test_hashing_files(context):
     hashed.should.equal('682f87d84c80d0a85c9179de681b3474906113b3')
 
 
-def test_no_curd():
+@scenario(cleandir)
+def test_no_curd(context):
     "CurdManager.get() should return None when it can't find a specific curd"
 
     # Given that I have an instance of a curd manager
