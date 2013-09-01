@@ -4,11 +4,8 @@ from mock import patch, Mock
 
 import os
 
-from curdling import download
-from curdling.util import (
-    expand_requirements, gen_package_path, LocalCache, Env
-)
-
+from curdling import download, LocalCache, Env
+from curdling.util import expand_requirements, gen_package_path
 
 
 @patch('io.open')
