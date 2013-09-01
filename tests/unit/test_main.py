@@ -4,6 +4,7 @@ from mock import patch, Mock
 
 import os
 
+from curdling import download
 from curdling.util import (
     expand_requirements, gen_package_path, LocalCache, Env
 )

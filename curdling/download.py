@@ -3,6 +3,7 @@ from collections import defaultdict
 from pip.req import InstallRequirement
 from pip.index import PackageFinder
 
+import os
 import urllib2
 
 from .util import gen_package_path
@@ -33,17 +34,24 @@ class PipSource(object):
 
 
 class DownloadManager(object):
-    def __init__(self, sources=None, storage=None):
+    def __init__(self, sources=None, storage=None, result_queue=None):
         self.sources = sources
         self.storage = storage
+        self.result_queue = result_queue
 
     def download(self, package_name, url):
         pkg = urllib2.urlopen(url).read()
-        path = gen_package_path(package_name)
+        path = os.path.join(
+            gen_package_path(package_name),
+            os.path.basename(url))
         return self.storage.write(path, pkg)
 
     def retrieve(self, package):
         for source in self.sources:
-            pkg = self.download(package, source.url(package))
-            return pkg
+            url = source.url(package)
+            path = self.download(package, url)
+
+            if self.result_queue:
+                self.result_queue.put(path)
+            return path
         return False

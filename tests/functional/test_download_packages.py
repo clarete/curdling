@@ -1,3 +1,4 @@
+from mock import Mock
 from curdling.download import PipSource, DownloadManager, MemoryStorage
 
 
@@ -14,3 +15,20 @@ def test_downloader():
 
     # Then I see that the package was downloaded correctly to the storage
     (package in storage).should.be.true
+
+
+def test_downloader_should_feed_result_queue():
+    "After downloading packages, the result queue should be fed"
+
+    # Given the following downloader component
+    queue = Mock()
+    sources = [PipSource(urls=['http://localhost:8000/simple'])]
+    storage = MemoryStorage()
+    downloader = DownloadManager(
+        sources=sources, storage=storage, result_queue=queue)
+
+    # When I try to retrieve a package from it
+    package = downloader.retrieve('gherkin==0.1.0')
+
+    # Then I see that the package was downloaded correctly to the storage
+    queue.put.assert_called_once_with('g/h/gherkin/gherkin-0.1.0.tar.gz')
