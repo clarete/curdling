@@ -1,7 +1,13 @@
+from __future__ import absolute_import, unicode_literals, print_function
 from pkg_resources import Requirement
-from mock import patch
+from mock import patch, Mock
 
-from curdling.util import parse_requirements, expand_requirements
+import os
+
+from curdling.util import (
+    expand_requirements, gen_package_path, LocalCache, Env
+)
+
 
 
 @patch('io.open')
@@ -20,25 +26,101 @@ def test_expand_requirements(open_func):
 
     # Then I see that all the required files were retrieved
     requirements.should.equal([
-        {'name': 'gherkin', 'spec': ('==', '0.1.0'), 'extras': []},
-        {'name': 'sure', 'spec': ('==', '0.2.1'), 'extras': []},
+        Requirement.parse('gherkin==0.1.0'),
+        Requirement.parse('sure==0.2.1'),
     ])
 
 
-def test_parsing_requirements():
-    "It should be possible to parse requirements"
+def test_gen_package_path():
+    "Utility to generate a sub-path for a package given its name"
 
-    # Given that I have the following requirements file
-    requirements = '''
-gherkin==0.1.0
-forbiddenfruit==0.1.1
-'''
+    # Given the following package
+    package = 'gherkin==0.1.0'
 
-    # When I parse it
-    requirements_list = parse_requirements(requirements)
+    # When I request a new name
+    dir_name = gen_package_path(package)
 
-    # Then I see I got the right list
-    requirements_list.should.equal([
-        {'name': 'gherkin', 'spec': ('==', '0.1.0'), 'extras': []},
-        {'name': 'forbiddenfruit', 'spec': ('==', '0.1.1'), 'extras': []},
-    ])
+    # Then I see the right directory structure
+    dir_name.should.equal(os.path.join('g', 'h', 'gherkin'))
+
+
+def test_local_cache_search():
+    "Local cache should be able to tell if a given package is present or not"
+
+    # Given that I have an instance of our local cache with a package indexed
+    cache = LocalCache(backend={})
+    cache.push('gherkin==0.1.0')
+
+    # When I look for the requirement
+    path = cache.get('gherkin==0.1.0')
+
+    # Then I see that the package exists
+    path.should.equal(os.path.join('g', 'h', 'gherkin'))
+
+
+def test_request_install_no_cache():
+    "Request the installation of a package when there is no cache"
+
+    # Given that I have an environment
+    cache = Mock()
+    cache.get.return_value = None
+    env = Env(local_cache_backend=cache)
+    env.check_installed = Mock(return_value=False)
+    env.download_queue = Mock()
+
+    # When I request an installation of a package
+    env.request_install('gherkin==0.1.0')
+
+    # Then I see that the caches were checked
+    env.check_installed.assert_called_once_with('gherkin==0.1.0')
+    env.local_cache.backend.get.assert_called_once_with('gherkin==0.1.0')
+
+    # And then I see that the download queue was populated
+    env.download_queue.put.assert_called_once_with('gherkin==0.1.0')
+
+
+def test_request_install_installed_package():
+    "Request the installation of an already installed package"
+
+    # Given that I have an environment
+    cache = Mock()
+    env = Env(local_cache_backend=cache)
+    env.check_installed = Mock(return_value=True)
+    env.download_queue = Mock()
+
+    # When I request an installation of a package
+    env.request_install('gherkin==0.1.0').should.be.true
+
+    # Then I see that, since the package was installed, the local cache was not
+    # queried
+    env.check_installed.assert_called_once_with('gherkin==0.1.0')
+    env.local_cache.backend.get.called.should.be.false
+
+    # And then I see that the download queue was not touched
+    env.download_queue.put.called.should.be.false
+
+
+def test_request_install_cached_package():
+    "Request the installation of a cached package"
+
+    # Given that I have a loaded local cache
+    cache = {'gherkin==0.1.0': gen_package_path('gherkin==0.1.0')}
+
+    # And that I have an environment associated with that local cache
+    env = Env(local_cache_backend=cache)
+    env.check_installed = Mock(return_value=False)
+    env.download_queue = Mock()
+    env.install_queue = Mock()
+
+    # When I request an installation of a package
+    env.request_install('gherkin==0.1.0').should.be.false
+
+    # Then I see that, since the package was not installed, the locall cache
+    # was queried and returned the right entry
+    env.check_installed.assert_called_once_with('gherkin==0.1.0')
+
+    # And I see that the install queue was populated
+    env.install_queue.put.assert_called_once_with('gherkin==0.1.0')
+
+    # And that the download queue was not touched
+    env.download_queue.put.called.should.be.false

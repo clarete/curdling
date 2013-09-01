@@ -1,12 +1,14 @@
+from __future__ import unicode_literals, print_function, absolute_import
+from StringIO import StringIO
+from datetime import datetime
+from sh import ErrorReturnCode, pip
+
 import io
 import os
 import hashlib
 import urllib2
 import urlparse
 import tarfile
-from StringIO import StringIO
-from datetime import datetime
-from sh import ErrorReturnCode, pip
 
 
 def hash_files(file_list):
