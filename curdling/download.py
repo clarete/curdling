@@ -97,7 +97,6 @@ class DownloadManager(object):
             self.package_queue.remove(queued)
             self.pool.spawn(self.retrieve, queued)
         self.pool.join()
-        self.pool.kill()
 
     def download(self, package_name, url):
         pkg = urllib2.urlopen(url).read()
