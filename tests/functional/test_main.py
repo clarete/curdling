@@ -1,6 +1,9 @@
 import os
 from . import FIXTURE
+
+from curdling import util
 from curdling.download import DirectoryStorage
+from curdling.wheelhouse import Curdling
 
 
 def test_directory_storage():
@@ -10,10 +13,10 @@ def test_directory_storage():
     storage = DirectoryStorage(path=FIXTURE('storagedirtest'))
 
     # When I save a file to the storage
-    storage.write('path/to/a/file.txt', 'the content')
+    storage.write('pkg.txt', 'the content')
 
     # Then I see that this file exists after the above call
-    result_path = FIXTURE('storagedirtest', 'path', 'to', 'a', 'file.txt')
+    result_path = FIXTURE('storagedirtest', 'p', 'k', 'pkg', 'pkg.txt')
     os.path.exists(result_path).should.be.true
 
     # And that the file above has the same content
@@ -30,10 +33,10 @@ def test_directory_storage_dict_api():
     storage = DirectoryStorage(path=FIXTURE('storagedirtest1'))
 
     # When I save a file to the storage
-    storage['path/to/a/file.txt'] = 'the content'
+    storage['file.txt'] = 'the content'
 
     # Then I see that this file exists after the above call
-    result_path = FIXTURE('storagedirtest1', 'path', 'to', 'a', 'file.txt')
+    result_path = FIXTURE('storagedirtest1', 'f', 'i', 'file', 'file.txt')
     os.path.exists(result_path).should.be.true
 
     # And that the file above has the same content
@@ -48,17 +51,30 @@ def test_directory_storage_delete_file():
 
     # Given the following directory storage with a file
     storage = DirectoryStorage(path=FIXTURE('storagedirtest2'))
-    storage['file/to/be/deleted.txt'] = 'some content'
+    storage['deleted.txt'] = 'some content'
 
     # When I blow it up
-    os.path.exists(FIXTURE('storagedirtest2/file/to/be/deleted.txt')).should.be.true
-    del storage['file/to/be/deleted.txt']
+    os.path.exists(FIXTURE('storagedirtest2/d/e/deleted/deleted.txt')).should.be.true
+    del storage['deleted.txt']
 
     # Then I see the file doesn't exist anymore
-    os.path.exists(FIXTURE('storagedirtest2/file/to/be/deleted.txt')).should.be.false
+    os.path.exists(FIXTURE('storagedirtest2/d/e/deleted/deleted.txt')).should.be.false
 
     # Removing the storage directory
     storage.delete()
+
+
+def test_directory_storage_find():
+    "The storage should know how to find a package"
+
+    # Given that I have a storage that contains a package
+    storage = DirectoryStorage(path=FIXTURE('storage1'))
+
+    # When I try to find this package
+    packages = storage.find('gherkin==0.1.0')
+
+    # Then I see that the given package's path was retrieved
+    packages.should.equal(['g/h/gherkin/gherkin-0.1.0.tar.gz'])
 
 
 def test_directory_storage_delete():
@@ -74,3 +90,26 @@ def test_directory_storage_delete():
 
     # Then I see the file doesn't exist anymore
     os.path.isdir(FIXTURE('storagedirtest3')).should.be.false
+
+
+def test_curd_package():
+    "It should possible to convert regular packages to wheels"
+
+    # Given that I have a storage containing a package
+    storage = DirectoryStorage(path=FIXTURE('storage1'))
+
+    # And a curdling using that storage
+    curdling = Curdling(storage=storage)
+
+    # When I request a curd to be created
+    package = curdling.wheel('gherkin==0.1.0')
+
+    # Then I see it's a wheel package.
+    package.should.equal('g/h/gherkin/gherkin-0.1.0-py27-none-any.whl')
+
+    # And that the file was created in the file system
+    (os.path.exists(FIXTURE('storage1/g/h/gherkin/gherkin-0.1.0-py27-none-any.whl'))
+     .should.be.true)
+
+    # And I delete the file
+    del storage[os.path.basename(package)]

@@ -4,9 +4,12 @@ from pkg_resources import Requirement
 import io
 import os
 import re
+import tarfile
 
 
 INCLUDE_PATTERN = re.compile(r'-r\s*\b([^\b]+)')
+
+NAME_RE = re.compile(r'^([\w\_]+)')
 
 
 def expand_requirements(file_name):
@@ -27,7 +30,7 @@ def expand_requirements(file_name):
 
 def gen_package_path(package_name):
     path = list(package_name[:2])
-    path.append(Requirement.parse(package_name).key)
+    path.append(NAME_RE.findall(package_name)[0])
     return os.path.join(*path)
 
 

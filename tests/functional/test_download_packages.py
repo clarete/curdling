@@ -33,7 +33,7 @@ def test_downloader_should_feed_result_queue():
     package = downloader.retrieve('gherkin==0.1.0')
 
     # Then I see that the package was downloaded correctly to the storage
-    queue.put.assert_called_once_with('g/h/gherkin/gherkin-0.1.0.tar.gz')
+    queue.put.assert_called_once_with('gherkin==0.1.0')
 
 
 def test_downloader_feeds_the_compile_queue():
@@ -55,4 +55,4 @@ def test_downloader_feeds_the_compile_queue():
     queue.qsize().should.equal(0)
 
     # And that the package was the one that I requested
-    package.should.equal('g/h/gherkin/gherkin-0.1.0.tar.gz')
+    package.should.equal('gherkin==0.1.0')

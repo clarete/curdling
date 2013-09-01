@@ -31,8 +31,8 @@ class DirectoryStorage(dict):
         super(DirectoryStorage, self).__init__()
         self.path = path
 
-    def build_path(self, path):
-        full = os.path.join(self.path, path)
+    def build_path(self, item):
+        full = os.path.join(self.path, gen_package_path(item), item)
         try:
             os.makedirs(os.path.dirname(full))
         except OSError as exc:
@@ -48,7 +48,7 @@ class DirectoryStorage(dict):
             f.write(value)
 
     def __delitem__(self, item):
-        os.unlink(os.path.join(self.path, item))
+        os.unlink(self.build_path(item))
 
     def delete(self):
         shutil.rmtree(self.path)
@@ -56,6 +56,13 @@ class DirectoryStorage(dict):
     def write(self, path, data):
         self[path] = data
         return path
+
+    def find(self, pkg, allowed=('.gz', '.zip', '.whl')):
+        subpath = gen_package_path(pkg)
+        full = os.path.join(self.path, subpath)
+        return [os.path.join(subpath, m)
+                for m in os.listdir(full)
+                if os.path.splitext(m)[1] in allowed]
 
     def read(self, path):
         return self[path]
@@ -94,10 +101,7 @@ class DownloadManager(object):
 
     def download(self, package_name, url):
         pkg = urllib2.urlopen(url).read()
-        path = os.path.join(
-            gen_package_path(package_name),
-            os.path.basename(url))
-        return self.storage.write(path, pkg)
+        return self.storage.write(os.path.basename(url), pkg)
 
     def retrieve(self, package):
         for source in self.sources:
@@ -105,6 +109,6 @@ class DownloadManager(object):
             path = self.download(package, url)
 
             if self.result_queue:
-                self.result_queue.put(path)
+                self.result_queue.put(package)
             return path
         return False
