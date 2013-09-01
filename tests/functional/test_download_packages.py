@@ -1,17 +1,4 @@
-from collections import defaultdict
-from curdling.util import PipSource, DownloadManager
-
-
-class MemoryStorage(defaultdict):
-    def __init__(self):
-        super(MemoryStorage, self).__init__(list)
-
-    def write(self, path, data):
-        self[path].append(data)
-        return path
-
-    def read(self, path):
-        return ''.join(self[path])
+from curdling.download import PipSource, DownloadManager, MemoryStorage
 
 
 def test_downloader():
