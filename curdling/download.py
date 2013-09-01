@@ -9,6 +9,8 @@ import errno
 import shutil
 import urllib2
 
+from gevent.pool import Pool
+
 from .util import gen_package_path
 
 
@@ -21,7 +23,7 @@ class MemoryStorage(defaultdict):
         return path
 
     def read(self, path):
-        return ''.join(self[path])
+        return (b'').join(self[path])
 
 
 class DirectoryStorage(dict):
@@ -76,6 +78,19 @@ class DownloadManager(object):
         self.sources = sources
         self.storage = storage
         self.result_queue = result_queue
+        self.package_queue = []
+        self.pool = None
+
+    def queue(self, package):
+        self.package_queue.append(package)
+
+    def start(self, concurrent=1):
+        self.pool = Pool(concurrent)
+        for queued in self.package_queue:
+            self.package_queue.remove(queued)
+            self.pool.spawn(self.retrieve, queued)
+        self.pool.join()
+        self.pool.kill()
 
     def download(self, package_name, url):
         pkg = urllib2.urlopen(url).read()
