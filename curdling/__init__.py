@@ -10,6 +10,8 @@ import urllib2
 import urlparse
 import tarfile
 
+from . import util
+
 
 def hash_files(file_list):
     """Hashes the contents of a list of files
@@ -146,3 +148,30 @@ class Curd(object):
 
     def members(self):
         return os.listdir(self.path)
+
+
+class LocalCache(object):
+    def __init__(self, backend):
+        self.backend = backend
+
+    def push(self, name):
+        self.backend[name] = util.gen_package_path(name)
+
+    def get(self, pkg):
+        return self.backend.get(pkg)
+
+
+class Env(object):
+    def __init__(self, local_cache_backend):
+        self.local_cache = LocalCache(backend=local_cache_backend)
+
+    def request_install(self, requirement):
+        if self.check_installed(requirement):
+            return True
+
+        elif self.local_cache.get(requirement):
+            self.install_queue.put(requirement)
+            return False
+
+        self.download_queue.put(requirement)
+        return False
