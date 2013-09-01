@@ -50,7 +50,7 @@ class DirectoryStorage(dict):
     def __delitem__(self, item):
         os.unlink(os.path.join(self.path, item))
 
-    def __del__(self):
+    def delete(self):
         shutil.rmtree(self.path)
 
     def write(self, path, data):
