@@ -1,9 +1,12 @@
+from __future__ import absolute_import, unicode_literals, print_function
+from gevent.queue import Queue
 import os
-from . import FIXTURE
 
 from curdling import util
 from curdling.download import DirectoryStorage
 from curdling.wheelhouse import Curdling
+
+from . import FIXTURE
 
 
 def test_directory_storage():
@@ -113,3 +116,23 @@ def test_curd_package():
 
     # And I delete the file
     del storage[os.path.basename(package)]
+
+
+def test_curdling_feeds_the_install_queue():
+    "Curdling wheels should feed the install queue"
+
+    # Given the following curdling environment associated with a loaded storage
+    queue = Queue()
+    storage = DirectoryStorage(path=FIXTURE('storage1'))
+    curdling = Curdling(storage=storage, result_queue=queue)
+
+    # When I start the downloader and try to read the next item in the queue
+    curdling.queue('gherkin==0.1.0')
+    curdling.start(concurrent=1)
+    package = queue.get()
+
+    # Then I see that the queue is now empty
+    queue.qsize().should.equal(0)
+
+    # And that the package was the one that I requested
+    package.should.equal('gherkin==0.1.0')
