@@ -3,7 +3,10 @@ from collections import defaultdict
 from pip.req import InstallRequirement
 from pip.index import PackageFinder
 
+import io
 import os
+import errno
+import shutil
 import urllib2
 
 from .util import gen_package_path
@@ -19,6 +22,41 @@ class MemoryStorage(defaultdict):
 
     def read(self, path):
         return ''.join(self[path])
+
+
+class DirectoryStorage(dict):
+    def __init__(self, path):
+        super(DirectoryStorage, self).__init__()
+        self.path = path
+
+    def build_path(self, path):
+        full = os.path.join(self.path, path)
+        try:
+            os.makedirs(os.path.dirname(full))
+        except OSError as exc:
+            if exc.errno != errno.EEXIST:
+                raise exc
+        return full
+
+    def __getitem__(self, item):
+        return io.open(self.build_path(item)).read()
+
+    def __setitem__(self, item, value):
+        with io.open(self.build_path(item), 'wb') as f:
+            f.write(value)
+
+    def __delitem__(self, item):
+        os.unlink(os.path.join(self.path, item))
+
+    def __del__(self):
+        shutil.rmtree(self.path)
+
+    def write(self, path, data):
+        self[path] = data
+        return path
+
+    def read(self, path):
+        return self[path]
 
 
 class PipSource(object):
