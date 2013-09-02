@@ -3,9 +3,11 @@ from pkg_resources import Requirement
 from mock import patch, Mock
 
 import os
+import errno
 import pkg_resources
 
 from curdling import download, LocalCache, Env
+from curdling.download import DirectoryStorage
 from curdling.util import expand_requirements, gen_package_path
 
 
@@ -69,6 +71,19 @@ def test_local_cache_search():
 
     # Then I see that the package exists
     path.should.equal(os.path.join('g', 'h', 'gherkin'))
+
+
+def test_directory_storage_permission_denied():
+    "DirectoryStorage.build_path() should handle other kinds of IOError exceptions"
+
+    with patch('os.makedirs') as makedirs:
+        exc = OSError()
+        exc.errno = errno.EPERM
+        makedirs.side_effect = exc
+
+        (DirectoryStorage('/root').build_path
+         .when.called_with('sub-directory')
+         .should.throw(OSError))
 
 
 def test_request_install_no_cache():
