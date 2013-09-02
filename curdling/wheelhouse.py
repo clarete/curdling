@@ -8,24 +8,15 @@ from pip.index import PackageFinder
 from pip.wheel import WheelBuilder
 
 from gevent.pool import Pool
+from . import Service
 
 
-class Curdling(object):
+class Curdling(Service):
     def __init__(self, storage, result_queue=None):
         self.storage = storage
-        self.result_queue = result_queue
-        self.package_queue = []
-        self.pool = None
-
-    def queue(self, package):
-        self.package_queue.append(package)
-
-    def start(self, concurrent=1):
-        self.pool = Pool(concurrent)
-        for queued in self.package_queue:
-            self.package_queue.remove(queued)
-            self.pool.spawn(self.wheel, queued)
-        self.pool.join()
+        super(Curdling, self).__init__(
+            callback=self.wheel,
+            result_queue=result_queue)
 
     def wheel(self, package):
         source = self.storage.find(package, allowed=('.gz',))[0]
@@ -73,10 +64,6 @@ class Curdling(object):
         # 1) build the wheel, 2) output the wheel file
         shutil.rmtree(build_dir)
         shutil.rmtree(wheel_dir)
-
-        # Finally, notifying interested people
-        if self.result_queue:
-            self.result_queue.put(package)
 
         # Finally, we just say where in the storage the file is
         return os.path.join(os.path.dirname(source), wheel_file)

@@ -31,28 +31,3 @@ def test_downloader_should_feed_result_queue():
 
     # When I try to retrieve a package from it
     package = downloader.retrieve('gherkin==0.1.0')
-
-    # Then I see that the package was downloaded correctly to the storage
-    queue.put.assert_called_once_with('gherkin==0.1.0')
-
-
-def test_downloader_feeds_the_compile_queue():
-    "After downloading packages, it should be compiled to a wheel"
-
-    # Given the following downloader component
-    queue = Queue()
-    storage = MemoryStorage()
-    downloader = DownloadManager(
-        sources=[PipSource(urls=['http://localhost:8000/simple'])],
-        storage=storage, result_queue=queue)
-
-    # When I start the downloader and try to read the next item in the queue
-    downloader.queue('gherkin==0.1.0')
-    downloader.start(concurrent=1)
-    package = queue.get()
-
-    # Then I see that the queue is now empty
-    queue.qsize().should.equal(0)
-
-    # And that the package was the one that I requested
-    package.should.equal('gherkin==0.1.0')

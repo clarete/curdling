@@ -1,8 +1,9 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from gevent.queue import Queue
+from mock import Mock
 import os
 
-from curdling import util
+from curdling import util, Service
 from curdling.download import DirectoryStorage
 from curdling.wheelhouse import Curdling
 
@@ -95,6 +96,37 @@ def test_directory_storage_delete():
     os.path.isdir(FIXTURE('storagedirtest3')).should.be.false
 
 
+def test_service():
+    "Service() should implement the basic needs of an async service"
+
+    # Given the following service
+    class MyService(Service):
+        def __init__(self, my_mock, result_queue=None):
+            self.my_mock = my_mock
+            super(MyService, self).__init__(
+                callback=self.run,
+                result_queue=result_queue,
+            )
+
+        def run(self, package):
+            self.my_mock.ran = package
+
+    my_mock = Mock()
+    queue = Queue()
+    service = MyService(my_mock, result_queue=queue)
+
+    # When I queue a package to be processed by my service and start the
+    # service with 1 concurrent worker
+    service.queue('gherkin==0.1.0')
+    service.start(concurrent=1)
+
+    # Then I see that the package processed
+    package = queue.get()
+    package.should.equal('gherkin==0.1.0')
+
+    my_mock.ran.should.equal('gherkin==0.1.0')
+
+
 def test_curd_package():
     "It should possible to convert regular packages to wheels"
 
@@ -116,23 +148,3 @@ def test_curd_package():
 
     # And I delete the file
     del storage[os.path.basename(package)]
-
-
-def test_curdling_feeds_the_install_queue():
-    "Curdling wheels should feed the install queue"
-
-    # Given the following curdling environment associated with a loaded storage
-    queue = Queue()
-    storage = DirectoryStorage(path=FIXTURE('storage1'))
-    curdling = Curdling(storage=storage, result_queue=queue)
-
-    # When I start the downloader and try to read the next item in the queue
-    curdling.queue('gherkin==0.1.0')
-    curdling.start(concurrent=1)
-    package = queue.get()
-
-    # Then I see that the queue is now empty
-    queue.qsize().should.equal(0)
-
-    # And that the package was the one that I requested
-    package.should.equal('gherkin==0.1.0')
