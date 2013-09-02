@@ -1,11 +1,12 @@
 from __future__ import unicode_literals, print_function, absolute_import
-from collections import namedtuple
 from datetime import datetime
-from gevent.pool import Pool
-from pip.commands.uninstall import UninstallCommand
-from sh import ErrorReturnCode, pip
 from StringIO import StringIO
+
+from sh import ErrorReturnCode, pip
+
 from . import util
+from gevent.pool import Pool
+from gevent.queue import Queue
 
 import io
 import os
@@ -13,7 +14,7 @@ import hashlib
 import urllib2
 import urlparse
 import tarfile
-import pkg_resources
+import gevent
 
 
 def hash_files(file_list):
@@ -153,84 +154,42 @@ class Curd(object):
         return os.listdir(self.path)
 
 
-class LocalCache(object):
-    def __init__(self, backend):
-        self.backend = backend
-
-    def put(self, name, val):
-        self.backend[name] = val
-
-    def get(self, name):
-        return self.backend.get(name)
-
-    def scan_dir(self, path):
-        allowed = ('.whl',)
-
-        for root, dirs, files in os.walk(path):
-            for name in files:
-                if name.startswith('.'):
-                    continue
-
-                n, ext = os.path.splitext(name)
-                if ext in allowed:
-                    pkg_name, version, impl, abi, plat = n.split('-')
-                    self.put(
-                        '{0}=={1}'.format(pkg_name, version),
-                        os.path.join(util.gen_package_path(pkg_name), name))
-
-
-class Env(object):
-    def __init__(self, local_cache_backend):
-        self.local_cache = LocalCache(backend=local_cache_backend)
-
-    def check_installed(self, package):
-        try:
-            pkg_resources.get_distribution(package)
-            return True
-        except (pkg_resources.VersionConflict,
-                pkg_resources.DistributionNotFound):
-            return False
-
-    def request_install(self, requirement):
-        if self.check_installed(requirement):
-            return True
-
-        elif self.local_cache.get(requirement):
-            self.install_queue.put(requirement)
-            return False
-
-        self.download_queue.put(requirement)
-        return False
-
-    def uninstall(self, package):
-        # We just overwrite the constructor here cause it's not actualy useful
-        # unless you're creating another command, not calling as a library.
-        class Uninstall(UninstallCommand):
-            def __init__(self):
-                pass
-
-        # Just creating an object that pretends to be the option container for
-        # the `run()` method.
-        opts = namedtuple('Options', 'yes requirements')
-        Uninstall().run(opts(yes=True, requirements=[]), [package])
-
-
 class Service(object):
-    def __init__(self, callback, result_queue):
+    def __init__(self, callback, concurrency=1, result_queue=None):
         self.callback = callback
         self.result_queue = result_queue
-        self.package_queue = []
+        self.package_queue = Queue()
         self.failed_queue = []
-        self.pool = None
+
+        self.main_greenlet = None
+        self.pool = Pool(concurrency)
+        self.should_run = True
 
     def queue(self, package):
-        self.package_queue.append(package)
+        print(' * {0},queueing: {1}'.format(self.__class__.__name__.lower(), package))
+        self.package_queue.put(package)
 
-    def start(self, concurrent=1):
-        self.pool = Pool(concurrent)
-        for queued in self.package_queue:
-            self.package_queue.remove(queued)
-            self.pool.spawn(self._run_service, queued)
+    def consume(self):
+        package = self.package_queue.get()
+        print(' * {0},consuming: {1}'.format(self.__class__.__name__.lower(), package))
+        self.pool.spawn(self._run_service, package)
+
+    def loop(self):
+        while self.should_run:
+            self.consume()
+
+    def start(self):
+        print('Forking main greenlet')
+        self.main_greenlet = gevent.spawn(self.loop)
+
+    def stop(self, force=False):
+        # This will force the current iteraton on `loop()` to be the last one,
+        # so the thing we're processing will be able to finish;
+        self.should_run = False
+
+        # if the caller is in a hurry, we'll just kill everything mercilessly
+        if force and self.main_greenlet:
+            self.main_greenlet.kill()
 
     def _run_service(self, package):
         try:

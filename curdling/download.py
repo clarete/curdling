@@ -13,8 +13,7 @@ import pkg_resources
 
 from gevent.pool import Pool
 
-from . import Service
-from .util import gen_package_path
+from . import util, Service
 
 
 class MemoryStorage(defaultdict):
@@ -32,7 +31,8 @@ class DirectoryStorage(dict):
         self.path = path
 
     def build_path(self, item):
-        full = os.path.join(self.path, gen_package_path(item), item)
+        full = os.path.join(self.path,
+            util.gen_package_path(item), item)
         try:
             os.makedirs(os.path.dirname(full))
         except OSError as exc:
@@ -58,11 +58,11 @@ class DirectoryStorage(dict):
         return path
 
     def find(self, pkg, allowed=('.gz', '.zip', '.whl')):
-        subpath = gen_package_path(pkg)
+        subpath = util.gen_package_path(pkg)
         full = os.path.join(self.path, subpath)
         return [os.path.join(subpath, m)
                 for m in os.listdir(full)
-                if os.path.splitext(m)[1] in allowed]
+                if util.ext(m) in allowed]
 
     def read(self, path):
         return self[path]
