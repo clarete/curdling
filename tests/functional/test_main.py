@@ -134,6 +134,38 @@ def test_service():
     my_mock.ran.should.equal('gherkin==0.1.0')
 
 
+def test_service_failure():
+    "Service() should handle custom callback failures"
+
+    # Given the following service
+    class MyService(Service):
+        def __init__(self, result_queue=None):
+            super(MyService, self).__init__(
+                callback=self.run,
+                result_queue=result_queue,
+            )
+
+        def run(self, package):
+            raise ValueError("I don't want to do anything")
+
+    queue = Queue()
+    service = MyService(result_queue=queue)
+
+    # When I queue a package to be processed by my service and start the
+    # service with 1 concurrent worker
+    service.queue('gherkin==0.1.0')
+    service.start(concurrent=1)
+    service.pool.join()         # Ensure we finish spawning the greenlet
+
+    # Then I see that no package was processed
+    queue.qsize().should.equal(0)
+
+    # And that the list of failed packages was updated
+    service.failed_queue[0][0].should.equal('gherkin==0.1.0')
+    service.failed_queue[0][1].should.be.a(ValueError)
+    service.failed_queue[0][1].message.should.equal("I don't want to do anything")
+
+
 def test_downloader():
     "It should be possible to download packages from pip repos"
 
