@@ -4,10 +4,10 @@ from pkg_resources import Requirement
 import io
 import os
 import re
-import tarfile
 
 
 INCLUDE_PATTERN = re.compile(r'-r\s*\b([^\b]+)')
+
 
 NAME_RE = re.compile(r'^([\w\_]+)')
 

@@ -10,7 +10,7 @@ import shutil
 
 FORMATS = ('whl', 'gz', 'bz', 'zip')
 
-PKG_NAME = lambda n: re.findall('([\w\_\.]+)-([\d\.]+\d)[\.\-]', n)[0]
+PKG_NAME = lambda n: re.findall(r'([\w\_\.]+)-([\d\.]+\d)[\.\-]', n)[0]
 
 
 def key_from_path(path):
