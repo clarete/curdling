@@ -59,3 +59,14 @@ def test_index_scan():
     index.find('gherkin==0.1.0').should.equal([
         FIXTURE('storage1/gherkin-0.1.0.tar.gz'),
     ])
+
+
+def test_index_scan_when_there_is_no_dir():
+    "Index.scan() should not fail when the dir does not exist"
+
+    # Given that I have an index that points to a folder that already contains
+    # packages
+    index = Index('I know this directory does not exist')
+
+    # When I scan the directory, I see it does not fail
+    index.scan()
