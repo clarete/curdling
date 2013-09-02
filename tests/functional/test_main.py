@@ -5,12 +5,26 @@ from mock import Mock
 import os
 import errno
 
-from curdling import util, Service, Env
+from curdling import util, Service, Env, LocalCache
 from curdling.download import DirectoryStorage
 from curdling.installer import Installer
 from curdling.wheelhouse import Curdling
 
 from . import FIXTURE
+
+
+def test_local_cache_update():
+    "It should be possible to update the local cache from a dir full of wheels"
+
+    # Given that I have a local package with an empty dict as its storage
+    cache = LocalCache(backend={})
+
+    # When I update the cache()
+    cache.scan_dir(FIXTURE('storage2'))
+
+    # Then now we can find the package
+    cache.get('gherkin==0.1.0').should.equal(
+        'g/h/gherkin/gherkin-0.1.0-py27-none-any.whl')
 
 
 def test_directory_storage():
