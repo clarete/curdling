@@ -1,13 +1,13 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from pkg_resources import Requirement
-from mock import patch, Mock
+from mock import call, patch, Mock
 
 import os
 import errno
 import pkg_resources
 
 from curdling.core import LocalCache, Env
-from curdling.download import DirectoryStorage
+from curdling.index import Index
 from curdling.util import expand_requirements, gen_package_path
 
 
@@ -73,26 +73,13 @@ def test_local_cache_search():
     path.should.equal('gherkin package path')
 
 
-def test_directory_storage_permission_denied():
-    "DirectoryStorage.build_path() should handle other kinds of IOError exceptions"
-
-    with patch('os.makedirs') as makedirs:
-        exc = OSError()
-        exc.errno = errno.EPERM
-        makedirs.side_effect = exc
-
-        (DirectoryStorage('/root').build_path
-         .when.called_with('sub-directory')
-         .should.throw(OSError))
-
-
 def test_request_install_no_cache():
     "Request the installation of a package when there is no cache"
 
     # Given that I have an environment
-    cache = Mock()
-    cache.get.return_value = None
-    env = Env(conf={'cache_backend': cache})
+    index = Mock()
+    index.find.return_value = []
+    env = Env(conf={'index': index})
     env.check_installed = Mock(return_value=False)
     env.services['download'] = Mock()
 
@@ -101,7 +88,10 @@ def test_request_install_no_cache():
 
     # Then I see that the caches were checked
     env.check_installed.assert_called_once_with('gherkin==0.1.0')
-    env.local_cache.backend.get.assert_called_once_with('gherkin==0.1.0')
+    list(env.index.find.call_args_list).should.equal([
+        call('gherkin==0.1.0', only=('whl',)),
+        call('gherkin==0.1.0', only=('gz', 'bz', 'zip')),
+    ])
 
     # And then I see that the download queue was populated
     env.services['download'].queue.assert_called_once_with('gherkin==0.1.0')
@@ -111,8 +101,9 @@ def test_request_install_installed_package():
     "Request the installation of an already installed package"
 
     # Given that I have an environment
-    cache = Mock()
-    env = Env(conf={'cache_backend': cache})
+    index = Mock()
+    index.find.return_value = []
+    env = Env(conf={'index': index})
     env.check_installed = Mock(return_value=True)
     env.services['download'] = Mock()
 
@@ -122,7 +113,7 @@ def test_request_install_installed_package():
     # Then I see that, since the package was installed, the local cache was not
     # queried
     env.check_installed.assert_called_once_with('gherkin==0.1.0')
-    env.local_cache.backend.get.called.should.be.false
+    env.index.find.called.should.be.false
 
     # And then I see that the download queue was not touched
     env.services['download'].queue.called.should.be.false
@@ -132,10 +123,40 @@ def test_request_install_cached_package():
     "Request the installation of a cached package"
 
     # Given that I have a loaded local cache
-    cache = {'gherkin==0.1.0': gen_package_path('gherkin==0.1.0')}
+    index = Index('')
+    index.storage = {'gherkin==0.1.0': ['storage1/gherkin-0.1.0.tar.gz']}
 
     # And that I have an environment associated with that local cache
-    env = Env(conf={'cache_backend': cache})
+    env = Env(conf={'index': index})
+    env.check_installed = Mock(return_value=False)
+    env.services['download'] = Mock()
+    env.services['install'] = Mock()
+    env.services['curdling'] = Mock()
+
+    # When I request an installation of a package
+    env.request_install('gherkin==0.1.0').should.be.false
+
+    # Then I see that, since the package was not installed, the locall cache
+    # was queried and returned the right entry
+    env.check_installed.assert_called_once_with('gherkin==0.1.0')
+
+    # And I see that the install queue was populated
+    env.services['curdling'].queue.assert_called_once_with('gherkin==0.1.0')
+
+    # And that the download queue was not touched
+    env.services['download'].queue.called.should.be.false
+    env.services['install'].queue.called.should.be.false
+
+
+def test_request_install_cached_wheels():
+    "Request the installation of a cached package"
+
+    # Given that I have a loaded local cache
+    index = Index('')
+    index.storage = {'gherkin==0.1.0': ['storage1/gherkin-0.1.0-py27-none-any.whl']}
+
+    # And that I have an environment associated with that local cache
+    env = Env(conf={'index': index})
     env.check_installed = Mock(return_value=False)
     env.services['download'] = Mock()
     env.services['install'] = Mock()
@@ -152,3 +173,47 @@ def test_request_install_cached_package():
 
     # And that the download queue was not touched
     env.services['download'].queue.called.should.be.false
+
+
+def test_index_find():
+    "It should be possible to find indexed packages"
+
+    index = Index('')
+
+    index.storage = {'gherkin==0.1.0': ['storage1/gherkin-0.1.0.tar.gz']}
+    index.find('gherkin==0.1.0', only=('gz',)).should.have.length_of(1)
+    index.find('gherkin==0.1.0', only=('whl',)).should.be.empty
+
+
+@patch('curdling.index.os')
+def test_index_ensure_path(patched_os):
+    "Test utility method Index.ensure_path()"
+
+    # We'll need that inside of ensure_path()
+    patched_os.path.dirname = os.path.dirname
+
+    # Given that I have an index
+    index = Index('')
+
+    # When I call ensure_path(resource) against a directory that doesn't seem
+    # to exist, it should try to create the directory for the resource
+    patched_os.path.isdir.return_value = False
+    index.ensure_path('path/to/my/resource')
+    patched_os.makedirs.assert_called_once_with('path/to/my')
+
+
+@patch('curdling.index.os')
+def test_index_ensure_path_for_existing_dirs(patched_os):
+    "Test utility method Index.ensure_path() for existing directories"
+
+    # We'll need that inside of ensure_path()
+    patched_os.path.dirname = os.path.dirname
+
+    # Given that I have an index
+    index = Index('')
+
+    # When I call ensure_path(resource) against a directory that exists to
+    # exists, it *SHOULD NOT* try to create the directory
+    patched_os.path.isdir.return_value = True
+    index.ensure_path('path/to/my/resource')
+    patched_os.makedirs.called.should.be.false
