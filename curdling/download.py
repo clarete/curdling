@@ -2,12 +2,14 @@ from __future__ import absolute_import, unicode_literals, print_function
 from collections import defaultdict
 from pip.req import InstallRequirement
 from pip.index import PackageFinder
+from pip.exceptions import DistributionNotFound
 
 import io
 import os
 import errno
 import shutil
 import urllib2
+import pkg_resources
 
 from gevent.pool import Pool
 
@@ -22,9 +24,6 @@ class MemoryStorage(defaultdict):
     def write(self, path, data):
         self[path].append(data)
         return path
-
-    def read(self, path):
-        return (b'').join(self[path])
 
 
 class DirectoryStorage(dict):
@@ -42,7 +41,7 @@ class DirectoryStorage(dict):
         return full
 
     def __getitem__(self, item):
-        return io.open(self.build_path(item)).read()
+        return io.open(os.path.join(self.path, item), 'rb').read()
 
     def __setitem__(self, item, value):
         with io.open(self.build_path(item), 'wb') as f:
@@ -76,9 +75,11 @@ class PipSource(object):
             index_urls=urls or [])
 
     def url(self, package):
-        return self.finder.find_requirement(
-            InstallRequirement.from_line(package),
-            True).url
+        pkg = InstallRequirement.from_line(package)
+        try:
+            return self.finder.find_requirement(pkg, True).url
+        except DistributionNotFound:
+            return None
 
 
 class DownloadManager(Service):
@@ -96,5 +97,6 @@ class DownloadManager(Service):
     def retrieve(self, package):
         for source in self.sources:
             url = source.url(package)
+            if not url:
+                continue
             return self.download(package, url)
-        return False

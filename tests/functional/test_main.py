@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals, print_function
 from gevent.queue import Queue
 from mock import Mock
 import os
+import errno
 
 from curdling import util, Service, Env
 from curdling.download import DirectoryStorage
@@ -80,6 +81,10 @@ def test_directory_storage_find():
 
     # Then I see that the given package's path was retrieved
     packages.should.equal(['g/h/gherkin/gherkin-0.1.0.tar.gz'])
+
+    # And I see that the content is also right
+    storage.read('g/h/gherkin/gherkin-0.1.0.tar.gz').should.equal(
+        open(FIXTURE('storage1/g/h/gherkin/gherkin-0.1.0.tar.gz'), 'rb').read())
 
 
 def test_directory_storage_delete():

@@ -19,7 +19,7 @@ def test_downloader():
     (package in storage).should.be.true
 
 
-def test_downloader_should_feed_result_queue():
+def test_downloader_with_no_packages():
     "After downloading packages, the result queue should be fed"
 
     # Given the following downloader component
@@ -30,4 +30,7 @@ def test_downloader_should_feed_result_queue():
         sources=sources, storage=storage, result_queue=queue)
 
     # When I try to retrieve a package from it
-    package = downloader.retrieve('gherkin==0.1.0')
+    package = downloader.retrieve('donotexist==0.1.0')
+
+    # Then I see package is none :(
+    package.should.be.none
