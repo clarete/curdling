@@ -62,7 +62,7 @@ class DirectoryStorage(dict):
         full = os.path.join(self.path, subpath)
         return [os.path.join(subpath, m)
                 for m in os.listdir(full)
-                if util.ext(m) in allowed]
+                if util.split_name(m)[1] in allowed]
 
     def read(self, path):
         return self[path]
@@ -92,7 +92,8 @@ class DownloadManager(Service):
 
     def download(self, package_name, url):
         pkg = urllib2.urlopen(url).read()
-        return self.storage.write(os.path.basename(url), pkg)
+        name, ext, _ = util.split_name(os.path.basename(url))
+        return self.storage.write(name + ext, pkg)
 
     def retrieve(self, package):
         for source in self.sources:

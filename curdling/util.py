@@ -12,8 +12,14 @@ INCLUDE_PATTERN = re.compile(r'-r\s*\b([^\b]+)')
 NAME_RE = re.compile(r'^([\w\_]+)')
 
 
-def ext(fname):
-    return os.path.splitext(fname)[1].split('#')[0]
+def split_name(fname):
+    name, ext = os.path.splitext(fname)
+
+    try:
+        ext, frag = ext.split('#')
+    except ValueError:
+        frag = ''
+    return name, ext, frag
 
 
 def expand_requirements(file_name):

@@ -247,7 +247,7 @@ def test_install_package():
     installer.install('gherkin==0.1.0')
 
     # Then I see that the package was installed
-    Env(cache_backend={}).check_installed('gherkin==0.1.0').should.be.true
+    Env().check_installed('gherkin==0.1.0').should.be.true
 
     # And I uninstall the package
-    Env(cache_backend={}).uninstall('gherkin==0.1.0')
+    Env().uninstall('gherkin==0.1.0')
