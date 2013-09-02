@@ -9,8 +9,6 @@ import re
 INCLUDE_PATTERN = re.compile(r'-r\s*\b([^\b]+)')
 
 
-NAME_RE = re.compile(r'^([\w\_]+)')
-
 
 def split_name(fname):
     name, ext = os.path.splitext(fname)
@@ -36,9 +34,3 @@ def expand_requirements(file_name):
         else:
             requirements.append(Requirement.parse(req))
     return requirements
-
-
-def gen_package_path(package_name):
-    path = list(package_name[:2])
-    path.append(NAME_RE.findall(package_name)[0])
-    return os.path.join(*path)
