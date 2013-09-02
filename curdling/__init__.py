@@ -1,8 +1,10 @@
 from __future__ import unicode_literals, print_function, absolute_import
-from StringIO import StringIO
+from collections import namedtuple
 from datetime import datetime
-from sh import ErrorReturnCode, pip
 from gevent.pool import Pool
+from pip.commands.uninstall import UninstallCommand
+from sh import ErrorReturnCode, pip
+from StringIO import StringIO
 from . import util
 
 import io
@@ -184,6 +186,18 @@ class Env(object):
 
         self.download_queue.put(requirement)
         return False
+
+    def uninstall(self, package):
+        # We just overwrite the constructor here cause it's not actualy useful
+        # unless you're creating another command, not calling as a library.
+        class Uninstall(UninstallCommand):
+            def __init__(self):
+                pass
+
+        # Just creating an object that pretends to be the option container for
+        # the `run()` method.
+        opts = namedtuple('Options', 'yes requirements')
+        Uninstall().run(opts(yes=True, requirements=[]), [package])
 
 
 class Service(object):
