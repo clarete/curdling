@@ -157,11 +157,26 @@ class LocalCache(object):
     def __init__(self, backend):
         self.backend = backend
 
-    def push(self, name):
-        self.backend[name] = util.gen_package_path(name)
+    def put(self, name, val):
+        self.backend[name] = val
 
-    def get(self, pkg):
-        return self.backend.get(pkg)
+    def get(self, name):
+        return self.backend.get(name)
+
+    def scan_dir(self, path):
+        allowed = ('.whl',)
+
+        for root, dirs, files in os.walk(path):
+            for name in files:
+                if name.startswith('.'):
+                    continue
+
+                n, ext = os.path.splitext(name)
+                if ext in allowed:
+                    pkg_name, version, impl, abi, plat = n.split('-')
+                    self.put(
+                        '{0}=={1}'.format(pkg_name, version),
+                        os.path.join(util.gen_package_path(pkg_name), name))
 
 
 class Env(object):

@@ -64,13 +64,13 @@ def test_local_cache_search():
 
     # Given that I have an instance of our local cache with a package indexed
     cache = LocalCache(backend={})
-    cache.push('gherkin==0.1.0')
+    cache.put('gherkin==0.1.0', 'gherkin package path')
 
     # When I look for the requirement
     path = cache.get('gherkin==0.1.0')
 
     # Then I see that the package exists
-    path.should.equal(os.path.join('g', 'h', 'gherkin'))
+    path.should.equal('gherkin package path')
 
 
 def test_directory_storage_permission_denied():
