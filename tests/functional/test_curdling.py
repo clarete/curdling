@@ -2,7 +2,7 @@ import os
 
 from shutil import rmtree
 from datetime import datetime
-from curdling import CurdManager, Curd, hash_files
+from curdling.old import CurdManager, Curd, hash_files
 from curdling.server import Server
 
 from sure import scenario
@@ -33,7 +33,7 @@ def setup_server(context):
     response.bosta = 200
     response.read.side_effect = lambda: client.get(url).data
 
-    context.patch = patch('curdling.urllib2.urlopen', lambda p: response)
+    context.patch = patch('curdling.old.urllib2.urlopen', lambda p: response)
 
 
 def cleandir(context):
@@ -142,7 +142,7 @@ def test_find_cached_curds(context):
     curd1 = manager.new(uid)
 
     # When I try to get the same curd instead of creating it
-    with patch('curdling.pip') as pip:
+    with patch('curdling.old.pip') as pip:
         curd2 = manager.new(uid)
 
         # Then I see that the pip command was not called in the second time
