@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals, print_function
 from pip.index import PackageFinder
 from pip.req import InstallRequirement, RequirementSet
 from pip.wheel import move_wheel_files
-from . import Service
+from .service import Service
 
 import tempfile
 import os
