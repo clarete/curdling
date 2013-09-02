@@ -8,7 +8,7 @@ import pkg_resources
 
 from curdling import Env
 from curdling.index import Index
-from curdling.util import expand_requirements, gen_package_path
+from curdling.util import expand_requirements
 
 
 @patch('io.open')
@@ -30,19 +30,6 @@ def test_expand_requirements(open_func):
         Requirement.parse('gherkin==0.1.0'),
         Requirement.parse('sure==0.2.1'),
     ])
-
-
-def test_gen_package_path():
-    "Utility to generate a sub-path for a package given its name"
-
-    # Given the following package
-    package = 'gherkin==0.1.0'
-
-    # When I request a new name
-    dir_name = gen_package_path(package)
-
-    # Then I see the right directory structure
-    dir_name.should.equal(os.path.join('g', 'h', 'gherkin'))
 
 
 @patch('curdling.pkg_resources.get_distribution')
