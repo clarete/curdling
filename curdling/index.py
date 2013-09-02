@@ -37,6 +37,9 @@ class Index(object):
         self.storage = defaultdict(list)
 
     def scan(self):
+        if not os.path.isdir(self.base_path):
+            return
+
         for file_name in os.listdir(self.base_path):
             key = key_from_path(file_name)
             destination = os.path.join(self.base_path, file_name)
