@@ -1,5 +1,5 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from curdling.index import Index
+from curdling.index import Index, PackageNotFound
 
 from . import FIXTURE
 
@@ -20,7 +20,9 @@ def test_index_from_file():
     ])
 
     # And that there's no wheel available yet
-    index.find('gherkin==0.1.0', only=('whl',))
+    index.find.when.called_with('gherkin==0.1.0', only=('whl',)).should.throw(
+        PackageNotFound,
+    )
 
     # And I clean the mess
     index.delete()

@@ -7,7 +7,7 @@ import errno
 import pkg_resources
 
 from curdling import Env
-from curdling.index import Index
+from curdling.index import Index, PackageNotFound
 from curdling.util import expand_requirements
 
 
@@ -51,7 +51,7 @@ def test_request_install_no_cache():
 
     # Given that I have an environment
     index = Mock()
-    index.find.return_value = []
+    index.find.side_effect = PackageNotFound
     env = Env(conf={'index': index})
     env.check_installed = Mock(return_value=False)
     env.services['download'] = Mock()
@@ -75,7 +75,6 @@ def test_request_install_installed_package():
 
     # Given that I have an environment
     index = Mock()
-    index.find.return_value = []
     env = Env(conf={'index': index})
     env.check_installed = Mock(return_value=True)
     env.services['download'] = Mock()
@@ -107,7 +106,7 @@ def test_request_install_cached_package():
     env.services['curdling'] = Mock()
 
     # When I request an installation of a package
-    env.request_install('gherkin==0.1.0').should.be.false
+    env.request_install('gherkin==0.1.0')
 
     # Then I see that, since the package was not installed, the locall cache
     # was queried and returned the right entry
@@ -155,7 +154,12 @@ def test_index_find():
 
     index.storage = {'gherkin==0.1.0': ['storage1/gherkin-0.1.0.tar.gz']}
     index.find('gherkin==0.1.0', only=('gz',)).should.have.length_of(1)
-    index.find('gherkin==0.1.0', only=('whl',)).should.be.empty
+    index.find.when.called_with('gherkin==0.1.0', only=('whl',)).should.throw(
+        PackageNotFound, (
+            "The index does not have the requested package: "
+            "gherkin==0.1.0 (whl)"
+        )
+    )
 
 
 @patch('curdling.index.os')
