@@ -3,6 +3,7 @@ from pkg_resources import Requirement
 from mock import patch, Mock
 
 import os
+import pkg_resources
 
 from curdling import download, LocalCache, Env
 from curdling.util import expand_requirements, gen_package_path
@@ -40,6 +41,20 @@ def test_gen_package_path():
 
     # Then I see the right directory structure
     dir_name.should.equal(os.path.join('g', 'h', 'gherkin'))
+
+
+@patch('curdling.pkg_resources.get_distribution')
+def test_check_installed(get_distribution):
+    "It should be possible to check if a certain package is currently installed"
+
+    get_distribution.return_value = True
+    Env(local_cache_backend={}).check_installed('gherkin==0.1.0').should.be.true
+
+    get_distribution.side_effect = pkg_resources.VersionConflict
+    Env(local_cache_backend={}).check_installed('gherkin==0.1.0').should.be.false
+
+    get_distribution.side_effect = pkg_resources.DistributionNotFound
+    Env(local_cache_backend={}).check_installed('gherkin==0.1.0').should.be.false
 
 
 def test_local_cache_search():
