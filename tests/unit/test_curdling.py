@@ -1,10 +1,10 @@
 import os
 from datetime import datetime
 from mock import patch, call
-from curdling import CurdManager, Curd, hash_files
+from curdling.old import CurdManager, Curd, hash_files
 
 
-@patch('curdling.io.open')
+@patch('curdling.old.io.open')
 def test_hashing_files(io_open):
     "It should be possible to get a uniq hash that identifies a list of files"
 
@@ -19,7 +19,7 @@ def test_hashing_files(io_open):
     hashed.should.equal('c9dfd0ebf5a976d3948a923dfa3dd913ddb84f9d')
 
 
-@patch('curdling.os.stat')
+@patch('curdling.old.os.stat')
 def test_curd(stat):
     "It should be possible to represent a directory with wheels"
 
@@ -49,7 +49,7 @@ def test_curd_comparison():
     same.should.be.true
 
 
-@patch('curdling.os.listdir')
+@patch('curdling.old.os.listdir')
 def test_curd_members(listdir):
     "It should be possible to list the wheels inside of a curd"
 
@@ -67,7 +67,7 @@ def test_curd_members(listdir):
 # ---- curd manager ----
 
 
-@patch('curdling.hash_files', lambda l: ','.join(l))
+@patch('curdling.old.hash_files', lambda l: ','.join(l))
 def test_curd_manager_add_files():
     "It should be possible to add new combinations of files to be hashed"
 
@@ -85,7 +85,7 @@ def test_curd_manager_add_files():
     })
 
 
-@patch('curdling.pip')
+@patch('curdling.old.pip')
 def test_curd_manager_new(pip):
     "It should be possible to create new curds through the `CurdManager`"
 
@@ -128,7 +128,7 @@ def test_curd_manager_new(pip):
     ])
 
 
-@patch('curdling.pip')
+@patch('curdling.old.pip')
 def test_curd_manager_install(pip):
     "It should be possible to install packages from wheels stored in curds"
 

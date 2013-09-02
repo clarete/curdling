@@ -6,7 +6,7 @@ from StringIO import StringIO
 from json import loads
 from flask import url_for
 
-from curdling import CurdManager
+from curdling.old import CurdManager
 from curdling.server import Server
 
 from sure import scenario
