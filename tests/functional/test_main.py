@@ -3,8 +3,9 @@ from gevent.queue import Queue
 from mock import Mock
 import os
 
-from curdling import util, Service
+from curdling import util, Service, Env
 from curdling.download import DirectoryStorage
+from curdling.installer import Installer
 from curdling.wheelhouse import Curdling
 
 from . import FIXTURE
@@ -148,3 +149,20 @@ def test_curd_package():
 
     # And I delete the file
     del storage[os.path.basename(package)]
+
+
+def test_install_package():
+    "It should possible to install wheels"
+
+    # Given that I have an installer configured with a loaded storage
+    storage = DirectoryStorage(path=FIXTURE('storage2'))
+    installer = Installer(storage=storage)
+
+    # When I request a curd to be created
+    installer.install('gherkin==0.1.0')
+
+    # Then I see that the package was installed
+    Env(local_cache_backend={}).check_installed('gherkin==0.1.0').should.be.true
+
+    # And I uninstall the package
+    Env(local_cache_backend={}).uninstall('gherkin==0.1.0')

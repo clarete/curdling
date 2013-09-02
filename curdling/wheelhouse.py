@@ -7,7 +7,6 @@ from pip.req import InstallRequirement, RequirementSet
 from pip.index import PackageFinder
 from pip.wheel import WheelBuilder
 
-from gevent.pool import Pool
 from . import Service
 
 
