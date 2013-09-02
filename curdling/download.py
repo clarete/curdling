@@ -83,12 +83,12 @@ class PipSource(object):
 
 
 class DownloadManager(Service):
-    def __init__(self, sources=None, storage=None, result_queue=None):
+    def __init__(self, sources, *args, **kwargs):
+        self.sources = sources
+        self.storage = kwargs.pop('storage', None)
         super(DownloadManager, self).__init__(
             callback=self.retrieve,
-            result_queue=result_queue)
-        self.sources = sources
-        self.storage = storage
+            *args, **kwargs)
 
     def download(self, package_name, url):
         pkg = urllib2.urlopen(url).read()

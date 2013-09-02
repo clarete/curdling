@@ -11,11 +11,11 @@ from . import Service
 
 
 class Curdling(Service):
-    def __init__(self, storage, result_queue=None):
-        self.storage = storage
+    def __init__(self, *args, **kwargs):
+        self.storage = kwargs.pop('storage', None)
         super(Curdling, self).__init__(
             callback=self.wheel,
-            result_queue=result_queue)
+            *args, **kwargs)
 
     def wheel(self, package):
         source = self.storage.find(package, allowed=('.gz',))[0]

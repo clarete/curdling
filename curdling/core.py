@@ -46,17 +46,21 @@ class Env(object):
             backend=self.conf.get('cache_backend', {}))
 
     def start_services(self):
-        # Just making sure they exist
+        # General params for all the services
+        params = {
+            'storage': self.conf.get('storage'),
+            'concurrency': self.conf.get('concurrency'),
+        }
+
         sources = [PipSource(urls=self.conf.get('urls'))]
-        storage = self.conf.get('storage')
-        self.services['download'] = DownloadManager(sources=sources, storage=storage)
-        self.services['curdling'] = Curdling(storage=storage)
-        self.services['install'] = Installer(storage=storage)
+        self.services['download'] = DownloadManager(sources=sources, **params)
+        self.services['curdling'] = Curdling(**params)
+        self.services['install'] = Installer(**params)
 
         # Creating a kind of a pipe that looks like this:
         # "download > curdling > install"
         self.services['download'].result_queue = self.services['curdling'].package_queue
-        self.services['curdling'].result_queue = self.services['install'].package_queue
+        # self.services['curdling'].result_queue = self.services['install'].package_queue
 
         # Starting the services
         [x.start() for x in self.services.values()]
