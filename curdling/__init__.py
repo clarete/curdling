@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function, absolute_import
 from StringIO import StringIO
 from datetime import datetime
 from sh import ErrorReturnCode, pip
+from gevent.pool import Pool
 from . import util
 
 import io
@@ -183,3 +184,32 @@ class Env(object):
 
         self.download_queue.put(requirement)
         return False
+
+
+class Service(object):
+    def __init__(self, callback, result_queue):
+        self.callback = callback
+        self.result_queue = result_queue
+        self.package_queue = []
+        self.failed_queue = []
+        self.pool = None
+
+    def queue(self, package):
+        self.package_queue.append(package)
+
+    def start(self, concurrent=1):
+        self.pool = Pool(concurrent)
+        for queued in self.package_queue:
+            self.package_queue.remove(queued)
+            self.pool.spawn(self._run_service, queued)
+
+    def _run_service(self, package):
+        try:
+            self.callback(package)
+        except BaseException as exc:
+            self.failed_queue.append((package, exc))
+        else:
+            # If the callback worked, let's go ahead and tell the world. If and
+            # only if requested by the caller, of course.
+            if self.result_queue:
+                self.result_queue.put(package)

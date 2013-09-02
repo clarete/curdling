@@ -11,6 +11,7 @@ import urllib2
 
 from gevent.pool import Pool
 
+from . import Service
 from .util import gen_package_path
 
 
@@ -80,23 +81,13 @@ class PipSource(object):
             True).url
 
 
-class DownloadManager(object):
+class DownloadManager(Service):
     def __init__(self, sources=None, storage=None, result_queue=None):
+        super(DownloadManager, self).__init__(
+            callback=self.retrieve,
+            result_queue=result_queue)
         self.sources = sources
         self.storage = storage
-        self.result_queue = result_queue
-        self.package_queue = []
-        self.pool = None
-
-    def queue(self, package):
-        self.package_queue.append(package)
-
-    def start(self, concurrent=1):
-        self.pool = Pool(concurrent)
-        for queued in self.package_queue:
-            self.package_queue.remove(queued)
-            self.pool.spawn(self.retrieve, queued)
-        self.pool.join()
 
     def download(self, package_name, url):
         pkg = urllib2.urlopen(url).read()
@@ -105,9 +96,5 @@ class DownloadManager(object):
     def retrieve(self, package):
         for source in self.sources:
             url = source.url(package)
-            path = self.download(package, url)
-
-            if self.result_queue:
-                self.result_queue.put(package)
-            return path
+            return self.download(package, url)
         return False
