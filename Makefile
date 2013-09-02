@@ -13,7 +13,7 @@ DUMMY_PYPI_PORT=8000
 
 all: test
 
-test: unit functional acceptance $(EXTRA_TEST_TASKS)
+test: unit functional $(EXTRA_TEST_TASKS)
 
 unit: setup
 	@TZ=EST+5EDT make run_test suite=unit
