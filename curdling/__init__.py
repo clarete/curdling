@@ -5,7 +5,6 @@ from pip.commands.uninstall import UninstallCommand
 from gevent.queue import Queue
 from gevent.pool import Pool
 
-from . import util
 from .download import PipSource, DownloadManager
 from .wheelhouse import Curdling
 from .installer import Installer

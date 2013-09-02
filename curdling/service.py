@@ -1,9 +1,7 @@
 from __future__ import unicode_literals, print_function, absolute_import
-from . import util
-
-import gevent
 from gevent.pool import Pool
 from gevent.queue import Queue
+import gevent
 
 
 class Service(object):

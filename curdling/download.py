@@ -1,17 +1,10 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from collections import defaultdict
 from pip.req import InstallRequirement
 from pip.index import PackageFinder
 from pip.exceptions import DistributionNotFound
 
-import io
 import os
-import errno
-import shutil
 import urllib2
-import pkg_resources
-
-from gevent.pool import Pool
 
 from . import util
 from .service import Service
