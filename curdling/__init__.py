@@ -2,6 +2,7 @@ from __future__ import unicode_literals, print_function, absolute_import
 from StringIO import StringIO
 from datetime import datetime
 from sh import ErrorReturnCode, pip
+from . import util
 
 import io
 import os
@@ -9,8 +10,7 @@ import hashlib
 import urllib2
 import urlparse
 import tarfile
-
-from . import util
+import pkg_resources
 
 
 def hash_files(file_list):
@@ -164,6 +164,14 @@ class LocalCache(object):
 class Env(object):
     def __init__(self, local_cache_backend):
         self.local_cache = LocalCache(backend=local_cache_backend)
+
+    def check_installed(self, package):
+        try:
+            pkg_resources.get_distribution(package)
+            return True
+        except (pkg_resources.VersionConflict,
+                pkg_resources.DistributionNotFound):
+            return False
 
     def request_install(self, requirement):
         if self.check_installed(requirement):
