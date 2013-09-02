@@ -9,11 +9,11 @@ import os
 
 
 class Installer(Service):
-    def __init__(self, storage, result_queue=None):
-        self.storage = storage
+    def __init__(self, *args, **kwargs):
+        self.storage = kwargs.pop('storage', None)
         super(Installer, self).__init__(
             callback=self.install,
-            result_queue=result_queue)
+            *args, **kwargs)
 
     def install(self, package):
         source = self.storage.find(package, allowed=('.whl',))[0]
