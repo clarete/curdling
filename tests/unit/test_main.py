@@ -50,13 +50,13 @@ def test_check_installed(get_distribution):
     "It should be possible to check if a certain package is currently installed"
 
     get_distribution.return_value = True
-    Env(cache_backend={}).check_installed('gherkin==0.1.0').should.be.true
+    Env().check_installed('gherkin==0.1.0').should.be.true
 
     get_distribution.side_effect = pkg_resources.VersionConflict
-    Env(cache_backend={}).check_installed('gherkin==0.1.0').should.be.false
+    Env().check_installed('gherkin==0.1.0').should.be.false
 
     get_distribution.side_effect = pkg_resources.DistributionNotFound
-    Env(cache_backend={}).check_installed('gherkin==0.1.0').should.be.false
+    Env().check_installed('gherkin==0.1.0').should.be.false
 
 
 def test_local_cache_search():
@@ -92,9 +92,9 @@ def test_request_install_no_cache():
     # Given that I have an environment
     cache = Mock()
     cache.get.return_value = None
-    env = Env(cache_backend=cache)
+    env = Env(conf={'cache_backend': cache})
     env.check_installed = Mock(return_value=False)
-    env.download_manager = Mock()
+    env.services['download'] = Mock()
 
     # When I request an installation of a package
     env.request_install('gherkin==0.1.0')
@@ -104,7 +104,7 @@ def test_request_install_no_cache():
     env.local_cache.backend.get.assert_called_once_with('gherkin==0.1.0')
 
     # And then I see that the download queue was populated
-    env.download_manager.queue.assert_called_once_with('gherkin==0.1.0')
+    env.services['download'].queue.assert_called_once_with('gherkin==0.1.0')
 
 
 def test_request_install_installed_package():
@@ -112,9 +112,9 @@ def test_request_install_installed_package():
 
     # Given that I have an environment
     cache = Mock()
-    env = Env(cache_backend=cache)
+    env = Env(conf={'cache_backend': cache})
     env.check_installed = Mock(return_value=True)
-    env.download_manager = Mock()
+    env.services['download'] = Mock()
 
     # When I request an installation of a package
     env.request_install('gherkin==0.1.0').should.be.true
@@ -125,7 +125,7 @@ def test_request_install_installed_package():
     env.local_cache.backend.get.called.should.be.false
 
     # And then I see that the download queue was not touched
-    env.download_manager.queue.called.should.be.false
+    env.services['download'].queue.called.should.be.false
 
 
 def test_request_install_cached_package():
@@ -135,10 +135,10 @@ def test_request_install_cached_package():
     cache = {'gherkin==0.1.0': gen_package_path('gherkin==0.1.0')}
 
     # And that I have an environment associated with that local cache
-    env = Env(cache_backend=cache)
+    env = Env(conf={'cache_backend': cache})
     env.check_installed = Mock(return_value=False)
-    env.download_manager = Mock()
-    env.install_manager = Mock()
+    env.services['download'] = Mock()
+    env.services['install'] = Mock()
 
     # When I request an installation of a package
     env.request_install('gherkin==0.1.0').should.be.false
@@ -148,7 +148,7 @@ def test_request_install_cached_package():
     env.check_installed.assert_called_once_with('gherkin==0.1.0')
 
     # And I see that the install queue was populated
-    env.install_manager.queue.assert_called_once_with('gherkin==0.1.0')
+    env.services['install'].queue.assert_called_once_with('gherkin==0.1.0')
 
     # And that the download queue was not touched
-    env.download_manager.queue.called.should.be.false
+    env.services['download'].queue.called.should.be.false

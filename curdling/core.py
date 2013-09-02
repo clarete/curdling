@@ -7,6 +7,7 @@ from gevent.pool import Pool
 
 from . import util
 from .download import PipSource, DownloadManager
+from .wheelhouse import Curdling
 from .installer import Installer
 
 import pkg_resources
@@ -29,9 +30,6 @@ class LocalCache(object):
 
         for root, dirs, files in os.walk(path):
             for name in files:
-                if name.startswith('.'):
-                    continue
-
                 n, ext = os.path.splitext(name)
                 if ext in allowed:
                     pkg_name, version, impl, abi, plat = n.split('-')
@@ -41,21 +39,35 @@ class LocalCache(object):
 
 
 class Env(object):
-    def __init__(self, cache_backend, storage=None):
-        self.local_cache = LocalCache(backend=cache_backend)
-        self.storage = storage
-        self.download_manager = None
-        self.install_manager = None
+    def __init__(self, conf=None):
+        self.conf = conf or {}
+        self.services = {}
+        self.local_cache = LocalCache(
+            backend=self.conf.get('cache_backend', {}))
 
-    def start_download_manager(self, source_urls):
-        sources = [PipSource(urls=source_urls)]
-        self.download_manager = DownloadManager(
-            sources=sources, storage=self.storage)
-        self.download_manager.start()
+    def start_services(self):
+        # Just making sure they exist
+        sources = [PipSource(urls=self.conf.get('urls'))]
+        storage = self.conf.get('storage')
+        self.services['download'] = DownloadManager(sources=sources, storage=storage)
+        self.services['curdling'] = Curdling(storage=storage)
+        self.services['install'] = Installer(storage=storage)
 
-    def start_install_manager(self):
-        self.install_manager = Installer(storage=self.storage)
-        self.install_manager.start()
+        # Creating a kind of a pipe that looks like this:
+        # "download > curdling > install"
+        self.services['download'].result_queue = self.services['curdling'].package_queue
+        self.services['curdling'].result_queue = self.services['install'].package_queue
+
+        # Starting the services
+        [x.start() for x in self.services.values()]
+
+    def wait(self):
+        # Loop through all the services checking their package_queue
+        while True:
+            if sum(x.package_queue.qsize() for x in self.services.values()):
+                gevent.sleep(1)
+            else:
+                break
 
     def check_installed(self, package):
         try:
@@ -70,10 +82,10 @@ class Env(object):
             return True
 
         elif self.local_cache.get(requirement):
-            self.install_manager.queue(requirement)
+            self.services['install'].queue(requirement)
             return False
 
-        self.download_manager.queue(requirement)
+        self.services['download'].queue(requirement)
         return False
 
     def uninstall(self, package):

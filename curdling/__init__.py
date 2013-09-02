@@ -179,7 +179,6 @@ class Service(object):
             self.consume()
 
     def start(self):
-        print('Forking main greenlet')
         self.main_greenlet = gevent.spawn(self.loop)
 
     def stop(self, force=False):
