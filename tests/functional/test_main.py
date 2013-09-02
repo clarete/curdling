@@ -5,8 +5,8 @@ from mock import Mock
 import os
 import errno
 
-from curdling import util, Service
-from curdling.core import Env, LocalCache
+from curdling import util, Env
+from curdling.service import Service
 from curdling.index import Index
 from curdling.installer import Installer
 from curdling.wheelhouse import Curdling

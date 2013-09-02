@@ -13,7 +13,8 @@ import pkg_resources
 
 from gevent.pool import Pool
 
-from . import util, Service
+from . import util
+from .service import Service
 
 
 class PipSource(object):
