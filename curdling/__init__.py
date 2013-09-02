@@ -195,6 +195,8 @@ class Service(object):
             self.callback(package)
         except BaseException as exc:
             self.failed_queue.append((package, exc))
+            print('failed to run {0} for package {1}: {2}'.format(
+                self.__class__.__name__, package, exc))
         else:
             # If the callback worked, let's go ahead and tell the world. If and
             # only if requested by the caller, of course.

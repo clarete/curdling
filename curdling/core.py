@@ -25,30 +25,16 @@ class LocalCache(object):
     def get(self, name):
         return self.backend.get(name)
 
-    def scan_dir(self, path):
-        allowed = ('.whl',)
-
-        for root, dirs, files in os.walk(path):
-            for name in files:
-                n, ext = os.path.splitext(name)
-                if ext in allowed:
-                    pkg_name, version, impl, abi, plat = n.split('-')
-                    self.put(
-                        '{0}=={1}'.format(pkg_name, version),
-                        os.path.join(util.gen_package_path(pkg_name), name))
-
-
 class Env(object):
     def __init__(self, conf=None):
         self.conf = conf or {}
+        self.index = self.conf.get('index')
         self.services = {}
-        self.local_cache = LocalCache(
-            backend=self.conf.get('cache_backend', {}))
 
     def start_services(self):
         # General params for all the services
         params = {
-            'storage': self.conf.get('storage'),
+            'index': self.index,
             'concurrency': self.conf.get('concurrency'),
         }
 
@@ -60,7 +46,7 @@ class Env(object):
         # Creating a kind of a pipe that looks like this:
         # "download > curdling > install"
         self.services['download'].result_queue = self.services['curdling'].package_queue
-        # self.services['curdling'].result_queue = self.services['install'].package_queue
+        self.services['curdling'].result_queue = self.services['install'].package_queue
 
         # Starting the services
         [x.start() for x in self.services.values()]
@@ -82,13 +68,24 @@ class Env(object):
             return False
 
     def request_install(self, requirement):
+
+        # Well, the package is installed, let's just bail
         if self.check_installed(requirement):
             return True
 
-        elif self.local_cache.get(requirement):
+        # Looking for built packages
+        if self.index.find(requirement, only=('whl',)):
             self.services['install'].queue(requirement)
             return False
 
+        # Looking for downloaded packages. If there's packages of any of the
+        # following distributions, we'll just build the wheel
+        allowed = ('gz', 'bz', 'zip')
+        if self.index.find(requirement, only=allowed):
+            self.services['curdling'].queue(requirement)
+            return False
+
+        # Nops, we really don't have the package
         self.services['download'].queue(requirement)
         return False
 

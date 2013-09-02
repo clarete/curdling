@@ -19,7 +19,7 @@ def split_name(fname):
         ext, frag = ext.split('#')
     except ValueError:
         frag = ''
-    return name, ext, frag
+    return name, ext[1:], frag
 
 
 def expand_requirements(file_name):

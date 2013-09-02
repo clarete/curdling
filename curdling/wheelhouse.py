@@ -12,14 +12,14 @@ from . import Service
 
 class Curdling(Service):
     def __init__(self, *args, **kwargs):
-        self.storage = kwargs.pop('storage', None)
+        self.index = kwargs.pop('index', None)
         super(Curdling, self).__init__(
             callback=self.wheel,
             *args, **kwargs)
 
     def wheel(self, package):
-        source = self.storage.find(package, allowed=('.gz',))[0]
-        target = os.path.join(self.storage.path, os.path.dirname(source))
+        source = self.index.find(package, only=('gz',))[0]
+        target = os.path.dirname(source)
 
         # The package finder is what PIP uses to find packages given their
         # names. This finder won't use internet at all, only the folder we know

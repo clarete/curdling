@@ -10,19 +10,26 @@ import os
 
 class Installer(Service):
     def __init__(self, *args, **kwargs):
-        self.storage = kwargs.pop('storage', None)
+        self.index = kwargs.pop('index')
         super(Installer, self).__init__(
             callback=self.install,
             *args, **kwargs)
 
     def install(self, package):
-        source = self.storage.find(package, allowed=('.whl',))[0]
-        target = os.path.join(self.storage.path, os.path.dirname(source))
+        # Find the package that we want to install
+        source = self.index.find(package, only=('whl',))[0]
+
+        # Create a package finder pointing to the directory that contains our
+        # package. Using a package finder makes it easier to interact with the
+        # PIP's `RequirementSet` API
         finder = PackageFinder(
-            find_links=[target],
+            find_links=[os.path.dirname(source)],
             index_urls=[],
             use_wheel=True,
         )
+
+        # This guy will unpack our package, build it and install it. Without
+        # that crazy network overhead
         build_dir = tempfile.mkdtemp()
         requirement_set = RequirementSet(
             build_dir=build_dir,
@@ -35,5 +42,7 @@ class Installer(Service):
         requirement_set.add_requirement(
             InstallRequirement.from_line(package))
 
+        # Install all the packages (we have only one though) that can be found
+        # in in our loaded finder. It contains just what we want
         requirement_set.prepare_files(finder)
         requirement_set.install([])
