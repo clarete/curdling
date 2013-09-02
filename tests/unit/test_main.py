@@ -6,7 +6,7 @@ import os
 import errno
 import pkg_resources
 
-from curdling import download, LocalCache, Env
+from curdling.core import LocalCache, Env
 from curdling.download import DirectoryStorage
 from curdling.util import expand_requirements, gen_package_path
 
@@ -45,18 +45,18 @@ def test_gen_package_path():
     dir_name.should.equal(os.path.join('g', 'h', 'gherkin'))
 
 
-@patch('curdling.pkg_resources.get_distribution')
+@patch('curdling.core.pkg_resources.get_distribution')
 def test_check_installed(get_distribution):
     "It should be possible to check if a certain package is currently installed"
 
     get_distribution.return_value = True
-    Env(local_cache_backend={}).check_installed('gherkin==0.1.0').should.be.true
+    Env(cache_backend={}).check_installed('gherkin==0.1.0').should.be.true
 
     get_distribution.side_effect = pkg_resources.VersionConflict
-    Env(local_cache_backend={}).check_installed('gherkin==0.1.0').should.be.false
+    Env(cache_backend={}).check_installed('gherkin==0.1.0').should.be.false
 
     get_distribution.side_effect = pkg_resources.DistributionNotFound
-    Env(local_cache_backend={}).check_installed('gherkin==0.1.0').should.be.false
+    Env(cache_backend={}).check_installed('gherkin==0.1.0').should.be.false
 
 
 def test_local_cache_search():
@@ -92,9 +92,9 @@ def test_request_install_no_cache():
     # Given that I have an environment
     cache = Mock()
     cache.get.return_value = None
-    env = Env(local_cache_backend=cache)
+    env = Env(cache_backend=cache)
     env.check_installed = Mock(return_value=False)
-    env.download_queue = Mock()
+    env.download_manager = Mock()
 
     # When I request an installation of a package
     env.request_install('gherkin==0.1.0')
@@ -104,7 +104,7 @@ def test_request_install_no_cache():
     env.local_cache.backend.get.assert_called_once_with('gherkin==0.1.0')
 
     # And then I see that the download queue was populated
-    env.download_queue.put.assert_called_once_with('gherkin==0.1.0')
+    env.download_manager.queue.assert_called_once_with('gherkin==0.1.0')
 
 
 def test_request_install_installed_package():
@@ -112,9 +112,9 @@ def test_request_install_installed_package():
 
     # Given that I have an environment
     cache = Mock()
-    env = Env(local_cache_backend=cache)
+    env = Env(cache_backend=cache)
     env.check_installed = Mock(return_value=True)
-    env.download_queue = Mock()
+    env.download_manager = Mock()
 
     # When I request an installation of a package
     env.request_install('gherkin==0.1.0').should.be.true
@@ -125,7 +125,7 @@ def test_request_install_installed_package():
     env.local_cache.backend.get.called.should.be.false
 
     # And then I see that the download queue was not touched
-    env.download_queue.put.called.should.be.false
+    env.download_manager.queue.called.should.be.false
 
 
 def test_request_install_cached_package():
@@ -135,10 +135,10 @@ def test_request_install_cached_package():
     cache = {'gherkin==0.1.0': gen_package_path('gherkin==0.1.0')}
 
     # And that I have an environment associated with that local cache
-    env = Env(local_cache_backend=cache)
+    env = Env(cache_backend=cache)
     env.check_installed = Mock(return_value=False)
-    env.download_queue = Mock()
-    env.install_queue = Mock()
+    env.download_manager = Mock()
+    env.install_manager = Mock()
 
     # When I request an installation of a package
     env.request_install('gherkin==0.1.0').should.be.false
@@ -148,7 +148,7 @@ def test_request_install_cached_package():
     env.check_installed.assert_called_once_with('gherkin==0.1.0')
 
     # And I see that the install queue was populated
-    env.install_queue.put.assert_called_once_with('gherkin==0.1.0')
+    env.install_manager.queue.assert_called_once_with('gherkin==0.1.0')
 
     # And that the download queue was not touched
-    env.download_queue.put.called.should.be.false
+    env.download_manager.queue.called.should.be.false

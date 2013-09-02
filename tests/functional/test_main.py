@@ -5,7 +5,8 @@ from mock import Mock
 import os
 import errno
 
-from curdling import util, Service, Env, LocalCache
+from curdling import util, Service
+from curdling.core import Env, LocalCache
 from curdling.download import DirectoryStorage
 from curdling.installer import Installer
 from curdling.wheelhouse import Curdling
@@ -139,7 +140,7 @@ def test_service():
     # When I queue a package to be processed by my service and start the
     # service with 1 concurrent worker
     service.queue('gherkin==0.1.0')
-    service.start(concurrent=1)
+    service.consume()
 
     # Then I see that the package processed
     package = queue.get()
@@ -168,7 +169,7 @@ def test_service_failure():
     # When I queue a package to be processed by my service and start the
     # service with 1 concurrent worker
     service.queue('gherkin==0.1.0')
-    service.start(concurrent=1)
+    service.consume()
     service.pool.join()         # Ensure we finish spawning the greenlet
 
     # Then I see that no package was processed
@@ -246,7 +247,7 @@ def test_install_package():
     installer.install('gherkin==0.1.0')
 
     # Then I see that the package was installed
-    Env(local_cache_backend={}).check_installed('gherkin==0.1.0').should.be.true
+    Env(cache_backend={}).check_installed('gherkin==0.1.0').should.be.true
 
     # And I uninstall the package
-    Env(local_cache_backend={}).uninstall('gherkin==0.1.0')
+    Env(cache_backend={}).uninstall('gherkin==0.1.0')
