@@ -31,6 +31,10 @@ def name_from_key(spec, ext):
     return ''.join(name)
 
 
+class PackageNotFound(Exception):
+    pass
+
+
 class Index(object):
     def __init__(self, base_path):
         self.base_path = base_path
@@ -70,7 +74,17 @@ class Index(object):
         self.storage[package].append(destination)
 
     def find(self, spec, only=FORMATS):
-        return filter(lambda f: split_name(f)[1] in only, self.storage[spec])
+        result = filter(lambda f: split_name(f)[1] in only, self.storage[spec])
+        if not result:
+            pkg = Requirement.parse(spec)
+            params = [pkg.key]
+            params.extend(pkg.specs[0])
+            params.append(', '.join(only))
+
+            raise PackageNotFound(
+                'The index does not have the requested package: '
+                '{0}{1}{2} ({3})'.format(*params))
+        return result
 
     def delete(self):
         shutil.rmtree(self.base_path)

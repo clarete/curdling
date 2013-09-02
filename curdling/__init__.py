@@ -8,6 +8,7 @@ from gevent.pool import Pool
 from .download import PipSource, DownloadManager
 from .wheelhouse import Curdling
 from .installer import Installer
+from .index import PackageNotFound
 
 import pkg_resources
 import gevent
@@ -63,16 +64,22 @@ class Env(object):
             return True
 
         # Looking for built packages
-        if self.index.find(requirement, only=('whl',)):
+        try:
+            self.index.find(requirement, only=('whl',))
             self.services['install'].queue(requirement)
             return False
+        except PackageNotFound:
+            pass
 
         # Looking for downloaded packages. If there's packages of any of the
         # following distributions, we'll just build the wheel
         allowed = ('gz', 'bz', 'zip')
-        if self.index.find(requirement, only=allowed):
+        try:
+            self.index.find(requirement, only=allowed)
             self.services['curdling'].queue(requirement)
             return False
+        except PackageNotFound:
+            pass
 
         # Nops, we really don't have the package
         self.services['download'].queue(requirement)
