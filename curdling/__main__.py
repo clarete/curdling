@@ -8,8 +8,18 @@ import argparse
 import os
 
 
+DEFAULT_PYPI_INDEX_LIST = [
+    'https://pypi.python.org/simple/',
+]
+
+
 class ValidationError(Exception):
     pass
+
+
+class AttrDict(dict):
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
 
 
 def parse_args():
@@ -19,6 +29,10 @@ def parse_args():
     parser.add_argument(
         '-r', '--requirements',
         help='A requirements file')
+
+    parser.add_argument(
+        '-i', '--index', action='append',
+        help='PyPi compatible index url. Repeat as many times as you need')
 
     parser.add_argument(
         'packages', metavar='PKG', nargs='*',
@@ -39,11 +53,14 @@ def prepare_args(args):
             for pkg in expand_requirements(args.requirements)
         ])
 
-    return packages
+    return AttrDict(
+        packages=packages,
+        pypi_urls=args.index or DEFAULT_PYPI_INDEX_LIST,
+    )
 
 
 def main():
-    packages = prepare_args(parse_args())
+    args = prepare_args(parse_args())
 
     # Setting up the index
     path = os.path.expanduser('~/.curds')
@@ -53,7 +70,7 @@ def main():
     # Configuration values for the environment
     config = {
         'index': index,
-        'urls': ['https://pypi.python.org/simple/'],
+        'urls': args.pypi_urls,
         'concurrency': 10,
         'cache_backend': {},
     }
@@ -63,7 +80,7 @@ def main():
     env.start_services()
 
     # Request the installation of the received package
-    for pkg in packages:
+    for pkg in args.packages:
         env.request_install(pkg)
 
     # All the installation requests were made, let's just wait here
