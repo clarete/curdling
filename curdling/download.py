@@ -31,9 +31,8 @@ class DownloadManager(Service):
 
     def download(self, package_name, url):
         print('downloading url {0}'.format(url))
-        ext = util.split_name(os.path.basename(url))[1]
         data = urllib2.urlopen(url).read()
-        return self.index.from_data(package_name, ext, data)
+        return self.index.from_data(url, data)
 
     def retrieve(self, package):
         for source in self.sources:

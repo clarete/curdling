@@ -103,7 +103,7 @@ def test_downloader():
     package = downloader.retrieve('gherkin==0.1.0')
 
     # Then I see that the package was downloaded correctly to the storage
-    index.find('gherkin==0.1.0').should_not.be.empty
+    index.get('gherkin==0.1.0').should_not.be.empty
 
     # And I cleanup the mess
     index.delete()
@@ -143,7 +143,7 @@ def test_curd_package():
     package.should.equal(FIXTURE('storage1/gherkin-0.1.0-py27-none-any.whl'))
 
     # And that it's present in the index
-    package = index.find('gherkin==0.1.0', only=('whl',))[0]
+    package = index.get('gherkin==0.1.0;whl')
 
     # And that the file was created in the file system
     os.path.exists(package).should.be.true

@@ -13,12 +13,12 @@ def test_index_from_file():
     index.from_file(FIXTURE('storage1/gherkin-0.1.0.tar.gz'))
 
     # Then I see it inside of the index
-    index.find('gherkin==0.1.0', only=('gz',)).should.equal([
+    index.get('gherkin==0.1.0;gz').should.equal(
         FIXTURE('index/gherkin-0.1.0.tar.gz'),
-    ])
+    )
 
     # And that there's no wheel available yet
-    index.find.when.called_with('gherkin==0.1.0', only=('whl',)).should.throw(
+    index.get.when.called_with('gherkin==0.1.0;whl').should.throw(
         PackageNotFound,
     )
 
@@ -34,12 +34,12 @@ def test_index_from_data():
 
     # When I index a file
     data = open(FIXTURE('storage1/gherkin-0.1.0.tar.gz'), 'rb').read()
-    index.from_data(package='gherkin==0.1.0', ext='gz', data=data)
+    index.from_data(path='gherkin-0.1.0.tar.gz', data=data)
 
     # Then I see it inside of the index
-    index.find('gherkin==0.1.0').should.equal([
+    index.get('gherkin==0.1.0').should.equal(
         FIXTURE('index/gherkin-0.1.0.tar.gz'),
-    ])
+    )
 
     # And I clean the mess
     index.delete()
@@ -56,9 +56,9 @@ def test_index_scan():
     index.scan()
 
     # Then I can look for packages
-    index.find('gherkin==0.1.0').should.equal([
+    index.get('gherkin==0.1.0').should.equal(
         FIXTURE('storage1/gherkin-0.1.0.tar.gz'),
-    ])
+    )
 
 
 def test_index_scan_when_there_is_no_dir():

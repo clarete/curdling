@@ -13,23 +13,6 @@ FORMATS = ('whl', 'gz', 'bz', 'zip')
 PKG_NAME = lambda n: re.findall(r'([\w\_\.]+)-([\d\.]+\d)[\.\-]', n)[0]
 
 
-def key_from_path(path):
-    return '{0}=={1}'.format(*PKG_NAME(os.path.basename(path)))
-
-
-def name_from_key(spec, ext):
-    # Add tar. to `bz` and `gz` files
-    ext = ext in ('gz', 'bz') and 'tar.' + ext or ext
-
-    # Parse the requirement and build the new name
-    req = Requirement.parse(spec)
-    name = [req.key]
-    name.append('-')
-    name.append(req.specs[0][1])
-    name.append('.')
-    name.append(ext)
-    return ''.join(name)
-
 
 def match_format(format_, name):
     ext = split_name(name)[1]
@@ -51,16 +34,15 @@ class PackageNotFound(Exception):
 class Index(object):
     def __init__(self, base_path):
         self.base_path = base_path
-        self.storage = defaultdict(list)
+        self.storage = defaultdict(lambda: defaultdict(list))
 
     def scan(self):
         if not os.path.isdir(self.base_path):
             return
 
         for file_name in os.listdir(self.base_path):
-            key = key_from_path(file_name)
             destination = os.path.join(self.base_path, file_name)
-            self.storage[key].append(destination)
+            self.index(destination)
 
     def ensure_path(self, destination):
         path = os.path.dirname(destination)
@@ -68,32 +50,28 @@ class Index(object):
             os.makedirs(path)
         return destination
 
+    def index(self, path):
+        pkg = os.path.basename(path)
+        name, version = PKG_NAME(pkg)
+        self.storage[name][version].append(pkg)
+
     def from_file(self, path):
         # Moving the file around
-        destination = self.ensure_path(os.path.join(self.base_path, os.path.basename(path)))
+        file_name = '.'.join(split_name(os.path.basename(path))[:2])
+        destination = self.ensure_path(os.path.join(self.base_path, file_name))
         shutil.copy(path, destination)
+        self.index(destination)
 
-        # Indexing the saved path under the `key` extracted from the package
-        # name.
-        key = key_from_path(path)
-        self.storage[key].append(destination)
-
-    def from_data(self, package, ext, data):
+    def from_data(self, path, data):
         # Build the name of the package based on its spec and extension
-        file_name = name_from_key(package, ext)
+        file_name = '.'.join(split_name(os.path.basename(path))[:2])
         destination = self.ensure_path(os.path.join(self.base_path, file_name))
         with open(destination, 'wb') as fobj:
             fobj.write(data)
-        self.storage[package].append(destination)
+        self.index(destination)
 
     def delete(self):
         shutil.rmtree(self.base_path)
-
-    def find(self, spec, only=FORMATS):
-        result = filter(lambda f: split_name(f)[1] in only, self.storage[spec])
-        if not result:
-            raise PackageNotFound(spec, ', '.join(only))
-        return result
 
     def get(self, query):
         # Read both: "pkg==0.0.0" and "pkg==0.0.0,fmt"
@@ -138,4 +116,6 @@ class Index(object):
         # Unlucky, we really don't have those files
         if not files:
             raise PackageNotFound(spec, format_)
-        return files[0]
+
+        # Yay, let's return the full path to the user
+        return os.path.join(self.base_path, files[0])
