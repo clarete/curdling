@@ -18,7 +18,7 @@ class Curdling(Service):
             *args, **kwargs)
 
     def wheel(self, package):
-        source = self.index.find(package, only=('gz',))[0]
+        source = self.index.get("{0};~whl".format(package))
         target = os.path.dirname(source)
 
         # The package finder is what PIP uses to find packages given their

@@ -51,7 +51,7 @@ def test_request_install_no_cache():
 
     # Given that I have an environment
     index = Mock()
-    index.find.side_effect = PackageNotFound('gherkin==0.1.0', 'whl')
+    index.get.side_effect = PackageNotFound('gherkin==0.1.0', 'whl')
     env = Env(conf={'index': index})
     env.check_installed = Mock(return_value=False)
     env.services['download'] = Mock()
@@ -61,9 +61,9 @@ def test_request_install_no_cache():
 
     # Then I see that the caches were checked
     env.check_installed.assert_called_once_with('gherkin==0.1.0')
-    list(env.index.find.call_args_list).should.equal([
-        call('gherkin==0.1.0', only=('whl',)),
-        call('gherkin==0.1.0', only=('gz', 'bz', 'zip')),
+    list(env.index.get.call_args_list).should.equal([
+        call('gherkin==0.1.0;whl'),
+        call('gherkin==0.1.0;~whl'),
     ])
 
     # And then I see that the download queue was populated
@@ -85,7 +85,7 @@ def test_request_install_installed_package():
     # Then I see that, since the package was installed, the local cache was not
     # queried
     env.check_installed.assert_called_once_with('gherkin==0.1.0')
-    env.index.find.called.should.be.false
+    env.index.get.called.should.be.false
 
     # And then I see that the download queue was not touched
     env.services['download'].queue.called.should.be.false
@@ -96,7 +96,7 @@ def test_request_install_cached_package():
 
     # Given that I have a loaded local cache
     index = Index('')
-    index.storage = {'gherkin==0.1.0': ['storage1/gherkin-0.1.0.tar.gz']}
+    index.storage = {'gherkin': {'0.1.0': ['storage1/gherkin-0.1.0.tar.gz']}}
 
     # And that I have an environment associated with that local cache
     env = Env(conf={'index': index})
@@ -125,7 +125,7 @@ def test_request_install_cached_wheels():
 
     # Given that I have a loaded local cache
     index = Index('')
-    index.storage = {'gherkin==0.1.0': ['storage1/gherkin-0.1.0-py27-none-any.whl']}
+    index.storage = {'gherkin': {'0.1.0': ['storage1/gherkin-0.1.0-py27-none-any.whl']}}
 
     # And that I have an environment associated with that local cache
     env = Env(conf={'index': index})
@@ -145,21 +145,6 @@ def test_request_install_cached_wheels():
 
     # And that the download queue was not touched
     env.services['download'].queue.called.should.be.false
-
-
-def test_index_find():
-    "It should be possible to find indexed packages"
-
-    index = Index('')
-
-    index.storage = {'gherkin==0.1.0': ['storage1/gherkin-0.1.0.tar.gz']}
-    index.find('gherkin==0.1.0', only=('gz',)).should.have.length_of(1)
-    index.find.when.called_with('gherkin==0.1.0', only=('whl',)).should.throw(
-        PackageNotFound, (
-            "The index does not have the requested package: "
-            "gherkin==0.1.0 (whl)"
-        )
-    )
 
 
 @patch('curdling.index.os')
@@ -196,11 +181,40 @@ def test_index_ensure_path_for_existing_dirs(patched_os):
     patched_os.makedirs.called.should.be.false
 
 
+def test_index_feed_backend():
+    "It should be possible to save package paths granularly"
+
+    # Given the following index
+    index = Index('')
+
+    # When I index a couple files
+    index.index('http://localhost:800/p/gherkin-0.1.0-py27-none-any.whl')
+    index.index('gherkin-0.1.0.tar.gz')
+    index.index('gherkin-0.1.5.tar.gz')
+    index.index('a/weird/dir/gherkin-0.2.0.tar.gz')
+
+    # Then I see that the backend structure looks right
+    dict(index.storage).should.equal({
+        'gherkin': {
+            '0.2.0': [
+                'gherkin-0.2.0.tar.gz',
+            ],
+            '0.1.5': [
+                'gherkin-0.1.5.tar.gz',
+            ],
+            '0.1.0': [
+                'gherkin-0.1.0-py27-none-any.whl',
+                'gherkin-0.1.0.tar.gz',
+            ],
+        },
+    })
+
+
 def test_index_get():
     "It should be possible to search for packages using different criterias"
 
     # Given that I have an index loaded with a couple package references
-    index = Index('wherever')
+    index = Index('')
     index.storage = {
         'gherkin': {
             '0.2.0': [

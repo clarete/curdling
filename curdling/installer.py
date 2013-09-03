@@ -16,7 +16,7 @@ class Installer(Service):
 
     def install(self, package):
         # Find the package that we want to install
-        source = self.index.find(package, only=('whl',))[0]
+        source = self.index.get("{0};whl".format(package))
 
         # Create a package finder pointing to the directory that contains our
         # package. Using a package finder makes it easier to interact with the

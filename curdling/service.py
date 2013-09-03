@@ -1,7 +1,9 @@
 from __future__ import unicode_literals, print_function, absolute_import
 from gevent.pool import Pool
 from gevent.queue import Queue
+import traceback
 import gevent
+import sys
 
 
 class Service(object):
@@ -45,8 +47,13 @@ class Service(object):
             self.callback(package)
         except BaseException as exc:
             self.failed_queue.append((package, exc))
-            print('failed to run {0} for package {1}: {2}'.format(
+
+            # The programmer (or user) might need some feedback
+            frames = traceback.extract_tb(sys.exc_info()[2])
+            print('failed to run {0} for package {1}: {2}. TB:'.format(
                 self.__class__.__name__, package, exc))
+            for frame in reversed(frames):
+                print(' {0}:{1} {2}(): {3}'.format(*frame))
         else:
             # If the callback worked, let's go ahead and tell the world. If and
             # only if requested by the caller, of course.

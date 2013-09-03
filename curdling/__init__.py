@@ -65,7 +65,7 @@ class Env(object):
 
         # Looking for built packages
         try:
-            self.index.find(requirement, only=('whl',))
+            self.index.get("{0};whl".format(requirement))
             self.services['install'].queue(requirement)
             return False
         except PackageNotFound:
@@ -73,9 +73,8 @@ class Env(object):
 
         # Looking for downloaded packages. If there's packages of any of the
         # following distributions, we'll just build the wheel
-        allowed = ('gz', 'bz', 'zip')
         try:
-            self.index.find(requirement, only=allowed)
+            self.index.get("{0};~whl".format(requirement))
             self.services['curdling'].queue(requirement)
             return False
         except PackageNotFound:
