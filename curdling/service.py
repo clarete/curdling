@@ -7,11 +7,12 @@ import sys
 
 
 class Service(object):
-    def __init__(self, callback, concurrency=1, result_queue=None):
+    def __init__(self, callback, concurrency=1, result_queue=None, env=None):
         self.callback = callback
         self.result_queue = result_queue
         self.package_queue = Queue()
         self.failed_queue = []
+        self.env = env
 
         self.main_greenlet = None
         self.pool = Pool(concurrency)
