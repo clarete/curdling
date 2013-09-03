@@ -273,3 +273,20 @@ def test_index_get():
         PackageNotFound, (
             "The index does not have the requested package: "
             "nonexisting==0.2.1"))
+
+
+def test_index_get_corner_case_pkg_name():
+    "It should be possible to search for packages that contain `_` in their name"
+
+    # Given that I have an index loaded with a couple package references
+    index = Index('')
+    index.storage = {
+        'python-gherkin': {
+            '0.1.0': [
+                'python_gherkin-0.1.0.tar.gz',
+            ]
+        }
+     }
+
+
+    index.get('python-gherkin==0.1.0;~whl').should.equal('python_gherkin-0.1.0.tar.gz')
