@@ -190,7 +190,7 @@ def test_index_feed_backend():
     # When I index a couple files
     index.index('http://localhost:800/p/gherkin-0.1.0-py27-none-any.whl')
     index.index('gherkin-0.1.0.tar.gz')
-    index.index('gherkin-0.1.5.tar.gz')
+    index.index('Gherkin-0.1.5.tar.gz')  # I know, weird right?
     index.index('a/weird/dir/gherkin-0.2.0.tar.gz')
 
     # Then I see that the backend structure looks right
@@ -200,7 +200,7 @@ def test_index_feed_backend():
                 'gherkin-0.2.0.tar.gz',
             ],
             '0.1.5': [
-                'gherkin-0.1.5.tar.gz',
+                'Gherkin-0.1.5.tar.gz',
             ],
             '0.1.0': [
                 'gherkin-0.1.0-py27-none-any.whl',
