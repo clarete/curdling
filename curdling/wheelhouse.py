@@ -57,10 +57,11 @@ class Curdling(Service):
         # the wheel dir is a tmp directory so the *only* file over there *is*
         # the one that we want.
         wheel_file = os.listdir(wheel_dir)[0]
-        shutil.move(os.path.join(wheel_dir, wheel_file), target)
+        path = self.index.from_file(os.path.join(wheel_dir, wheel_file))
 
         # Cleaning up the mess. Here I kill the two temp folders I created to
-        # 1) build the wheel, 2) output the wheel file
+        # 1) build the package into a wheel, 2) output the wheel file
+        # separately
         shutil.rmtree(build_dir)
         shutil.rmtree(wheel_dir)
 

@@ -142,6 +142,9 @@ def test_curd_package():
     # Then I see it's a wheel package.
     package.should.equal(FIXTURE('storage1/gherkin-0.1.0-py27-none-any.whl'))
 
+    # And that it's present in the index
+    package = index.find('gherkin==0.1.0', only=('whl',))[0]
+
     # And that the file was created in the file system
     os.path.exists(package).should.be.true
 
