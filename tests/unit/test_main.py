@@ -51,7 +51,7 @@ def test_request_install_no_cache():
 
     # Given that I have an environment
     index = Mock()
-    index.find.side_effect = PackageNotFound
+    index.find.side_effect = PackageNotFound('gherkin==0.1.0', 'whl')
     env = Env(conf={'index': index})
     env.check_installed = Mock(return_value=False)
     env.services['download'] = Mock()
@@ -194,3 +194,68 @@ def test_index_ensure_path_for_existing_dirs(patched_os):
     patched_os.path.isdir.return_value = True
     index.ensure_path('path/to/my/resource')
     patched_os.makedirs.called.should.be.false
+
+
+def test_index_get():
+    "It should be possible to search for packages using different criterias"
+
+    # Given that I have an index loaded with a couple package references
+    index = Index('wherever')
+    index.storage = {
+        'gherkin': {
+            '0.2.0': [
+                'gherkin-0.2.0.tar.gz',
+            ],
+            '0.1.5': [
+                'gherkin-0.2.0.tar.gz',
+            ],
+            '0.1.1': [
+                'gherkin-0.1.1.tar.gz',
+            ],
+            '0.1.0': [
+                'gherkin-0.1.0.tar.gz',
+                'gherkin-0.1.0-py27-none-any.whl',
+            ],
+        }
+    }
+
+    # Let's do some random assertions
+
+    # No version: Always brings the newest
+    index.get('gherkin').should.equal('gherkin-0.2.0.tar.gz')
+
+    # With a range of versions: Always brings the newest
+    index.get('gherkin>0.1.0').should.equal('gherkin-0.2.0.tar.gz')
+
+    # With a handful of version specs: Find the matching version and prefer whl
+    index.get('gherkin>=0.1.0,<0.1.5,!=0.1.1').should.equal('gherkin-0.1.0-py27-none-any.whl')
+
+    # With version: Always prefers the wheel
+    index.get('gherkin==0.1.0,<=0.2.0').should.equal('gherkin-0.1.0-py27-none-any.whl')
+
+    # With version and format: Prefers anything but `whl'
+    index.get('gherkin==0.1.0;~whl').should.equal('gherkin-0.1.0.tar.gz')
+
+    # With version range and no format: Finds the highest version with the :)
+    index.get.when.called_with('gherkin==0.1.1;whl').should.throw(
+        PackageNotFound, (
+            "The index does not have the requested package: "
+            "gherkin==0.1.1 (whl)"))
+
+    # With version and a format that is not available: Blows up! :)
+    index.get.when.called_with('gherkin==0.1.1;whl').should.throw(
+        PackageNotFound, (
+            "The index does not have the requested package: "
+            "gherkin==0.1.1 (whl)"))
+
+    # With a version we simply don't have: Blows up! :)
+    index.get.when.called_with('gherkin==0.2.1').should.throw(
+        PackageNotFound, (
+            "The index does not have the requested package: "
+            "gherkin==0.2.1"))
+
+    # With a package we simply don't have: Blows up! :)
+    index.get.when.called_with('nonexisting==0.2.1').should.throw(
+        PackageNotFound, (
+            "The index does not have the requested package: "
+            "nonexisting==0.2.1"))

@@ -1,8 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from curdling.index import Index, PackageNotFound
-
 from . import FIXTURE
-
 
 
 def test_index_from_file():
@@ -66,8 +64,8 @@ def test_index_scan():
 def test_index_scan_when_there_is_no_dir():
     "Index.scan() should not fail when the dir does not exist"
 
-    # Given that I have an index that points to a folder that already contains
-    # packages
+    # Given that I have an index that points to a directory that already
+    # contains packages
     index = Index('I know this directory does not exist')
 
     # When I scan the directory, I see it does not fail
