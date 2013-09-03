@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from collections import defaultdict
-from pkg_resources import Requirement, parse_version
+from pkg_resources import Requirement, parse_version, safe_name
 
 from curdling.util import split_name
 
@@ -10,7 +10,7 @@ import shutil
 
 FORMATS = ('whl', 'gz', 'bz', 'zip')
 
-PKG_NAME = lambda n: re.findall(r'([\w\_\.]+)-([\d\.]+\d)[\.\-]', n)[0]
+PKG_NAME = lambda n: re.findall(r'([\w\-\_\.]+)-([\d\.]+\d)[\.\-]', n)[0]
 
 
 
@@ -53,7 +53,7 @@ class Index(object):
     def index(self, path):
         pkg = os.path.basename(path)
         name, version = PKG_NAME(pkg)
-        self.storage[name.lower()][version].append(pkg)
+        self.storage[safe_name(name.lower())][version].append(pkg)
 
     def from_file(self, path):
         # Moving the file around

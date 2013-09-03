@@ -7,7 +7,9 @@ import tempfile
 import os
 import re
 
-CONVERT_DEPENDENCY_RE = re.compile(r'(\w+)\b\s*\(?([^\)]+)?')
+
+CONVERT_DEPENDENCY_RE = re.compile(r'([\w\_\-]+)\b\s*\(?([^\)]+)?')
+
 
 class Installer(Service):
     def __init__(self, *args, **kwargs):
