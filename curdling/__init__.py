@@ -24,6 +24,7 @@ class Env(object):
     def start_services(self):
         # General params for all the services
         params = {
+            'env': self,
             'index': self.index,
             'concurrency': self.conf.get('concurrency'),
         }
