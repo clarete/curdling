@@ -5,6 +5,7 @@ from pip.commands.uninstall import UninstallCommand
 from gevent.queue import Queue
 from gevent.pool import Pool
 
+from .logging import Logger, ReportableError
 from .download import PipSource, CurdlingSource, DownloadManager
 from .wheelhouse import Curdling
 from .installer import Installer
@@ -17,18 +18,18 @@ import os
 
 
 class Env(object):
-    def __init__(self, conf=None):
-        self.conf = conf or {}
+    def __init__(self, conf):
+        self.conf = conf
         self.index = self.conf.get('index')
+        self.logger = Logger('main', conf.log_level)
         self.services = {}
 
     def start_services(self):
         # General params for all the services
-        params = {
+        self.conf.update({
             'env': self,
             'index': self.index,
-            'concurrency': self.conf.get('concurrency'),
-        }
+        })
 
         # Defines the priority of where we're gonna look for packages first. As
         # you can see clearly here, curdling is our prefered repo.
@@ -49,10 +50,10 @@ class Env(object):
             sources.append(PipSource(urls=pypi_urls))
 
         # Tiem to create our tasty services :)
-        self.services['download'] = DownloadManager(sources=sources, **params)
-        self.services['curdling'] = Curdling(**params)
-        self.services['install'] = Installer(**params)
-        self.services['upload'] = Uploader(sources=curdling_urls, **params)
+        self.services['download'] = DownloadManager(sources=sources, **self.conf)
+        self.services['curdling'] = Curdling(**self.conf)
+        self.services['install'] = Installer(**self.conf)
+        self.services['upload'] = Uploader(sources=curdling_urls, **self.conf)
 
         # Creating a kind of a pipe that looks like this:
         # "download > curdling > install"
@@ -74,6 +75,13 @@ class Env(object):
                 gevent.sleep(1)
             else:
                 break
+
+    def shutdown(self):
+        # Gathers all the failures across all the servicess
+        failures = []
+        for name, service in self.services.items():
+            self.failed_queue()
+            service.pool.kill()
 
     def check_installed(self, package):
         try:

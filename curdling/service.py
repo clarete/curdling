@@ -1,32 +1,37 @@
 from __future__ import unicode_literals, print_function, absolute_import
 from gevent.pool import Pool
 from gevent.queue import Queue
-import traceback
 import gevent
-import sys
+
+from .logging import ReportableError, Logger
 
 
 class Service(object):
-    def __init__(self, callback, concurrency=1, result_queue=None, env=None):
+    def __init__(self, callback, env, **args):
         self.callback = callback
-        self.result_queue = result_queue
+        self.result_queue = args.get('result_queue')
         self.package_queue = Queue()
         self.failed_queue = []
         self.env = env
 
         self.main_greenlet = None
-        self.pool = Pool(concurrency)
+        self.pool = Pool(args.get('concurrency'))
         self.should_run = True
 
         self.subscribers = []
+        self.logger = Logger(self.name, args.get('log_level'))
+
+    @property
+    def name(self):
+        return self.__class__.__name__.lower()
 
     def queue(self, package):
-        print(' * {0},queueing: {1}'.format(self.__class__.__name__.lower(), package))
+        self.logger.level(3, ' * %s,queueing: %s', self.name, package)
         self.package_queue.put(package)
 
     def consume(self):
         package = self.package_queue.get()
-        print(' * {0},consuming: {1}'.format(self.__class__.__name__.lower(), package))
+        self.logger.level(3, ' * %s,consuming: %s', self.name, package)
         self.pool.spawn(self._run_service, package)
 
     def subscribe(self, other):
@@ -51,15 +56,13 @@ class Service(object):
     def _run_service(self, package):
         try:
             self.callback(package)
+        except ReportableError as exc:
+            self.logger.level(0, "Error: %s", exc)
         except BaseException as exc:
             self.failed_queue.append((package, exc))
-
-            # The programmer (or user) might need some feedback
-            frames = traceback.extract_tb(sys.exc_info()[2])
-            print('failed to run {0} for package {1}: {2}. TB:'.format(
-                self.__class__.__name__, package, exc))
-            for frame in reversed(frames):
-                print(' {0}:{1} {2}(): {3}'.format(*frame))
+            self.logger.traceback(3,
+                'failed to run %s for package %s:',
+                self.name, package, exc=exc)
         else:
             # Let's notify our subscribers
             for subscriber in self.subscribers:

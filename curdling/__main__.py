@@ -43,6 +43,12 @@ def parse_args():
         help='Upload your packages back to the curdling index')
 
     parser.add_argument(
+        '-l', '--log-level', default=1, type=int,
+        help=(
+            'Increases the verbosity, goes from 0 (quiet) to '
+            'the infinite and beyond (chatty)'))
+
+    parser.add_argument(
         'packages', metavar='PKG', nargs='*',
         help='list of files to install')
 
@@ -66,6 +72,7 @@ def prepare_args(args):
         pypi_urls=args.index or DEFAULT_PYPI_INDEX_LIST,
         curdling_urls=args.curdling_index,
         upload=args.upload,
+        log_level=args.log_level,
     )
 
 
@@ -81,7 +88,6 @@ def main():
     args.update({
         'index': index,
         'concurrency': 10,
-        'cache_backend': {},
     })
 
     # Let's create the environment and start the required services
@@ -93,7 +99,11 @@ def main():
         env.request_install(pkg)
 
     # All the installation requests were made, let's just wait here
-    env.wait()
+    try:
+        env.wait()
+    except KeyboardInterrupt:
+        print('\b\bIs there cheese in your rug?')
+        env.shutdown()
 
 
 if __name__ == '__main__':

@@ -1,14 +1,13 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from pip.req import InstallRequirement
 from pip.index import PackageFinder
-from pip.exceptions import DistributionNotFound
 
 import re
 import os
 import urllib2
 import urlparse
 
-from . import util
+from . import util, ReportableError
 from .service import Service
 
 
@@ -30,7 +29,6 @@ class PipSource(object):
         pkg = InstallRequirement.from_line(package)
         return self.finder.find_requirement(pkg, True).url
 
-
 class DownloadManager(Service):
     def __init__(self, sources, *args, **kwargs):
         self.sources = sources
@@ -40,23 +38,33 @@ class DownloadManager(Service):
             *args, **kwargs)
 
     def download(self, package_name, url):
-        print(' * downloadmanager:url {0}'.format(url), end='')
-        try:
-            response = urllib2.urlopen(url)
-        except (urllib2.URLError, urllib2.HTTPError) as exc:
-            print('...failed: {0}'.format(exc))
-            raise exc
-        print('...ok')
-
-        # Reading the response object to find our stuff
+        response = urllib2.urlopen(url)
         header = response.info().get('content-disposition', '')
         file_name = re.findall(r'filename=([^;]+)', header)
-        file_name = file_name and file_name[0] or url
-        data = response.read()
-        return self.index.from_data(file_name, data)
+        return self.index.from_data(
+            file_name and file_name[0] or url,
+            response.read())
+
+    def attempt(self, package, source):
+        self.logger.level(2, ' * downloadmanager: ', end='')
+        try:
+            url = source.url(package)
+            return self.download(package, url)
+        except Exception as exc:
+            args = getattr(exc, 'args')
+            msg = args and str(args[0]) or exc.msg
+            self.logger.level(2, '...failed (%s)', msg)
+            self.logger.traceback(3, '', exc=exc)
+        else:
+            self.logger.level(2, '...ok')
 
     def retrieve(self, package):
         for source in self.sources:
-            url = source.url(package)
-            return self.download(package, url)
-        raise DistributionNotFound
+            path = self.attempt(package, source)
+
+            # We log all the attempts to the second level. But if we can make
+            # it, that's where we get out of the loop, avoiding the need to
+            # keep iterating over other sources.
+            if path:
+                return path
+        raise ReportableError('Distribution not found')
