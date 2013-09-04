@@ -51,12 +51,17 @@ class DownloadManager(Service):
             url = source.url(package)
             return self.download(package, url)
         except Exception as exc:
+            # Showing the source name
+            self.logger.level(2, 'from %s ',
+                source.__class__.__name__.lower(), end='')
+
+            # Showing the cause
             args = getattr(exc, 'args')
             msg = args and str(args[0]) or exc.msg
-            self.logger.level(2, '...failed (%s)', msg)
-            self.logger.traceback(3, '', exc=exc)
+            self.logger.level(2, '... failed (%s)', msg)
+            self.logger.traceback(4, '', exc=exc)
         else:
-            self.logger.level(2, '...ok')
+            self.logger.level(2, '... ok')
 
     def retrieve(self, package):
         for source in self.sources:
@@ -67,4 +72,4 @@ class DownloadManager(Service):
             # keep iterating over other sources.
             if path:
                 return path
-        raise ReportableError('Distribution not found')
+        raise ReportableError('No distributions found for {0}'.format(package))

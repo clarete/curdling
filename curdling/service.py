@@ -7,12 +7,12 @@ from .logging import ReportableError, Logger
 
 
 class Service(object):
-    def __init__(self, callback, env, **args):
+    def __init__(self, callback, **args):
         self.callback = callback
         self.result_queue = args.get('result_queue')
         self.package_queue = Queue()
         self.failed_queue = []
-        self.env = env
+        self.env = args.get('env')
 
         self.main_greenlet = None
         self.pool = Pool(args.get('concurrency'))
@@ -57,10 +57,11 @@ class Service(object):
         try:
             self.callback(package)
         except ReportableError as exc:
+            self.failed_queue.append((package, exc))
             self.logger.level(0, "Error: %s", exc)
         except BaseException as exc:
             self.failed_queue.append((package, exc))
-            self.logger.traceback(3,
+            self.logger.traceback(4,
                 'failed to run %s for package %s:',
                 self.name, package, exc=exc)
         else:

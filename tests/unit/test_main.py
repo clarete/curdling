@@ -38,13 +38,13 @@ def test_check_installed(get_distribution):
     "It should be possible to check if a certain package is currently installed"
 
     get_distribution.return_value = True
-    Env().check_installed('gherkin==0.1.0').should.be.true
+    Env({}).check_installed('gherkin==0.1.0').should.be.true
 
     get_distribution.side_effect = pkg_resources.VersionConflict
-    Env().check_installed('gherkin==0.1.0').should.be.false
+    Env({}).check_installed('gherkin==0.1.0').should.be.false
 
     get_distribution.side_effect = pkg_resources.DistributionNotFound
-    Env().check_installed('gherkin==0.1.0').should.be.false
+    Env({}).check_installed('gherkin==0.1.0').should.be.false
 
 
 def test_service_subscribe():

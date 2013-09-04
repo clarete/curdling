@@ -2,7 +2,7 @@ from __future__ import unicode_literals, print_function
 
 from . import Env
 from .index import Index
-from .util import expand_requirements
+from .util import expand_requirements, AttrDict
 
 import argparse
 import os
@@ -15,11 +15,6 @@ DEFAULT_PYPI_INDEX_LIST = [
 
 class ValidationError(Exception):
     pass
-
-
-class AttrDict(dict):
-    __getattr__ = dict.__getitem__
-    __setattr__ = dict.__setitem__
 
 
 def parse_args():
@@ -103,8 +98,16 @@ def main():
         env.wait()
     except KeyboardInterrupt:
         print('\b\bIs there cheese in your rug?')
-        env.shutdown()
+        return env.shutdown()
+    return env.shutdown()
+
+
+def err_code(errors):
+    # This function defines what's the error number that curdling will return!
+    # Yeah, it's a big deal! It's just a stub though. For now, this naive
+    # implementation returns success if no installations failed.
+    return errors.get('install', 0)
 
 
 if __name__ == '__main__':
-    main()
+    raise SystemExit(err_code(main()))

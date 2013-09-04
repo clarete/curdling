@@ -21,7 +21,7 @@ class Env(object):
     def __init__(self, conf):
         self.conf = conf
         self.index = self.conf.get('index')
-        self.logger = Logger('main', conf.log_level)
+        self.logger = Logger('main', conf.get('log_level'))
         self.services = {}
 
     def start_services(self):
@@ -77,11 +77,23 @@ class Env(object):
                 break
 
     def shutdown(self):
+        # Let's show some stats
+        errors = {}
+
         # Gathers all the failures across all the servicess
-        failures = []
         for name, service in self.services.items():
-            self.failed_queue()
+            if service.failed_queue:
+                self.logger.level(3, "Step: %s", name, indent=2)
+                errors[name] = 0
+            for package, exc in service.failed_queue:
+                errors[name] += 1
+                failure = '{0}: {1}'.format(package, exc)
+                self.logger.level(3, "%s", failure, indent=4)
             service.pool.kill()
+
+        if not errors:
+            self.logger.level(3, "We're good to go!")
+        return errors
 
     def check_installed(self, package):
         try:

@@ -9,6 +9,10 @@ import re
 INCLUDE_PATTERN = re.compile(r'-r\s*\b([^\b]+)')
 
 
+class AttrDict(dict):
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
+
 
 def split_name(fname):
     name, ext = os.path.splitext(fname)

@@ -6,12 +6,11 @@ import os
 import errno
 
 from curdling import util, Env
+from curdling.logging import ReportableError
 from curdling.service import Service
 from curdling.index import Index
 from curdling.installer import Installer
 from curdling.wheelhouse import Curdling
-
-from pip.exceptions import DistributionNotFound
 
 from . import FIXTURE
 
@@ -88,7 +87,7 @@ def test_downloader_with_no_sources():
     # When I try to retrieve a package from it, than I see it just blows up
     # with a nice exception
     downloader.retrieve.when.called_with('gherkin==0.1.0').should.throw(
-        DistributionNotFound)
+        ReportableError)
 
 
 def test_downloader():
@@ -120,8 +119,8 @@ def test_downloader_with_no_packages():
 
     # When I try to retrieve a package from it
     downloader.retrieve.when.called_with('donotexist==0.1.0').should.throw(
-        DistributionNotFound,
-        'No distributions at all found for donotexist==0.1.0',
+        ReportableError,
+        'No distributions found for donotexist==0.1.0',
     )
 
 
@@ -163,7 +162,7 @@ def test_install_package():
     installer.install('gherkin==0.1.0')
 
     # Then I see that the package was installed
-    Env().check_installed('gherkin==0.1.0').should.be.true
+    Env({}).check_installed('gherkin==0.1.0').should.be.true
 
     # And I uninstall the package
-    Env().uninstall('gherkin==0.1.0')
+    Env({}).uninstall('gherkin==0.1.0')
