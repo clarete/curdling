@@ -65,6 +65,7 @@ def prepare_args(args):
         packages=packages,
         pypi_urls=args.index or DEFAULT_PYPI_INDEX_LIST,
         curdling_urls=args.curdling_index,
+        upload=args.upload,
     )
 
 

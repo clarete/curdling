@@ -49,9 +49,11 @@ if __name__ == '__main__':
         packages=find_packages(exclude=['*tests*']),
         install_requires=install_requires,
         dependency_links=dependency_links,
+        include_package_data=True,
         entry_points={
             'console_scripts': [
-                'curdling = curdling.cmdline:main',
+                'curdling = curdling.__main__:main',
+                'curdling-server = curdling.web.__main__:main',
             ]
         },
         classifiers=[

@@ -21,9 +21,9 @@ class Server(object):
 
     def start(self):
         if self.args.debug:
-            self.app.run(debug=True)
+            self.app.run(host=self.args.host, port=self.args.port, debug=True)
         else:
-            WSGIServer(('0.0.0.0', 8000), self.app).serve_forever()
+            WSGIServer((self.args.host, self.args.port), self.app).serve_forever()
 
     def web_index(self):
         return render_template('index.html', index=self.index)

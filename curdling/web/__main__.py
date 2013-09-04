@@ -16,6 +16,14 @@ def parse_args():
         '-d', '--debug', action='store_true', default=False,
         help='Runs without gevent and enables debug')
 
+    parser.add_argument(
+        '-H', '--host', default='0.0.0.0',
+        help='Host name to bind')
+
+    parser.add_argument(
+        '-p', '--port', type=int, default=8000,
+        help='Port to bind')
+
     return parser.parse_args()
 
 
