@@ -2,7 +2,7 @@ SHELL=bash
 
 PACKAGE=curdling
 
-CUSTOM_PIP_INDEX=localshop
+CUSTOM_PIP_INDEX=
 
 TESTS_VERBOSITY=2
 
