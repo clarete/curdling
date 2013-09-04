@@ -35,6 +35,14 @@ def parse_args():
         help='PyPi compatible index url. Repeat as many times as you need')
 
     parser.add_argument(
+        '-c', '--curdling-index', action='append', default=[],
+        help='Curdling compatible index url. Repeat as many times as you need')
+
+    parser.add_argument(
+        '-u', '--upload', action='store_true', default=False,
+        help='Upload your packages back to the curdling index')
+
+    parser.add_argument(
         'packages', metavar='PKG', nargs='*',
         help='list of files to install')
 
@@ -56,6 +64,7 @@ def prepare_args(args):
     return AttrDict(
         packages=packages,
         pypi_urls=args.index or DEFAULT_PYPI_INDEX_LIST,
+        curdling_urls=args.curdling_index,
     )
 
 
@@ -68,15 +77,14 @@ def main():
     index.scan()
 
     # Configuration values for the environment
-    config = {
+    args.update({
         'index': index,
-        'urls': args.pypi_urls,
         'concurrency': 10,
         'cache_backend': {},
-    }
+    })
 
     # Let's create the environment and start the required services
-    env = Env(config)
+    env = Env(args)
     env.start_services()
 
     # Request the installation of the received package

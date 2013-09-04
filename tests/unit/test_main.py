@@ -9,6 +9,7 @@ import pkg_resources
 from curdling import Env
 from curdling.index import Index, PackageNotFound
 from curdling.util import expand_requirements
+from curdling.service import Service
 
 
 @patch('io.open')
@@ -44,6 +45,23 @@ def test_check_installed(get_distribution):
 
     get_distribution.side_effect = pkg_resources.DistributionNotFound
     Env().check_installed('gherkin==0.1.0').should.be.false
+
+
+def test_service_subscribe():
+    "Services should be able to subscribe to other services"
+
+    # Given that I have two services
+    service1 = Service(lambda p: '1')
+    service2 = Service(lambda p: '2')
+
+    # When I subscribe one service to another
+    service1.subscribe(service2)
+    service2.queue('gherkin==0.1.0')
+    service2.consume()
+    service2.pool.join()
+
+    # Then I see that service1 was notified
+    service2.subscribers[0].package_queue.qsize().should.equal(1)
 
 
 def test_request_install_no_cache():

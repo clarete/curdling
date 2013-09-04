@@ -113,11 +113,10 @@ def test_downloader_with_no_packages():
     "After downloading packages, the result queue should be fed"
 
     # Given the following downloader component
-    queue = Mock()
     sources = [PipSource(urls=['http://localhost:8000/simple'])]
     index = Index(FIXTURE('tmpindex'))
     downloader = DownloadManager(
-        sources=sources, index=index, result_queue=queue)
+        sources=sources, index=index)
 
     # When I try to retrieve a package from it
     downloader.retrieve.when.called_with('donotexist==0.1.0').should.throw(

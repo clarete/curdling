@@ -10,8 +10,17 @@ import shutil
 
 FORMATS = ('whl', 'gz', 'bz', 'zip')
 
-PKG_NAME = lambda n: re.findall(r'([\w\-\_\.]+)-([\d\.]+\d)[\.\-]', n)[0]
+PKG_NAMES = [
+    r'([\w\-]+)-([\d\.]+\d)[\.\-]',
+    r'(\w+)-(.+)\.\w+$',
+]
 
+
+def pkg_name(name):
+    for expr in PKG_NAMES:
+        result = re.findall(expr, name)
+        if result:
+            return result[0]
 
 
 def match_format(format_, name):
@@ -52,7 +61,7 @@ class Index(object):
 
     def index(self, path):
         pkg = os.path.basename(path)
-        name, version = PKG_NAME(pkg)
+        name, version = pkg_name(pkg)
         self.storage[safe_name(name.lower())][version].append(pkg)
 
     def from_file(self, path):
@@ -61,6 +70,7 @@ class Index(object):
         destination = self.ensure_path(os.path.join(self.base_path, file_name))
         shutil.copy(path, destination)
         self.index(destination)
+        return destination
 
     def from_data(self, path, data):
         # Build the name of the package based on its spec and extension
@@ -69,9 +79,13 @@ class Index(object):
         with open(destination, 'wb') as fobj:
             fobj.write(data)
         self.index(destination)
+        return destination
 
     def delete(self):
         shutil.rmtree(self.base_path)
+
+    def list_packages(self):
+        return self.storage.keys()
 
     def get(self, query):
         # Read both: "pkg==0.0.0" and "pkg==0.0.0,fmt"

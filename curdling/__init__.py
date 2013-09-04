@@ -5,10 +5,11 @@ from pip.commands.uninstall import UninstallCommand
 from gevent.queue import Queue
 from gevent.pool import Pool
 
-from .download import PipSource, DownloadManager
+from .download import PipSource, CurdlingSource, DownloadManager
 from .wheelhouse import Curdling
 from .installer import Installer
 from .index import PackageNotFound
+from .uploader import Uploader
 
 import pkg_resources
 import gevent
@@ -29,15 +30,39 @@ class Env(object):
             'concurrency': self.conf.get('concurrency'),
         }
 
-        sources = [PipSource(urls=self.conf.get('urls'))]
+        # Defines the priority of where we're gonna look for packages first. As
+        # you can see clearly here, curdling is our prefered repo.
+        source_types = (
+            ('curdling_urls', CurdlingSource),
+            ('pypi_urls', PipSource),
+        )
+
+        # Retrieving sources from the args object fed from the user
+        sources = []
+
+        curdling_urls = self.conf.get('curdling_urls')
+        for url in curdling_urls:
+            sources.append(CurdlingSource(url=url))
+
+        pypi_urls = self.conf.get('pypi_urls')
+        if pypi_urls:
+            sources.append(PipSource(urls=pypi_urls))
+
+        # Tiem to create our tasty services :)
         self.services['download'] = DownloadManager(sources=sources, **params)
         self.services['curdling'] = Curdling(**params)
         self.services['install'] = Installer(**params)
+        self.services['upload'] = Uploader(sources=curdling_urls, **params)
 
         # Creating a kind of a pipe that looks like this:
         # "download > curdling > install"
-        self.services['download'].result_queue = self.services['curdling'].package_queue
-        self.services['curdling'].result_queue = self.services['install'].package_queue
+        self.services['curdling'].subscribe(self.services['download'])
+        self.services['install'].subscribe(self.services['curdling'])
+
+        # If the user wants to share local wheels, let's do it! :)
+        if self.conf.upload:
+            self.services['upload'].subscribe(self.services['curdling'])
+            self.services['upload'].subscribe(self.services['install'])
 
         # Starting the services
         [x.start() for x in self.services.values()]
@@ -59,7 +84,6 @@ class Env(object):
             return False
 
     def request_install(self, requirement):
-
         # Well, the package is installed, let's just bail
         if self.check_installed(requirement):
             return True

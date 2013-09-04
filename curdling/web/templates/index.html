@@ -1,0 +1,15 @@
+<html>
+    <head>
+        <title>Curdling Index</title>
+    </head>
+
+    <body>
+        <h1>Packages available</h1>
+
+        <ul>
+            {% for package in index.list_packages() %}
+            <li>{{ package }}</li>
+            {% endfor %}
+        </ul>
+    </body>
+</html>

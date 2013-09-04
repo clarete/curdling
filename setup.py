@@ -3,7 +3,7 @@ import os
 from setuptools import setup, find_packages
 
 
-def parse_requirements():
+def parse_requirements(path):
     """Rudimentary parser for the `requirements.txt` file
 
     We just want to separate regular packages from links to pass them to the
@@ -11,8 +11,7 @@ def parse_requirements():
     function properly.
     """
     try:
-        requirements = \
-            map(str.strip, local_file('requirements.txt').splitlines())
+        requirements = map(str.strip, local_file(path).splitlines())
     except IOError:
         raise RuntimeError("Couldn't find the `requirements.txt' file :(")
 
@@ -34,7 +33,8 @@ def parse_requirements():
 local_file = lambda f: \
     open(os.path.join(os.path.dirname(__file__), f)).read()
 
-install_requires, dependency_links = parse_requirements()
+install_requires, dependency_links = \
+    parse_requirements('requirements.txt')
 
 
 if __name__ == '__main__':
@@ -57,4 +57,7 @@ if __name__ == '__main__':
         classifiers=[
             'Programming Language :: Python',
         ],
+        extras_require={
+            'server': parse_requirements('requirements-server.txt')[0],
+        },
     )

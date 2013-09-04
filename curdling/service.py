@@ -18,6 +18,8 @@ class Service(object):
         self.pool = Pool(concurrency)
         self.should_run = True
 
+        self.subscribers = []
+
     def queue(self, package):
         print(' * {0},queueing: {1}'.format(self.__class__.__name__.lower(), package))
         self.package_queue.put(package)
@@ -26,6 +28,9 @@ class Service(object):
         package = self.package_queue.get()
         print(' * {0},consuming: {1}'.format(self.__class__.__name__.lower(), package))
         self.pool.spawn(self._run_service, package)
+
+    def subscribe(self, other):
+        other.subscribers.append(self)
 
     def loop(self):
         while self.should_run:
@@ -56,6 +61,10 @@ class Service(object):
             for frame in reversed(frames):
                 print(' {0}:{1} {2}(): {3}'.format(*frame))
         else:
+            # Let's notify our subscribers
+            for subscriber in self.subscribers:
+                subscriber.queue(package)
+
             # If the callback worked, let's go ahead and tell the world. If and
             # only if requested by the caller, of course.
             if self.result_queue:
