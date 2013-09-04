@@ -5,9 +5,10 @@ Curdles your cheesy code and extracts its binaries
 
 ## tl;dr
 
-Curdling compiles all the packages you request into wheels, cache them locally
-and use the clients to build packages the server doesn't have. Now keep
-reading, it's worth it!
+Curdling compiles all the packages you request into
+[wheel](www.python.org/dev/peps/pep-0427/), cache them locally and use the
+clients to build packages the server doesn't have. Now keep reading, it's worth
+it!
 
 ## Intro
 
@@ -22,11 +23,11 @@ cycles in something cooler.
 
 ## So, what's the idea behind curdling?
 
-Wheels! Basically wheels! I'm not reinventing them though. The new python
-binary format brought hope to my heart. Curdling is basically a cache layer on
-top of the python package installation environment (which is kinda
-crazy). Curdling leverages the power of `PIP`, `wheel` and `pkg_resources` to
-provide a seamless package installation and update.
+Basically [Wheels](www.python.org/dev/peps/pep-0427/)! I'm not reinventing them
+though. The new python binary format brought hope to my heart. Curdling is
+basically a cache layer on top of the python package installation environment
+(which is kinda crazy). Curdling leverages the power of `PIP`, `wheel` and
+`pkg_resources` to provide a seamless package installation and update.
 
 ### Seriously? what curdling does?
 
@@ -37,11 +38,11 @@ just issue the following command:
 
     $ curdling forbiddenfruit
 
-BOOM! You `forbidden fruit` is now installed in your `sys.path`. But wait, what
+BOOM! The requested package is now installed in your `sys.path`! But wait, what
 happened under the hood? Let's study each step:
 
 1. The package needs to be found and downloaded;
-2. If it's not a [wheel](www.python.org/dev/peps/pep-0427/) package, build it;
+2. If it's not a wheel package, build it;
 3. Install the wheel;
 
 ### Taking a deeper look
