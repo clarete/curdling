@@ -57,10 +57,8 @@ def prepare_args(args):
 
     packages = args.packages or []
     if args.requirements:
-        packages.extend([
-            '{0}=={1}'.format(pkg.key, pkg.specs[0][1])
-            for pkg in expand_requirements(args.requirements)
-        ])
+        for pkg in expand_requirements(args.requirements):
+            packages.append(str(pkg))
 
     return AttrDict(
         packages=packages,
