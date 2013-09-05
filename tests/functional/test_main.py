@@ -138,7 +138,9 @@ def test_curd_package():
         'path': index.get('gherkin==0.1.0;~whl')}))
 
     # Then I see it's a wheel package.
-    package.should.equal(FIXTURE('storage1/gherkin-0.1.0-py27-none-any.whl'))
+    package.should.equal({
+        'path': FIXTURE('storage1/gherkin-0.1.0-py27-none-any.whl'),
+    })
 
     # And that it's present in the index
     package = index.get('gherkin==0.1.0;whl')

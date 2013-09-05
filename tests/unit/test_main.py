@@ -64,7 +64,7 @@ def test_service_subscribe():
     # Then I see that service1 was notified
     service2.subscribers.should.equal([service1])
     service1.package_queue.put.assert_called_once_with((
-        'gherkin==0.1.0', ('sender', {'data': 'd'})))
+        'gherkin==0.1.0', ('service', {'v': '2'})))
 
 
 def test_request_install_no_cache():
@@ -136,7 +136,7 @@ def test_request_install_cached_package():
 
     # And I see that the install queue was populated
     env.services['curdling'].queue.assert_called_once_with(
-        'gherkin==0.1.0', 'main')
+        'gherkin==0.1.0', 'main', path='storage1/gherkin-0.1.0.tar.gz')
 
     # And that the download queue was not touched
     env.services['download'].queue.called.should.be.false
@@ -165,7 +165,7 @@ def test_request_install_cached_wheels():
 
     # And I see that the install queue was populated
     env.services['install'].queue.assert_called_once_with(
-        'gherkin==0.1.0', 'main')
+        'gherkin==0.1.0', 'main', path='storage1/gherkin-0.1.0-py27-none-any.whl')
 
     # And that the download queue was not touched
     env.services['download'].queue.called.should.be.false
