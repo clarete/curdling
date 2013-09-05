@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from curdling.download import PipSource, DownloadManager
-from gevent.queue import Queue
+from gevent.queue import JoinableQueue
 from mock import Mock
 import os
 import errno
@@ -27,16 +27,16 @@ def test_service():
                 result_queue=result_queue,
             )
 
-        def run(self, package):
+        def run(self, package, sender_data):
             self.my_mock.ran = package
 
     my_mock = Mock()
-    queue = Queue()
+    queue = JoinableQueue()
     service = MyService(my_mock, result_queue=queue)
 
     # When I queue a package to be processed by my service and start the
     # service with 1 concurrent worker
-    service.queue('gherkin==0.1.0')
+    service.queue('gherkin==0.1.0', 'main')
     service.consume()
 
     # Then I see that the package processed
@@ -57,15 +57,15 @@ def test_service_failure():
                 result_queue=result_queue,
             )
 
-        def run(self, package):
+        def run(self, package, sender_data):
             raise ValueError("I don't want to do anything")
 
-    queue = Queue()
+    queue = JoinableQueue()
     service = MyService(result_queue=queue)
 
     # When I queue a package to be processed by my service and start the
     # service with 1 concurrent worker
-    service.queue('gherkin==0.1.0')
+    service.queue('gherkin==0.1.0', 'main')
     service.consume()
     service.pool.join()         # Ensure we finish spawning the greenlet
 
@@ -86,8 +86,8 @@ def test_downloader_with_no_sources():
 
     # When I try to retrieve a package from it, than I see it just blows up
     # with a nice exception
-    downloader.retrieve.when.called_with('gherkin==0.1.0').should.throw(
-        ReportableError)
+    downloader.retrieve.when.called_with(
+        'main', 'gherkin==0.1.0').should.throw(ReportableError)
 
 
 def test_downloader():
@@ -99,7 +99,7 @@ def test_downloader():
     downloader = DownloadManager(sources=sources, index=index)
 
     # When I try to retrieve a package from it
-    package = downloader.retrieve('gherkin==0.1.0')
+    package = downloader.retrieve('gherkin==0.1.0', 'main')
 
     # Then I see that the package was downloaded correctly to the storage
     index.get('gherkin==0.1.0').should_not.be.empty
@@ -118,10 +118,9 @@ def test_downloader_with_no_packages():
         sources=sources, index=index)
 
     # When I try to retrieve a package from it
-    downloader.retrieve.when.called_with('donotexist==0.1.0').should.throw(
-        ReportableError,
-        'No distributions found for donotexist==0.1.0',
-    )
+    downloader.retrieve.when.called_with(
+        'donotexist==0.1.0', ('main', {})).should.throw(ReportableError,
+            'No distributions found for donotexist==0.1.0')
 
 
 def test_curd_package():
@@ -135,7 +134,8 @@ def test_curd_package():
     curdling = Curdling(index=index)
 
     # When I request a curd to be created
-    package = curdling.wheel('gherkin==0.1.0')
+    package = curdling.wheel('gherkin==0.1.0', ('main', {
+        'path': index.get('gherkin==0.1.0;~whl')}))
 
     # Then I see it's a wheel package.
     package.should.equal(FIXTURE('storage1/gherkin-0.1.0-py27-none-any.whl'))
@@ -159,7 +159,8 @@ def test_install_package():
     installer = Installer(index=index)
 
     # When I request a curd to be created
-    installer.install('gherkin==0.1.0')
+    installer.install('gherkin==0.1.0', ('main', {
+        'path': index.get('gherkin==0.1.0;whl')}))
 
     # Then I see that the package was installed
     Env({}).check_installed('gherkin==0.1.0').should.be.true

@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from wheel.tool import install
-from .service import Service
+from .service import Service, NotForMe
 
 import pkg_resources
 import tempfile
@@ -18,11 +18,16 @@ class Installer(Service):
             callback=self.install,
             *args, **kwargs)
 
-    def install(self, package):
-        # Find the package that we want to install
-        requirements = self.index.get("{0};whl".format(package))
-        wheel_dirs = [os.path.dirname(requirements)]
-        install([requirements], wheel_dirs=wheel_dirs, force=True)
+    def install(self, package, sender_data):
+        source = sender_data[1].pop('path')
+
+        # If the file is not a wheel, then we bail. We don't know how to
+        # install anything else anything :)
+        if not re.findall('whl$', source):
+            raise NotForMe
+
+        wheel_dirs = [os.path.dirname(source)]
+        install([source], wheel_dirs=wheel_dirs, force=True)
         self.find_dependencies(package)
 
     def find_dependencies(self, package):

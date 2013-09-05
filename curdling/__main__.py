@@ -69,7 +69,7 @@ def prepare_args(args):
     )
 
 
-def main():
+def prepare_env():
     args = prepare_args(parse_args())
 
     # Setting up the index
@@ -91,13 +91,7 @@ def main():
     for pkg in args.packages:
         env.request_install(pkg)
 
-    # All the installation requests were made, let's just wait here
-    try:
-        env.wait()
-    except KeyboardInterrupt:
-        print('\b\bIs there cheese in your rug?')
-        return env.shutdown()
-    return env.shutdown()
+    return env
 
 
 def err_code(errors):
@@ -107,5 +101,16 @@ def err_code(errors):
     return errors.get('install', 0)
 
 
+def __run():
+    env = prepare_env()
+    try:
+        # All the installation requests were made, let's just wait here
+        env.wait()
+    except KeyboardInterrupt:
+        print('\b\bIs there cheese in your rug?')
+        raise SystemExit(err_code(env.shutdown()))
+    return {}
+
+
 if __name__ == '__main__':
-    raise SystemExit(err_code(main()))
+    raise SystemExit(err_code(__run()))

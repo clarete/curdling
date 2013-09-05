@@ -24,7 +24,7 @@ class Uploader(Service):
             requests.put(url, files={package: data}, data={package: package})
 
 
-    def upload(self, package):
+    def upload(self, package, sender_data):
         path = self.index.get("{0};whl".format(package))
         for source in self.sources:
             self.put(path, source)

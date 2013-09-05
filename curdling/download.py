@@ -46,7 +46,9 @@ class DownloadManager(Service):
             response.read())
 
     def attempt(self, package, source):
-        self.logger.level(2, ' * downloadmanager: ', end='')
+        self.logger.level(
+            2, ' * downloadmanager.attempt(package=%s, source=%s): ',
+            package, source.__class__.__name__.lower(), end='')
         try:
             url = source.url(package)
             return self.download(package, url)
@@ -60,10 +62,10 @@ class DownloadManager(Service):
             msg = args and str(args[0]) or exc.msg
             self.logger.level(2, '... failed (%s)', msg)
             self.logger.traceback(4, '', exc=exc)
-        else:
+        finally:
             self.logger.level(2, '... ok')
 
-    def retrieve(self, package):
+    def retrieve(self, package, sender_data):
         for source in self.sources:
             path = self.attempt(package, source)
 
@@ -71,5 +73,5 @@ class DownloadManager(Service):
             # it, that's where we get out of the loop, avoiding the need to
             # keep iterating over other sources.
             if path:
-                return path
+                return {"path": path}
         raise ReportableError('No distributions found for {0}'.format(package))

@@ -51,17 +51,20 @@ def test_service_subscribe():
     "Services should be able to subscribe to other services"
 
     # Given that I have two services
-    service1 = Service(lambda p: '1')
-    service2 = Service(lambda p: '2')
+    service1 = Service(lambda p, s: {'v': '1'})
+    service1.package_queue = Mock()
+    service2 = Service(lambda p, s: {'v': '2'})
 
-    # When I subscribe one service to another
+    # When I subscribe one service to another and consume the second service
     service1.subscribe(service2)
-    service2.queue('gherkin==0.1.0')
+    service2.queue('gherkin==0.1.0', 'sender', data='d')
     service2.consume()
     service2.pool.join()
 
     # Then I see that service1 was notified
-    service2.subscribers[0].package_queue.qsize().should.equal(1)
+    service2.subscribers.should.equal([service1])
+    service1.package_queue.put.assert_called_once_with((
+        'gherkin==0.1.0', ('sender', {'data': 'd'})))
 
 
 def test_request_install_no_cache():
@@ -85,7 +88,8 @@ def test_request_install_no_cache():
     ])
 
     # And then I see that the download queue was populated
-    env.services['download'].queue.assert_called_once_with('gherkin==0.1.0')
+    env.services['download'].queue.assert_called_once_with(
+        'gherkin==0.1.0', 'main')
 
 
 def test_request_install_installed_package():
@@ -131,7 +135,8 @@ def test_request_install_cached_package():
     env.check_installed.assert_called_once_with('gherkin==0.1.0')
 
     # And I see that the install queue was populated
-    env.services['curdling'].queue.assert_called_once_with('gherkin==0.1.0')
+    env.services['curdling'].queue.assert_called_once_with(
+        'gherkin==0.1.0', 'main')
 
     # And that the download queue was not touched
     env.services['download'].queue.called.should.be.false
@@ -159,7 +164,8 @@ def test_request_install_cached_wheels():
     env.check_installed.assert_called_once_with('gherkin==0.1.0')
 
     # And I see that the install queue was populated
-    env.services['install'].queue.assert_called_once_with('gherkin==0.1.0')
+    env.services['install'].queue.assert_called_once_with(
+        'gherkin==0.1.0', 'main')
 
     # And that the download queue was not touched
     env.services['download'].queue.called.should.be.false

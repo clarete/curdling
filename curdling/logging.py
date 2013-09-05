@@ -10,7 +10,7 @@ class ReportableError(Exception):
 class Logger(object):
     def __init__(self, name, run_level):
         self.name = name
-        self.run_level = run_level
+        self.run_level = run_level or 200  # Will run with tests
 
     def level(self, level, msg, *args, **kwargs):
         indent = kwargs.get('indent')

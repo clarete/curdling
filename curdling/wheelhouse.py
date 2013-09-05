@@ -1,13 +1,14 @@
 from __future__ import absolute_import, unicode_literals, print_function
 import tempfile
 import os
+import re
 import shutil
 
 from pip.req import InstallRequirement, RequirementSet
 from pip.index import PackageFinder
 from pip.wheel import WheelBuilder
 
-from .service import Service
+from .service import Service, NotForMe
 
 
 class Curdling(Service):
@@ -17,8 +18,14 @@ class Curdling(Service):
             callback=self.wheel,
             *args, **kwargs)
 
-    def wheel(self, package):
-        source = self.index.get("{0};~whl".format(package))
+    def wheel(self, package, sender_data):
+        source = sender_data[1].pop('path')
+
+        # If the file has the wheel extention, we bail. We don't have to do
+        # anything :)
+        if re.findall('whl$', source):
+            raise NotForMe
+
         target = os.path.dirname(source)
 
         # The package finder is what PIP uses to find packages given their
@@ -66,4 +73,4 @@ class Curdling(Service):
         shutil.rmtree(wheel_dir)
 
         # Finally, we just say where in the storage the file is
-        return os.path.join(os.path.dirname(source), wheel_file)
+        return {'path': os.path.join(os.path.dirname(source), wheel_file)}

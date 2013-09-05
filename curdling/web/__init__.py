@@ -1,6 +1,6 @@
 from __future__ import unicode_literals, print_function, absolute_import
 from flask import Flask, render_template, send_file, request
-from gevent.queue import Queue
+from gevent.queue import JoinableQueue
 from gevent.pywsgi import WSGIServer
 import os
 

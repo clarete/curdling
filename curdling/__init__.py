@@ -2,7 +2,7 @@ from __future__ import unicode_literals, print_function, absolute_import
 from collections import namedtuple
 from pip.commands.uninstall import UninstallCommand
 
-from gevent.queue import Queue
+from gevent.queue import JoinableQueue
 from gevent.pool import Pool
 
 from .logging import Logger, ReportableError
@@ -58,6 +58,7 @@ class Env(object):
         # Creating a kind of a pipe that looks like this:
         # "download > curdling > install"
         self.services['curdling'].subscribe(self.services['download'])
+        self.services['install'].subscribe(self.services['download'])
         self.services['install'].subscribe(self.services['curdling'])
 
         # If the user wants to share local wheels, let's do it! :)
@@ -110,8 +111,8 @@ class Env(object):
 
         # Looking for built packages
         try:
-            self.index.get("{0};whl".format(requirement))
-            self.services['install'].queue(requirement)
+            path = self.index.get("{0};whl".format(requirement))
+            self.services['install'].queue(requirement, 'main', path=path)
             return False
         except PackageNotFound:
             pass
@@ -119,14 +120,14 @@ class Env(object):
         # Looking for downloaded packages. If there's packages of any of the
         # following distributions, we'll just build the wheel
         try:
-            self.index.get("{0};~whl".format(requirement))
-            self.services['curdling'].queue(requirement)
+            path = self.index.get("{0};~whl".format(requirement))
+            self.services['curdling'].queue(requirement, 'main', path=path)
             return False
         except PackageNotFound:
             pass
 
         # Nops, we really don't have the package
-        self.services['download'].queue(requirement)
+        self.services['download'].queue(requirement, 'main')
         return False
 
     def uninstall(self, package):
