@@ -79,8 +79,6 @@ class DownloadManager(Service):
             msg = args and str(args[0]) or exc.msg
             self.logger.level(2, '... failed (%s)', msg)
             self.logger.traceback(4, '', exc=exc)
-        finally:
-            self.logger.level(2, '')
 
     def retrieve(self, package, sender_data):
         for source in self.sources:
