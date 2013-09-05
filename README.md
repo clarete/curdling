@@ -26,8 +26,9 @@ cycles in something cooler.
 Basically [Wheels](www.python.org/dev/peps/pep-0427/)! I'm not reinventing them
 though. The new python binary format brought hope to my heart. Curdling is
 basically a cache layer on top of the python package installation environment
-(which is kinda crazy). Curdling leverages the power of `PIP`, `wheel` and
-`pkg_resources` to provide a seamless package installation and update.
+(which is kinda crazy). Curdling leverages the power of *wheel* and
+[distlib](https://bitbucket.org/vinay.sajip/distlib) to provide a seamless
+package installation and update.
 
 ### Seriously? what curdling does?
 
