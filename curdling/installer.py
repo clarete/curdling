@@ -49,4 +49,6 @@ class Installer(Service):
         # though, the dependency format will be different.
         # e.g: "ejson (==0.1.3)" will become "ejson==0.1.3"
         for dependency in dist.requires.union(dist.test_requires):
-            self.env.request_install(self._spec2installable(dependency))
+            self.env.request_install(
+                self._spec2installable(dependency),
+                sender=self.name, data={'dependency-of': package})

@@ -104,7 +104,7 @@ class Env(object):
                 pkg_resources.DistributionNotFound):
             return False
 
-    def request_install(self, requirement):
+    def request_install(self, requirement, requester='main', **data):
         # Well, the package is installed, let's just bail
         if self.check_installed(requirement):
             return True
@@ -112,7 +112,8 @@ class Env(object):
         # Looking for built packages
         try:
             path = self.index.get("{0};whl".format(requirement))
-            self.services['install'].queue(requirement, 'main', path=path)
+            data.update({'path': path})
+            self.services['install'].queue(requirement, requester, **data)
             return False
         except PackageNotFound:
             pass
@@ -121,13 +122,14 @@ class Env(object):
         # following distributions, we'll just build the wheel
         try:
             path = self.index.get("{0};~whl".format(requirement))
-            self.services['curdling'].queue(requirement, 'main', path=path)
+            data.update({'path': path})
+            self.services['curdling'].queue(requirement, requester, **data)
             return False
         except PackageNotFound:
             pass
 
         # Nops, we really don't have the package
-        self.services['download'].queue(requirement, 'main')
+        self.services['download'].queue(requirement, requester, **data)
         return False
 
     def uninstall(self, package):
