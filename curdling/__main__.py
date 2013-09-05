@@ -112,5 +112,9 @@ def __run():
     return {}
 
 
+def main():
+    return(err_code(__run()))
+
+
 if __name__ == '__main__':
     raise SystemExit(err_code(__run()))
