@@ -9,9 +9,6 @@ import os
 import re
 
 
-CONVERT_DEPENDENCY_RE = re.compile(r'([\w\_\-]+)\b\s*\(?([^\)]+)?')
-
-
 class Installer(Service):
     def __init__(self, *args, **kwargs):
         self.index = kwargs.pop('index')
@@ -37,10 +34,6 @@ class Installer(Service):
             ','.join(op + v for op, v in pkg.constraints))
 
     def find_dependencies(self, package):
-        # This weird `reload()` is here cause the `get_provider` method that
-        # feeds `get_distribution` uses a variable (working_set) populated in
-        # the module body, so it won't get updated just by installing a new
-        # package.
         name = distlib.database.parse_requirement(package).name
         dist = DistributionPath().get_distribution(name)
 
