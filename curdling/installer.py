@@ -31,7 +31,7 @@ class Installer(Service):
     def _spec2installable(self, spec):
         pkg = distlib.database.parse_requirement(spec)
         return "{0}{1}".format(pkg.name,
-            ','.join(op + v for op, v in pkg.constraints))
+            ','.join(op + v for op, v in (pkg.constraints or ())))
 
     def find_dependencies(self, package):
         name = distlib.database.parse_requirement(package).name

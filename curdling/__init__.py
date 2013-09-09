@@ -6,7 +6,7 @@ from gevent.queue import JoinableQueue
 from gevent.pool import Pool
 
 from .logging import Logger, ReportableError
-from .download import PipSource, CurdlingSource, DownloadManager
+from .download import DownloadManager
 from .wheelhouse import Curdling
 from .installer import Installer
 from .index import PackageNotFound
@@ -31,29 +31,11 @@ class Env(object):
             'index': self.index,
         })
 
-        # Defines the priority of where we're gonna look for packages first. As
-        # you can see clearly here, curdling is our prefered repo.
-        source_types = (
-            ('curdling_urls', CurdlingSource),
-            ('pypi_urls', PipSource),
-        )
-
-        # Retrieving sources from the args object fed from the user
-        sources = []
-
-        curdling_urls = self.conf.get('curdling_urls')
-        for url in curdling_urls:
-            sources.append(CurdlingSource(url=url))
-
-        pypi_urls = self.conf.get('pypi_urls')
-        if pypi_urls:
-            sources.append(PipSource(urls=pypi_urls))
-
         # Tiem to create our tasty services :)
-        self.services['download'] = DownloadManager(sources=sources, **self.conf)
+        self.services['download'] = DownloadManager(**self.conf)
         self.services['curdling'] = Curdling(**self.conf)
         self.services['install'] = Installer(**self.conf)
-        self.services['upload'] = Uploader(sources=curdling_urls, **self.conf)
+        self.services['upload'] = Uploader(sources=self.conf.get('curdling_urls', []), **self.conf)
 
         # Creating a kind of a pipe that looks like this:
         # "download > curdling > install"
