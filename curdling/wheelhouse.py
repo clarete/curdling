@@ -1,14 +1,100 @@
 from __future__ import absolute_import, unicode_literals, print_function
-import tempfile
+from .service import Service, NotForMe
+
 import os
 import re
+import sys
+import subprocess
 import shutil
+import tempfile
+import zipfile
+import tarfile
 
-from pip.req import InstallRequirement, RequirementSet
-from pip.index import PackageFinder
-from pip.wheel import WheelBuilder
 
-from .service import Service, NotForMe
+# We'll use it to call the `setup.py` script of packages we're building
+PYTHON_EXECUTABLE = sys.executable.encode(sys.getfilesystemencoding())
+
+# Those are the formats we know how to extract, if you need to add a new one
+# here, please refer to the page[0] to check the magic bits of the file type
+# you wanna add.
+#
+# [0] http://www.garykessler.net/library/file_sigs.html
+SUPPORTED_FORMATS = {
+    b"\x1f\x8b\x08": "gz",
+    b"\x42\x5a\x68": "bz2",
+    b"\x50\x4b\x03\x04": "zip"
+}
+
+# Must be greater than the length of the biggest key of `SUPPORTED_FORMATS`, to
+# be used as the block size to `file.read()` in `guess_file_type()`
+SUPPORTED_FORMATS_MAX_LEN = max(len(x) for x in SUPPORTED_FORMATS)
+
+# Matcher for egg-info directories
+EGG_INFO_RE = re.compile(r'(-py\d\.\d)?\.egg-info', re.I)
+
+
+def get_paths(directory='', check=False):
+    paths = {}
+    for sub in "purelib", "platlib", "headers", "data":
+        path = os.path.join(directory, sub)
+        if not check or os.path.exists(path):
+            paths[sub] = path
+    return paths
+
+
+def guess_file_type(filename):
+    with open(filename) as f:
+        file_start = f.read(SUPPORTED_FORMATS_MAX_LEN)
+    for magic, filetype in SUPPORTED_FORMATS.items():
+        if file_start.startswith(magic):
+            return filetype
+    raise RuntimeError('Unknown compress format for file %s' % filename)
+
+
+class Script(object):
+    def __init__(self, path):
+        self.path = path
+
+    def __call__(self, command, *custom_args):
+        # What we're gonna run
+        cwd = os.path.dirname(self.path)
+        script = os.path.basename(self.path)
+
+        # Building the argument list starting from the interpreter path
+        args = [PYTHON_EXECUTABLE]
+        args.append(script)
+        args.append(command)
+        args.extend(custom_args)
+
+        # Boom! Installing the package in the requested directory
+        null = open(os.devnull, 'w')
+        subprocess.call(args, cwd=cwd, stdout=null, stderr=null)
+
+        # Returning the path pointing to the generated file
+        dist_dir = os.path.join(cwd, 'dist')
+        return os.path.join(dist_dir, os.listdir(dist_dir)[0])
+
+
+def unpack(package, destination):
+    file_type = guess_file_type(package)
+
+    # The only extensions we support currently
+    if file_type == 'zip':
+        fp = zipfile.ZipFile(package)
+        get_names = fp.namelist
+    elif file_type in ('gz', 'bz2'):
+        fp = tarfile.open(package, 'r')
+        get_names = lambda: [x.name for x in fp.getmembers()]
+
+    # Find the setup.py script among the other contents
+    try:
+        setup_py = min([x for x in get_names() if x.endswith('setup.py')])
+        fp.extractall(destination)
+    except ValueError:
+        raise RuntimeError('No setup.py script was found here')
+    finally:
+        fp.close()
+    return Script(os.path.join(destination, setup_py))
 
 
 class Curdling(Service):
@@ -26,51 +112,18 @@ class Curdling(Service):
         if re.findall('whl$', source):
             raise NotForMe
 
-        target = os.path.dirname(source)
+        # Place used to unpack the wheel
+        destination = tempfile.mkdtemp()
 
-        # The package finder is what PIP uses to find packages given their
-        # names. This finder won't use internet at all, only the folder we know
-        # that our file is.
-        finder = PackageFinder(find_links=[target], index_urls=[])
-
-        # Another requirement to use PIP API, we have to build a requirement
-        # set.
-        build_dir = tempfile.mkdtemp()
-        requirement_set = RequirementSet(
-            build_dir=build_dir,
-            src_dir=None,
-            download_dir=None,
-            download_cache=None,
-            ignore_dependencies=True,
-            ignore_installed=True,
-        )
-        requirement_set.add_requirement(
-            InstallRequirement.from_line(package))
-
-        # Here we go, we're finally converting the package from a regular
-        # format to a wheel. Notice that the wheel dir is another tmp
-        # directory. See comments below.
-        wheel_dir = tempfile.mkdtemp()
-        builder = WheelBuilder(
-            requirement_set,
-            finder,
-            wheel_dir=wheel_dir,
-            build_options=[],
-            global_options=[],
-        )
-        builder.build()
-
-        # Since I just can't retrieve the brand new file name through the API,
-        # the wheel dir is a tmp directory so the *only* file over there *is*
-        # the one that we want.
-        wheel_file = os.listdir(wheel_dir)[0]
-        path = self.index.from_file(os.path.join(wheel_dir, wheel_file))
-
-        # Cleaning up the mess. Here I kill the two temp folders I created to
-        # 1) build the package into a wheel, 2) output the wheel file
-        # separately
-        shutil.rmtree(build_dir)
-        shutil.rmtree(wheel_dir)
+        # Unpackaging the file we just received. The unpack function will give
+        # us the path for the setup.py script and building the wheel file with
+        # the `bdist_wheel` command.
+        try:
+            setup_py = unpack(package=source, destination=destination)
+            wheel_file = setup_py('bdist_wheel')
+            path = self.index.from_file(wheel_file)
+        finally:
+            shutil.rmtree(destination)
 
         # Finally, we just say where in the storage the file is
-        return {'path': os.path.join(os.path.dirname(source), wheel_file)}
+        return {'path': path}
