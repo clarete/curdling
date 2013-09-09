@@ -88,7 +88,8 @@ def unpack(package, destination):
 
     # Find the setup.py script among the other contents
     try:
-        setup_py = min([x for x in get_names() if x.endswith('setup.py')])
+        setup_scripts = [x for x in get_names() if x.endswith('setup.py')]
+        setup_py = sorted(setup_scripts, key=lambda e: len(e))[0]
         fp.extractall(destination)
     except ValueError:
         raise RuntimeError('No setup.py script was found here')
