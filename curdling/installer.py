@@ -10,23 +10,6 @@ import re
 
 
 class Installer(Service):
-    def __init__(self, *args, **kwargs):
-        self.index = kwargs.pop('index')
-        super(Installer, self).__init__(
-            callback=self.install,
-            *args, **kwargs)
-
-    def install(self, package, sender_data):
-        source = sender_data[1].pop('path')
-
-        # If the file is not a wheel, then we bail. We don't know how to
-        # install anything else anything :)
-        if not re.findall('whl$', source):
-            raise NotForMe
-
-        wheel_dirs = [os.path.dirname(source)]
-        install([source], wheel_dirs=wheel_dirs, force=True)
-        self.find_dependencies(package)
 
     def _spec2installable(self, spec):
         pkg = distlib.database.parse_requirement(spec)
@@ -45,3 +28,15 @@ class Installer(Service):
             self.env.request_install(
                 self._spec2installable(dependency),
                 sender=self.name, data={'dependency-of': package})
+
+    def handle(self, package, sender_data):
+        source = sender_data[1].pop('path')
+
+        # If the file is not a wheel, then we bail. We don't know how to
+        # install anything else anything :)
+        if not re.findall('whl$', source):
+            raise NotForMe
+
+        wheel_dirs = [os.path.dirname(source)]
+        install([source], wheel_dirs=wheel_dirs, force=True)
+        self.find_dependencies(package)

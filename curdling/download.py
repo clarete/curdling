@@ -31,12 +31,6 @@ def get_locator(conf):
 
 
 class DownloadManager(Service):
-    def __init__(self, *args, **kwargs):
-        self.conf = kwargs
-        self.index = self.conf.pop('index')
-        super(DownloadManager, self).__init__(
-            callback=self.retrieve,
-            *args, **self.conf)
 
     def download(self, url):
         opener = build_opener()
@@ -79,7 +73,7 @@ class DownloadManager(Service):
             self.logger.level(2, '... failed (%s)', msg)
             self.logger.traceback(4, '', exc=exc)
 
-    def retrieve(self, package, sender_data):
+    def handle(self, package, sender_data):
         path = self.attempt(package)
 
         # We log all the attempts to the second level. But if we can make it,

@@ -26,16 +26,18 @@ class Env(object):
 
     def start_services(self):
         # General params for all the services
-        self.conf.update({
+        args = self.conf
+        args.update({
             'env': self,
             'index': self.index,
+            'conf': self.conf,
         })
 
         # Tiem to create our tasty services :)
-        self.services['download'] = DownloadManager(**self.conf)
-        self.services['curdling'] = Curdling(**self.conf)
-        self.services['install'] = Installer(**self.conf)
-        self.services['upload'] = Uploader(sources=self.conf.get('curdling_urls', []), **self.conf)
+        self.services['download'] = DownloadManager(**args)
+        self.services['curdling'] = Curdling(**args)
+        self.services['install'] = Installer(**args)
+        self.services['upload'] = Uploader(sources=args.get('curdling_urls', []), **args)
 
         # Creating a kind of a pipe that looks like this:
         # "download > curdling > install"
@@ -44,7 +46,7 @@ class Env(object):
         self.services['install'].subscribe(self.services['curdling'])
 
         # If the user wants to share local wheels, let's do it! :)
-        if self.conf.upload:
+        if args.get('upload'):
             self.services['upload'].subscribe(self.services['curdling'])
             self.services['upload'].subscribe(self.services['install'])
 

@@ -99,13 +99,8 @@ def unpack(package, destination):
 
 
 class Curdling(Service):
-    def __init__(self, *args, **kwargs):
-        self.index = kwargs.pop('index', None)
-        super(Curdling, self).__init__(
-            callback=self.wheel,
-            *args, **kwargs)
 
-    def wheel(self, package, sender_data):
+    def handle(self, package, sender_data):
         source = sender_data[1].pop('path')
 
         # If the file has the wheel extention, we bail. We don't have to do

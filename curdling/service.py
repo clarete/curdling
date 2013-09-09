@@ -11,8 +11,7 @@ class NotForMe(Exception):
 
 
 class Service(object):
-    def __init__(self, callback, **args):
-        self.callback = callback
+    def __init__(self, **args):
         self.result_queue = args.get('result_queue')
         self.package_queue = JoinableQueue()
         self.failed_queue = []
@@ -24,6 +23,8 @@ class Service(object):
 
         self.subscribers = []
         self.logger = Logger(self.name, args.get('log_level'))
+        self.conf = args.pop('conf', {})
+        self.index = args.pop('index', None)
 
     @property
     def name(self):
@@ -62,7 +63,7 @@ class Service(object):
 
     def _run_service(self, package, sender_data):
         try:
-            data = self.callback(package, sender_data)
+            data = self.handle(package, sender_data)
         except NotForMe:
             return
         except ReportableError as exc:
