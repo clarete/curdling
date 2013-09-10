@@ -63,6 +63,10 @@ class DownloadManager(Service):
         locator = get_locator(self.conf)
         try:
             requirement = locator.locate(package)
+            if requirement is None:
+                raise RuntimeError(
+                    'No distribution found for {0}'.format(package))
+
             path = self.download(requirement.metadata.download_url)
             self.logger.level(2, ' ... ok')
             return path
