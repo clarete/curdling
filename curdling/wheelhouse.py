@@ -60,13 +60,19 @@ class Script(object):
         cwd = os.path.dirname(self.path)
         script = os.path.basename(self.path)
 
-        # Building the argument list starting from the interpreter path
+        # Building the argument list starting from the interpreter path. This
+        # weird we're doing here was copied from `pip` and it basically forces
+        # the usage of setuptools instead of distutils or any other weird
+        # library people might be using.
         args = [PYTHON_EXECUTABLE]
-        args.append(script)
+        args.append('-c')
+        args.append(
+            r"import setuptools;__file__=%r;"
+            r"exec(compile(open(__file__).read().replace('\r\n', '\n'), __file__, 'exec'))" % script)
         args.append(command)
         args.extend(custom_args)
 
-        # Boom! Installing the package in the requested directory
+        # Boom! Executing the command.
         null = open(os.devnull, 'w')
         subprocess.call(args, cwd=cwd, stdout=null, stderr=null)
 
