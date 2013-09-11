@@ -1,5 +1,5 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from urllib2 import HTTPPasswordMgrWithDefaultRealm
+from urllib2 import HTTPPasswordMgrWithDefaultRealm, HTTPError
 from urlparse import urljoin
 from distlib import database, metadata, compat, locators
 
@@ -49,7 +49,18 @@ class CurdlingLocator(locators.Locator):
     def _get_project(self, name):
         # Retrieve the info
         url = urljoin(self.url, 'api/' + name)
-        response = self.opener.open(compat.Request(url))
+        try:
+            response = self.opener.open(compat.Request(url))
+        except HTTPError as exc:
+            # We just bail if any 404 HTTP Errors happened. Cause it just means
+            # that the package was not found.
+            if exc.getcode() == 404:
+                return
+
+            # If anything else happens, we let it blow up, so the user can se
+            # how to fix the issue.
+            raise exc
+
         data = json.loads(response.read())
         result = {}
 
