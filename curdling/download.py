@@ -1,5 +1,8 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from distlib.compat import Request, urlparse, build_opener
+from urllib2 import HTTPPasswordMgrWithDefaultRealm
+from distlib.compat import (
+    urlparse, build_opener, HTTPBasicAuthHandler, Request,
+)
 from distlib.locators import (
     Locator, AggregatingLocator, SimpleScrapingLocator, JSONLocator,
 )
@@ -8,6 +11,32 @@ import re
 
 from . import util, ReportableError
 from .service import Service
+
+
+def get_locator(conf):
+    return AggregatingLocator(*([
+        CurdlingLocator(u) for u in conf.get('curdling_urls', [])
+    ] + [
+        SimpleLocator(u, timeout=3.0) for u in conf.get('pypi_urls', [])
+    ]), scheme='legacy')
+
+
+def get_opener(url):
+    # Set the actual base_url, without credentials info
+    url = urlparse(url)
+    base_url = lambda p=url.path: '{0}://{1}:{2}{3}'.format(
+        url.scheme, url.hostname, url.port or 80, p)
+
+    # Prepare the list of handlers that will be added to the opener
+    handlers = []
+    if url.username and url.password:
+        manager = HTTPPasswordMgrWithDefaultRealm()
+        manager.add_password(None, base_url(), url.username, url.password)
+        manager.add_password(None, base_url('/packages/'), url.username, url.password)
+        handlers.append(HTTPBasicAuthHandler(manager))
+
+    # Define a new opener based on the things we found above
+    return base_url(), build_opener(*handlers)
 
 
 class CurdlingLocator(Locator):
@@ -22,18 +51,15 @@ class CurdlingLocator(Locator):
         return
 
 
-def get_locator(conf):
-    return AggregatingLocator(*([
-        CurdlingLocator(u) for u in conf.get('curdling_urls', [])
-    ] + [
-        SimpleScrapingLocator(u, timeout=3.0) for u in conf.get('pypi_urls', [])
-    ]), scheme='legacy')
+class SimpleLocator(SimpleScrapingLocator):
+    def __init__(self, *args, **kwargs):
+        super(SimpleLocator, self).__init__(*args, **kwargs)
+        self.base_url, self.opener = get_opener(self.base_url)
 
 
 class DownloadManager(Service):
 
-    def download(self, url):
-        opener = build_opener()
+    def download(self, opener, url):
         response = opener.open(Request(url))
         try:
             content = []
@@ -60,14 +86,20 @@ class DownloadManager(Service):
         self.logger.level(
             2, ' * downloadmanager.attempt(package=%s): ',
             package, end='')
-        locator = get_locator(self.conf)
         try:
+            locator = get_locator(self.conf)
             requirement = locator.locate(package)
             if requirement is None:
                 raise RuntimeError(
                     'No distribution found for {0}'.format(package))
 
-            path = self.download(requirement.metadata.download_url)
+            # Here we're passing the same opener to the download function. In
+            # other words, we just want to use the same locator that was used
+            # to find the package to download it.
+            path = self.download(
+                requirement.locator.opener,
+                requirement.download_url)
+
             self.logger.level(2, ' ... ok')
             return path
         except Exception as exc:
