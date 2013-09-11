@@ -30,7 +30,7 @@ def expand_requirements(file_name):
     for req in io.open(file_name).read().splitlines():
         req = req.strip()
         if not req:
-            break
+            continue
 
         # No comments about it...
         if req.startswith('#'):
