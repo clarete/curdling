@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from collections import defaultdict
-from pkg_resources import Requirement, parse_version, safe_name
+from distlib.util import parse_requirement
+from pkg_resources import parse_version, safe_name
 
 from curdling.util import split_name
 
@@ -32,10 +33,10 @@ def match_format(format_, name):
 
 class PackageNotFound(Exception):
     def __init__(self, spec, formats):
-        pkg = Requirement.parse(spec)
+        pkg = parse_requirement(spec)
         msg = ['The index does not have the requested package: ']
-        msg.append(pkg.key)
-        msg.extend(','.join(''.join(spec) for spec in pkg.specs))
+        msg.append(pkg.name)
+        msg.extend(','.join(''.join(spec) for spec in pkg.constraints))
         msg.append(formats and ' ({0})'.format(formats) or '')
         super(PackageNotFound, self).__init__(''.join(msg))
 
@@ -91,10 +92,10 @@ class Index(object):
         # Read both: "pkg==0.0.0" and "pkg==0.0.0,fmt"
         sym = ';'
         spec, format_ = (sym in query and (query.split(sym)) or (query, ''))
-        requirement = Requirement.parse(spec)
+        requirement = parse_requirement(spec)
 
         # [First step] Looking up the package name parsed from the spec
-        versions = self.storage.get(requirement.key)
+        versions = self.storage.get(requirement.name)
         if not versions:
             raise PackageNotFound(spec, format_)
 
@@ -109,7 +110,7 @@ class Index(object):
             '==': lambda v: x == parse_version(v),
             '>=': lambda v: x >= parse_version(v),
             '>':  lambda v: x >  parse_version(v),
-        }[op](v) for op, v in requirement.specs)
+        }[op](v) for op, v in requirement.constraints)
 
         compat_versions = filter(filter_cmp, parsed_versions.keys())
         if not compat_versions:

@@ -26,8 +26,8 @@ def split_name(fname):
 
 def safe_name(spec):
     req = parse_requirement(spec)
-    constraints = ''.join([''.join(c) for c in req.constraints])
-    return ''.join([req.name.replace('-', '_'), constraints])
+    constraints = ', '.join([''.join(c) for c in req.constraints])
+    return '{0} ({1})'.format(req.name.replace('-', '_'), constraints)
 
 
 def expand_requirements(file_name):
