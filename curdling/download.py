@@ -88,7 +88,8 @@ class DownloadManager(Service):
             package, end='')
         try:
             locator = get_locator(self.conf)
-            requirement = locator.locate(package)
+            prereleases = self.conf.get('prereleases', True)
+            requirement = locator.locate(package, prereleases)
             if requirement is None:
                 raise RuntimeError(
                     'No distribution found for {0}'.format(package))
