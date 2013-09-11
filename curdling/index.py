@@ -36,7 +36,7 @@ class PackageNotFound(Exception):
         pkg = parse_requirement(spec)
         msg = ['The index does not have the requested package: ']
         msg.append(pkg.name)
-        msg.extend(','.join(''.join(spec) for spec in pkg.constraints))
+        msg.extend(','.join(''.join(spec) for spec in pkg.constraints or []))
         msg.append(formats and ' ({0})'.format(formats) or '')
         super(PackageNotFound, self).__init__(''.join(msg))
 
@@ -110,7 +110,7 @@ class Index(object):
             '==': lambda v: x == parse_version(v),
             '>=': lambda v: x >= parse_version(v),
             '>':  lambda v: x >  parse_version(v),
-        }[op](v) for op, v in requirement.constraints)
+        }[op](v) for op, v in requirement.constraints or [])
 
         compat_versions = filter(filter_cmp, parsed_versions.keys())
         if not compat_versions:
