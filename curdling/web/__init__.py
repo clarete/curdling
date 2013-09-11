@@ -1,10 +1,22 @@
 from __future__ import unicode_literals, print_function, absolute_import
-from flask import Flask, render_template, send_file, request
 from gevent.queue import JoinableQueue
 from gevent.pywsgi import WSGIServer
+from flask import (
+    Flask, Blueprint, render_template, send_file, request, current_app,
+)
+
 import os
+import json
 
 from ..index import Index, PackageNotFound
+
+
+api = Blueprint('api', __name__)
+
+
+@api.route('/')
+def api_index():
+    return json.dumps(current_app.index.list_packages())
 
 
 class Server(object):
@@ -14,9 +26,11 @@ class Server(object):
         self.index.scan()
 
         self.app = Flask(__name__)
+        self.app.index = self.index
+        self.app.register_blueprint(api, url_prefix='/api')
         self.app.add_url_rule('/', 'index', self.web_index)
-        self.app.add_url_rule('/<query>', 'search', self.web_search)
-        self.app.add_url_rule('/<package>', 'upload', self.web_upload,
+        self.app.add_url_rule('/s/<query>', 'search', self.web_search)
+        self.app.add_url_rule('/p/<package>', 'upload', self.web_upload,
                               methods=('PUT',))
 
     def start(self):

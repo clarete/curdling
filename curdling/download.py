@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from urllib2 import HTTPPasswordMgrWithDefaultRealm
+from urlparse import urljoin
 from distlib.compat import (
     urlparse, build_opener, HTTPBasicAuthHandler, Request,
 )
@@ -7,10 +8,11 @@ from distlib.locators import (
     Locator, AggregatingLocator, SimpleScrapingLocator, JSONLocator,
 )
 
-import re
-
 from . import util, ReportableError
 from .service import Service
+
+import re
+import json
 
 
 def get_locator(conf):
@@ -42,10 +44,12 @@ def get_opener(url):
 class CurdlingLocator(Locator):
     def __init__(self, url, **kwargs):
         super(CurdlingLocator, self).__init__(**kwargs)
-        self.url =  url
+        self.url, self.opener = get_opener(url)
 
     def get_distribution_names(self):
-        return
+        url = urljoin(self.url, 'api')
+        response = self.opener.open(Request(url))
+        return json.loads(response.read())
 
     def _get_project(self, name):
         return
