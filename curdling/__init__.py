@@ -1,5 +1,7 @@
 from __future__ import unicode_literals, print_function, absolute_import
 from collections import namedtuple
+from distlib.database import DistributionPath
+from distlib.util import parse_requirement
 from pip.commands.uninstall import UninstallCommand
 
 from gevent.queue import JoinableQueue
@@ -12,7 +14,6 @@ from .installer import Installer
 from .index import PackageNotFound
 from .uploader import Uploader
 
-import pkg_resources
 import gevent
 import os
 
@@ -81,12 +82,8 @@ class Env(object):
         return errors
 
     def check_installed(self, package):
-        try:
-            pkg_resources.get_distribution(package)
-            return True
-        except (pkg_resources.VersionConflict,
-                pkg_resources.DistributionNotFound):
-            return False
+        return DistributionPath().get_distribution(
+            parse_requirement(package).name) is not None
 
     def request_install(self, requirement, requester='main', **data):
         # Well, the package is installed, let's just bail
