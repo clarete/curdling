@@ -32,7 +32,7 @@ def expand_requirements(file_name):
     requirements = []
 
     for req in io.open(file_name).read().splitlines():
-        req = req.strip()
+        req = req.split('#', 1)[0].strip()
         if not req:
             continue
 
