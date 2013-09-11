@@ -1,5 +1,5 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from pkg_resources import Requirement
+from distlib.util import parse_requirement
 
 import io
 import os
@@ -24,6 +24,12 @@ def split_name(fname):
     return name, ext[1:], frag
 
 
+def safe_name(spec):
+    req = parse_requirement(spec)
+    constraints = ''.join([''.join(c) for c in req.constraints])
+    return ''.join([req.name.replace('-', '_'), constraints])
+
+
 def expand_requirements(file_name):
     requirements = []
 
@@ -40,5 +46,5 @@ def expand_requirements(file_name):
         if found:
             requirements.extend(expand_requirements(found[0]))
         else:
-            requirements.append(Requirement.parse(req))
+            requirements.append(safe_name(req))
     return requirements

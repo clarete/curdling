@@ -2,7 +2,7 @@ from __future__ import unicode_literals, print_function
 
 from . import Env
 from .index import Index
-from .util import expand_requirements, AttrDict
+from .util import expand_requirements, safe_name, AttrDict
 
 import argparse
 import os
@@ -55,10 +55,10 @@ def prepare_args(args):
         raise ValidationError(
             'we need either at least one package or a requirements file')
 
-    packages = args.packages or []
+    packages = [safe_name(req) for req in (args.packages or [])]
     if args.requirements:
         for pkg in expand_requirements(args.requirements):
-            packages.append(str(pkg))
+            packages.append(pkg)
 
     return AttrDict(
         packages=packages,
