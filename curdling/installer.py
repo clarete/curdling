@@ -17,8 +17,10 @@ class Installer(Service):
             ','.join(op + v for op, v in (pkg.constraints or ())))
 
     def find_dependencies(self, package):
+        # This nasty replace in the package name will fix the problem that
+        # makes `get_distribution`
         name = distlib.database.parse_requirement(package).name
-        dist = DistributionPath().get_distribution(name)
+        dist = DistributionPath().get_distribution(name.replace('_', '-'))
 
         # This is another ugly thing. There's no other way for retrieving the
         # dependency list for a package until it's installed. If it is a wheel,

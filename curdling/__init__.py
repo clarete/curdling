@@ -83,7 +83,7 @@ class Env(object):
 
     def check_installed(self, package):
         return DistributionPath().get_distribution(
-            parse_requirement(package).name) is not None
+            parse_requirement(package).name.replace('_', '-')) is not None
 
     def request_install(self, requirement, requester='main', **data):
         # Well, the package is installed, let's just bail
