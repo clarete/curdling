@@ -1,12 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from urllib2 import HTTPPasswordMgrWithDefaultRealm
 from urlparse import urljoin
-from distlib.compat import (
-    urlparse, build_opener, HTTPBasicAuthHandler, Request,
-)
-from distlib.locators import (
-    Locator, AggregatingLocator, SimpleScrapingLocator, JSONLocator,
-)
+from distlib import database, metadata, compat, locators
 
 from . import util, ReportableError
 from .service import Service
@@ -16,7 +11,7 @@ import json
 
 
 def get_locator(conf):
-    return AggregatingLocator(*([
+    return locators.AggregatingLocator(*([
         CurdlingLocator(u) for u in conf.get('curdling_urls', [])
     ] + [
         SimpleLocator(u, timeout=3.0) for u in conf.get('pypi_urls', [])
@@ -25,7 +20,7 @@ def get_locator(conf):
 
 def get_opener(url):
     # Set the actual base_url, without credentials info
-    url = urlparse(url)
+    url = compat.urlparse(url)
     base_url = lambda p=url.path: '{0}://{1}:{2}{3}'.format(
         url.scheme, url.hostname, url.port or 80, p)
 
@@ -35,27 +30,48 @@ def get_opener(url):
         manager = HTTPPasswordMgrWithDefaultRealm()
         manager.add_password(None, base_url(), url.username, url.password)
         manager.add_password(None, base_url('/packages/'), url.username, url.password)
-        handlers.append(HTTPBasicAuthHandler(manager))
+        handlers.append(compat.HTTPBasicAuthHandler(manager))
 
     # Define a new opener based on the things we found above
-    return base_url(), build_opener(*handlers)
+    return base_url(), compat.build_opener(*handlers)
 
 
-class CurdlingLocator(Locator):
+class CurdlingLocator(locators.Locator):
     def __init__(self, url, **kwargs):
         super(CurdlingLocator, self).__init__(**kwargs)
         self.url, self.opener = get_opener(url)
 
     def get_distribution_names(self):
         url = urljoin(self.url, 'api')
-        response = self.opener.open(Request(url))
+        response = self.opener.open(compat.Request(url))
         return json.loads(response.read())
 
     def _get_project(self, name):
-        return
+        # Retrieve the info
+        url = urljoin(self.url, 'api/' + name)
+        response = self.opener.open(compat.Request(url))
+        data = json.loads(response.read())
+        result = {}
+
+        for version in data:
+            # Source url for the package
+            source_url = version['urls'][0]  # TODO: prefer whl files
+
+            # Build the metadata
+            mdata = metadata.Metadata(scheme=self.scheme)
+            mdata.name = version['name']
+            mdata.version = version['version']
+            mdata.source_url = mdata.download_url = source_url['url']
+
+            # Building the dist and associating the download url
+            distribution = database.Distribution(mdata)
+            distribution.locator = self
+            result[version['version']] = distribution
+
+        return result
 
 
-class SimpleLocator(SimpleScrapingLocator):
+class SimpleLocator(locators.SimpleScrapingLocator):
     def __init__(self, *args, **kwargs):
         super(SimpleLocator, self).__init__(*args, **kwargs)
         self.base_url, self.opener = get_opener(self.base_url)
@@ -64,7 +80,7 @@ class SimpleLocator(SimpleScrapingLocator):
 class DownloadManager(Service):
 
     def download(self, opener, url):
-        response = opener.open(Request(url))
+        response = opener.open(compat.Request(url))
         try:
             content = []
             headers = response.info()

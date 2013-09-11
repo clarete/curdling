@@ -4,6 +4,7 @@ from distlib.util import parse_requirement
 import io
 import os
 import re
+import hashlib
 
 
 INCLUDE_PATTERN = re.compile(r'-r\s*\b([^\b]+)')
@@ -46,3 +47,13 @@ def expand_requirements(file_name):
         else:
             requirements.append(safe_name(req))
     return requirements
+
+
+def filehash(f, algo, block_size=2**20):
+    algo = getattr(hashlib, algo)()
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        algo.update(data)
+    return algo.hexdigest()

@@ -3,7 +3,7 @@ from collections import defaultdict
 from distlib.util import parse_requirement
 from pkg_resources import parse_version, safe_name
 
-from curdling.util import split_name
+from curdling.util import split_name, filehash
 
 import os
 import re
@@ -87,6 +87,28 @@ class Index(object):
 
     def list_packages(self):
         return self.storage.keys()
+
+    def get_urlhash(self, url, fmt):
+        """Returns the hash of the file of an internal url
+        """
+        with self.open(os.path.basename(url)) as f:
+            return {'url': fmt(url), 'sha256': filehash(f, 'sha256')}
+
+    def package_releases(self, package, url_fmt=lambda u: u):
+        """List all versions of a package
+
+        Along with the version, the caller also receives the file list with all
+        the available formats.
+        """
+        return [{
+            'name': package,
+            'version': version,
+            'urls': [self.get_urlhash(f, url_fmt) for f in files]
+        } for version, files in self.storage.get(package, {}).items()]
+
+    def open(self, fname, mode='r'):
+        return open(os.path.abspath(os.path.join(
+            self.base_path, os.path.basename(fname))), mode)
 
     def get(self, query):
         # Read both: "pkg==0.0.0" and "pkg==0.0.0,fmt"

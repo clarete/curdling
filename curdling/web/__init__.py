@@ -1,8 +1,7 @@
 from __future__ import unicode_literals, print_function, absolute_import
-from gevent.queue import JoinableQueue
 from gevent.pywsgi import WSGIServer
 from flask import (
-    Flask, Blueprint, render_template, send_file, request, current_app,
+    Flask, Blueprint, render_template, send_file, request, current_app, url_for,
 )
 
 import os
@@ -19,17 +18,30 @@ def api_index():
     return json.dumps(current_app.index.list_packages())
 
 
+@api.route('/<package>')
+def api_package(package):
+    releases = []
+    fmt = lambda u: url_for('download', package=u, _external=True)
+    for release in current_app.index.package_releases(package, fmt):
+        releases.append(release)
+    return json.dumps(releases)
+
+
 class Server(object):
     def __init__(self, args):
         self.args = args
         self.index = Index(args.curddir)
         self.index.scan()
 
+        # Setting up the app
         self.app = Flask(__name__)
         self.app.index = self.index
+
+        # Registering urls
         self.app.register_blueprint(api, url_prefix='/api')
         self.app.add_url_rule('/', 'index', self.web_index)
         self.app.add_url_rule('/s/<query>', 'search', self.web_search)
+        self.app.add_url_rule('/p/<package>', 'download', self.web_download)
         self.app.add_url_rule('/p/<package>', 'upload', self.web_upload,
                               methods=('PUT',))
 
@@ -52,6 +64,10 @@ class Server(object):
         return send_file(
             path, as_attachment=True,
             attachment_filename=os.path.basename(path))
+
+    def web_download(self, package):
+        with self.index.open(package) as pkg:
+            return pkg.read()
 
     def web_upload(self, package):
         """
