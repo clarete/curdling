@@ -1,30 +1,22 @@
 from __future__ import unicode_literals, print_function, absolute_import
-from gevent.pool import Pool
-from gevent.queue import JoinableQueue
-import gevent
-
+from Queue import Queue
+from multiprocessing.pool import ThreadPool
 from .logging import ReportableError, Logger
-
-
-class NotForMe(Exception):
-    pass
+import threading
+import time
 
 
 class Service(object):
     def __init__(self, **args):
-        self.result_queue = args.get('result_queue')
-        self.package_queue = JoinableQueue()
-        self.failed_queue = []
         self.env = args.get('env')
-
-        self.main_greenlet = None
-        self.pool = Pool(args.get('concurrency'))
-        self.should_run = True
-
-        self.subscribers = []
-        self.logger = Logger(self.name, args.get('log_level'))
         self.conf = args.pop('conf', {})
         self.index = args.pop('index', None)
+        self.logger = Logger(self.name, args.get('log_level'))
+
+        self.pool = ThreadPool(args.get('concurrency', 1))
+        self.lock = threading.RLock()
+        self.async_result = None
+        self._queue = Queue()
 
     @property
     def name(self):
@@ -32,54 +24,44 @@ class Service(object):
 
     def queue(self, package, sender_name, **data):
         assert (sender_name == 'downloadmanager' and data.get('path')) or True
-        self.package_queue.put((package, (sender_name, data)))
+        self._queue.put((package, (sender_name, data)))
         self.logger.level(3, ' * queue(from=%s, to=%s, package=%s, data=%s)',
                           sender_name, self.name, package, data)
 
-    def consume(self):
-        package, sender_data = self.package_queue.get()
-        self.pool.spawn(self._run_service, package, sender_data)
-        self.logger.level(3, ' * %s.run(package=%s, sender_data=%s)',
-                          self.name, package, sender_data)
-
-    def subscribe(self, other):
-        other.subscribers.append(self)
-
-    def loop(self):
-        while self.should_run:
-            self.consume()
-
     def start(self):
-        self.main_greenlet = gevent.spawn(self.loop)
+        self.logger.level(3, ' * %s.start()', self.name)
+        self.async_result = self.pool.apply_async(self._run_service)
 
-    def stop(self, force=False):
-        # This will force the current iteraton on `loop()` to be the last one,
-        # so the thing we're processing will be able to finish;
-        self.should_run = False
+    def terminate(self):
+        self.pool.terminate()
+        self.pool.join()
 
-        # if the caller is in a hurry, we'll just kill everything mercilessly
-        if force and self.main_greenlet:
-            self.main_greenlet.kill()
+    def wait(self):
+        while not self.async_result.ready():
+            time.sleep(1)
 
-    def _run_service(self, package, sender_data):
-        try:
-            data = self.handle(package, sender_data)
-        except NotForMe:
-            return
-        except ReportableError as exc:
-            self.failed_queue.append((package, exc))
-            self.logger.level(0, "Error: %s", exc)
-        except BaseException as exc:
-            self.failed_queue.append((package, exc))
-            self.logger.traceback(4,
-                'failed to run %s (requested by:%s) for package %s:',
-                self.name, sender_data[0], package, exc=exc)
-        else:
-            # Let's notify our subscribers
-            for subscriber in self.subscribers:
-                subscriber.queue(package, self.name, **(data or {}))
+    def join(self):
+        self.pool.close()
+        self.pool.join()
 
-            # If the callback worked, let's go ahead and tell the world. If and
-            # only if requested by the caller, of course.
-            if self.result_queue:
-                self.result_queue.put(package)
+    # -- Private API --
+
+    def _run_service(self):
+        while True:
+            package, sender_data = self._queue.get()
+
+            self.logger.level(3, ' * %s.run(package=%s, sender_data=%s)',
+                              self.name, package, sender_data)
+            try:
+                data = self.handle(package, sender_data)
+            except ReportableError as exc:
+                self.failed_queue.append((package, exc))
+                self.logger.level(0, "Error: %s", exc)
+            except BaseException as exc:
+                self.failed_queue.append((package, exc))
+                self.logger.traceback(4,
+                    'failed to run %s (requested by:%s) for package %s:',
+                    self.name, sender_data[0], package, exc=exc)
+
+            self.logger.level(3, ' * %s.result(package=%s): %s ... ok',
+                              self.name, package, data)

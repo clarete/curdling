@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from curdling.download import PipSource, DownloadManager
-from gevent.queue import JoinableQueue
+from curdling.download import PipSource, Downloader
 from mock import Mock
 import os
 import errno
@@ -82,7 +81,7 @@ def test_downloader_with_no_sources():
     "It should be possible to download packages from pip repos"
 
     # Given the following downloader component with NO SOURCES
-    downloader = DownloadManager(sources=[], index=Index(''))
+    downloader = Downloader(sources=[], index=Index(''))
 
     # When I try to retrieve a package from it, than I see it just blows up
     # with a nice exception
@@ -96,7 +95,7 @@ def test_downloader():
     # Given the following downloader component
     sources = [PipSource(urls=['http://localhost:8000/simple'])]
     index = Index(FIXTURE('tmpindex'))
-    downloader = DownloadManager(sources=sources, index=index)
+    downloader = Downloader(sources=sources, index=index)
 
     # When I try to retrieve a package from it
     package = downloader.retrieve('gherkin==0.1.0', 'main')
@@ -114,7 +113,7 @@ def test_downloader_with_no_packages():
     # Given the following downloader component
     sources = [PipSource(urls=['http://localhost:8000/simple'])]
     index = Index(FIXTURE('tmpindex'))
-    downloader = DownloadManager(
+    downloader = Downloader(
         sources=sources, index=index)
 
     # When I try to retrieve a package from it

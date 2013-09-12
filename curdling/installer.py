@@ -1,12 +1,11 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from distlib.database import DistributionPath
 from wheel.tool import install
-from .service import Service, NotForMe
+from .service import Service
 
 import distlib
 import tempfile
 import os
-import re
 
 
 class Installer(Service):
@@ -33,12 +32,6 @@ class Installer(Service):
 
     def handle(self, package, sender_data):
         source = sender_data[1].pop('path')
-
-        # If the file is not a wheel, then we bail. We don't know how to
-        # install anything else anything :)
-        if not re.findall('whl$', source):
-            raise NotForMe
-
         wheel_dirs = [os.path.dirname(source)]
         install([source], wheel_dirs=wheel_dirs, force=True)
         self.find_dependencies(package)

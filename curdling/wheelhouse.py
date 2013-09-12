@@ -1,5 +1,5 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from .service import Service, NotForMe
+from .service import Service
 
 import os
 import re
@@ -108,11 +108,6 @@ class Curdling(Service):
 
     def handle(self, package, sender_data):
         source = sender_data[1].pop('path')
-
-        # If the file has the wheel extention, we bail. We don't have to do
-        # anything :)
-        if re.findall('whl$', source):
-            raise NotForMe
 
         # Place used to unpack the wheel
         destination = tempfile.mkdtemp()

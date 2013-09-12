@@ -88,7 +88,19 @@ class SimpleLocator(locators.SimpleScrapingLocator):
         self.base_url, self.opener = get_opener(self.base_url)
 
 
-class DownloadManager(Service):
+class Downloader(Service):
+
+    def handle(self, package, sender_data):
+        path = self.attempt(package)
+
+        # We log all the attempts to the second level. But if we can make it,
+        # that's where we get out of the loop, avoiding the need to keep
+        # iterating over other sources.
+        if path:
+            return {"path": path}
+        raise ReportableError('No distributions found for {0}'.format(package))
+
+    # -- Private API of the Download service --
 
     def download(self, opener, url):
         response = opener.open(compat.Request(url))
@@ -114,9 +126,6 @@ class DownloadManager(Service):
             b''.join(content))
 
     def attempt(self, package):
-        self.logger.level(
-            2, ' * downloadmanager.attempt(package=%s): ',
-            package, end='')
         try:
             locator = get_locator(self.conf)
             prereleases = self.conf.get('prereleases', True)
@@ -131,8 +140,6 @@ class DownloadManager(Service):
             path = self.download(
                 requirement.locator.opener,
                 requirement.download_url)
-
-            self.logger.level(2, ' ... ok')
             return path
         except Exception as exc:
             # Showing the cause
@@ -140,13 +147,3 @@ class DownloadManager(Service):
             msg = args and str(args[0]) or exc.msg
             self.logger.level(2, '... failed (%s)', msg)
             self.logger.traceback(4, '', exc=exc)
-
-    def handle(self, package, sender_data):
-        path = self.attempt(package)
-
-        # We log all the attempts to the second level. But if we can make it,
-        # that's where we get out of the loop, avoiding the need to keep
-        # iterating over other sources.
-        if path:
-            return {"path": path}
-        raise ReportableError('No distributions found for {0}'.format(package))
