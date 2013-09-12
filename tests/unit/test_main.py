@@ -9,6 +9,7 @@ from curdling import Env
 from curdling.index import Index, PackageNotFound
 from curdling.util import expand_requirements
 from curdling.service import Service
+from curdling.signal import Signal, SignalEmitter
 
 
 @patch('io.open')
@@ -294,3 +295,24 @@ def test_index_get_corner_case_pkg_name():
 
 
     index.get('python-gherkin==0.1.0;~whl').should.equal('python_gherkin-0.1.0.tar.gz')
+
+
+def test_signal():
+    # Given that I have a button that emits signals
+    class Button(SignalEmitter):
+        clicked = Signal()
+
+    # And a content to store results of the callback function associated with
+    # the `clicked` signal in the next lines
+    ctx = {}
+
+    # And an instance of that button class
+    b = Button()
+    b.connect('clicked', lambda *args, **kwargs: ctx.update(result=kwargs))
+
+    # When button instance gets clicked (IOW: when we emit the `clicked`
+    # signal)
+    b.emit('clicked', a=1, b=2)
+
+    # Then we see that the  dictionary was populated as expected
+    ctx.should.equal({'result': {'a': 1, 'b': 2}})
