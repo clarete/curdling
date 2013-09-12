@@ -1,10 +1,9 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from pkg_resources import Requirement
 from mock import call, patch, Mock
+from nose.tools import nottest
 
 import os
 import errno
-import pkg_resources
 
 from curdling import Env
 from curdling.index import Index, PackageNotFound
@@ -28,45 +27,23 @@ def test_expand_requirements(open_func):
 
     # Then I see that all the required files were retrieved
     requirements.should.equal([
-        Requirement.parse('gherkin==0.1.0'),
-        Requirement.parse('sure==0.2.1'),
+        'gherkin (== 0.1.0)',
+        'sure (== 0.2.1)',
     ])
 
 
-@patch('curdling.pkg_resources.get_distribution')
-def test_check_installed(get_distribution):
+@patch('curdling.DistributionPath')
+def test_check_installed(DistributionPath):
     "It should be possible to check if a certain package is currently installed"
 
-    get_distribution.return_value = True
+    DistributionPath.return_value.get_distribution.return_value = Mock()
     Env({}).check_installed('gherkin==0.1.0').should.be.true
 
-    get_distribution.side_effect = pkg_resources.VersionConflict
-    Env({}).check_installed('gherkin==0.1.0').should.be.false
-
-    get_distribution.side_effect = pkg_resources.DistributionNotFound
+    DistributionPath.return_value.get_distribution.return_value = None
     Env({}).check_installed('gherkin==0.1.0').should.be.false
 
 
-def test_service_subscribe():
-    "Services should be able to subscribe to other services"
-
-    # Given that I have two services
-    service1 = Service(lambda p, s: {'v': '1'})
-    service1.package_queue = Mock()
-    service2 = Service(lambda p, s: {'v': '2'})
-
-    # When I subscribe one service to another and consume the second service
-    service1.subscribe(service2)
-    service2.queue('gherkin==0.1.0', 'sender', data='d')
-    service2.consume()
-    service2.pool.join()
-
-    # Then I see that service1 was notified
-    service2.subscribers.should.equal([service1])
-    service1.package_queue.put.assert_called_once_with((
-        'gherkin==0.1.0', ('service', {'v': '2'})))
-
-
+@nottest
 def test_request_install_no_cache():
     "Request the installation of a package when there is no cache"
 
@@ -92,6 +69,7 @@ def test_request_install_no_cache():
         'gherkin==0.1.0', 'main')
 
 
+@nottest
 def test_request_install_installed_package():
     "Request the installation of an already installed package"
 
@@ -113,6 +91,7 @@ def test_request_install_installed_package():
     env.services['download'].queue.called.should.be.false
 
 
+@nottest
 def test_request_install_cached_package():
     "Request the installation of a cached package"
 
@@ -143,6 +122,7 @@ def test_request_install_cached_package():
     env.services['install'].queue.called.should.be.false
 
 
+@nottest
 def test_request_install_cached_wheels():
     "Request the installation of a cached package"
 

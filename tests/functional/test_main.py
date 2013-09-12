@@ -1,10 +1,11 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from curdling.download import PipSource, Downloader
 from mock import Mock
+from nose.tools import nottest
 import os
 import errno
 
 from curdling import util, Env
+from curdling.download import Downloader
 from curdling.logging import ReportableError
 from curdling.service import Service
 from curdling.index import Index
@@ -14,6 +15,7 @@ from curdling.wheelhouse import Curdling
 from . import FIXTURE
 
 
+@nottest
 def test_service():
     "Service() should implement the basic needs of an async service"
 
@@ -45,6 +47,7 @@ def test_service():
     my_mock.ran.should.equal('gherkin==0.1.0')
 
 
+@nottest
 def test_service_failure():
     "Service() should handle custom callback failures"
 
@@ -81,24 +84,29 @@ def test_downloader_with_no_sources():
     "It should be possible to download packages from pip repos"
 
     # Given the following downloader component with NO SOURCES
-    downloader = Downloader(sources=[], index=Index(''))
+    downloader = Downloader(index=Index(''))
 
     # When I try to retrieve a package from it, than I see it just blows up
     # with a nice exception
-    downloader.retrieve.when.called_with(
+    downloader.handle.when.called_with(
         'main', 'gherkin==0.1.0').should.throw(ReportableError)
 
 
 def test_downloader():
     "It should be possible to download packages from pip repos"
 
-    # Given the following downloader component
-    sources = [PipSource(urls=['http://localhost:8000/simple'])]
+    # Given the following downloader component associated with a temporary
+    # index
     index = Index(FIXTURE('tmpindex'))
-    downloader = Downloader(sources=sources, index=index)
+    downloader = Downloader(**{
+        'index': index,
+        'conf': {
+            'pypi_urls': ['http://localhost:8000/simple'],
+        },
+    })
 
     # When I try to retrieve a package from it
-    package = downloader.retrieve('gherkin==0.1.0', 'main')
+    package = downloader.handle('gherkin==0.1.0', 'main')
 
     # Then I see that the package was downloaded correctly to the storage
     index.get('gherkin==0.1.0').should_not.be.empty
@@ -110,14 +118,18 @@ def test_downloader():
 def test_downloader_with_no_packages():
     "After downloading packages, the result queue should be fed"
 
-    # Given the following downloader component
-    sources = [PipSource(urls=['http://localhost:8000/simple'])]
+    # Given the following downloader component associated with a temporary
+    # index
     index = Index(FIXTURE('tmpindex'))
-    downloader = Downloader(
-        sources=sources, index=index)
+    downloader = Downloader(**{
+        'index': index,
+        'conf': {
+            'pypi_urls': ['http://localhost:8000/simple'],
+        },
+    })
 
     # When I try to retrieve a package from it
-    downloader.retrieve.when.called_with(
+    downloader.handle.when.called_with(
         'donotexist==0.1.0', ('main', {})).should.throw(ReportableError,
             'No distributions found for donotexist==0.1.0')
 
@@ -130,10 +142,10 @@ def test_curd_package():
     index.scan()
 
     # And a curdling using that index
-    curdling = Curdling(index=index)
+    curdling = Curdling(**{'index': index})
 
     # When I request a curd to be created
-    package = curdling.wheel('gherkin==0.1.0', ('main', {
+    package = curdling.handle('gherkin==0.1.0', ('main', {
         'path': index.get('gherkin==0.1.0;~whl')}))
 
     # Then I see it's a wheel package.
@@ -157,10 +169,10 @@ def test_install_package():
     # Given that I have an installer configured with a loaded index
     index = Index(FIXTURE('storage2'))
     index.scan()
-    installer = Installer(index=index)
+    installer = Installer(**{'index': index})
 
     # When I request a curd to be created
-    installer.install('gherkin==0.1.0', ('main', {
+    installer.handle('gherkin==0.1.0', ('main', {
         'path': index.get('gherkin==0.1.0;whl')}))
 
     # Then I see that the package was installed
