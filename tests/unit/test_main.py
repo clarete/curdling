@@ -10,6 +10,7 @@ from curdling.index import Index, PackageNotFound
 from curdling.util import expand_requirements
 from curdling.service import Service
 from curdling.signal import Signal, SignalEmitter
+from curdling.maestro import Maestro
 
 
 @patch('io.open')
@@ -298,6 +299,8 @@ def test_index_get_corner_case_pkg_name():
 
 
 def test_signal():
+    "It should possible to emit signals"
+
     # Given that I have a button that emits signals
     class Button(SignalEmitter):
         clicked = Signal()
@@ -316,3 +319,24 @@ def test_signal():
 
     # Then we see that the  dictionary was populated as expected
     ctx.should.equal({'result': {'a': 1, 'b': 2}})
+
+
+def test_maestro_mapping():
+
+    # Given that I have a maestro
+    maestro = Maestro()
+
+    # When I open a new couple new nodes with subnodes
+    maestro.file_package('curdling', dependency_of=None)
+    maestro.file_package('setuptools', dependency_of='curdling')
+    maestro.file_package('sure', dependency_of='curdling')
+    maestro.file_package('forbiddenfruit', dependency_of='sure')
+
+    # Then I see that we have all the pacakges that were requested and we know
+    # their position in the tree store
+    maestro.mapping.should.equal({
+        'curdling': [0, 0],
+        'setuptools': [0, 0, 0],
+        'sure': [0, 0, 1],
+        'forbiddenfruit': [0, 0, 1, 0],
+    })
