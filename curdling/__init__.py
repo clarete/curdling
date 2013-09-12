@@ -18,6 +18,11 @@ import gevent
 import os
 
 
+PACKAGE_BLACKLIST = (
+    'setuptools',
+)
+
+
 class Env(object):
     def __init__(self, conf):
         self.conf = conf
@@ -86,6 +91,15 @@ class Env(object):
             parse_requirement(package).name.replace('_', '-')) is not None
 
     def request_install(self, requirement, requester='main', **data):
+        # If it's a blacklisted requirement, we should cowardly refuse to
+        # install
+        for blacklisted in PACKAGE_BLACKLIST:
+            if requirement.startswith(blacklisted):
+                self.logger.level(2,
+                    "Cowardly refusing to install blacklisted "
+                    "requirement `%s'", requirement)
+                return False
+
         # Well, the package is installed, let's just bail
         if self.check_installed(requirement):
             return True
