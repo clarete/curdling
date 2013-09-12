@@ -261,3 +261,17 @@ def test_tree_should_act_like_a_list():
     tree[0].should.equal(node0)
     tree[1].should.equal(node1)
     tree.children(tree.root).should.equal([n for n in tree])
+
+
+def test_tree_from_path():
+    # Givent that I have a treestore with a couple nodes and subnodes
+    tree = TreeStore()
+    node1 = tree.append(tree.root, title='node1')
+    node1_1 = tree.append(node1, title='node1_1')
+    node1_2 = tree.append(node1, title='node1_2')
+
+    # When I try to get nodes from their paths, Then I see that it works
+    tree.from_path([0]).should.equal(tree.root)
+    tree.from_path([0, 0]).should.equal(node1)
+    tree.from_path([0, 0, 0]).should.equal(node1_1)
+    tree.from_path([0, 0, 1]).should.equal(node1_2)

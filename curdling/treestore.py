@@ -99,6 +99,12 @@ class TreeStore(object):
         path.insert(0, 0)       # Root node
         return path
 
+    def from_path(self, path):
+        node = self.root
+        for index in path[1:]:
+            node = node.nodes[index]
+        return node
+
     def remove(self, node):
         node.parent.nodes.remove(node)
         node.parent = None
