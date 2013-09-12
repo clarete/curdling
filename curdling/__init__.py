@@ -57,12 +57,12 @@ class Env(object):
     def request_install(self, requirement, requester='main', **data):
         # If it's a blacklisted requirement, we should cowardly refuse to
         # install
-        # for blacklisted in PACKAGE_BLACKLIST:
-        #     if requirement.startswith(blacklisted):
-        #         self.logger.level(2,
-        #             "Cowardly refusing to install blacklisted "
-        #             "requirement `%s'", requirement)
-        #         return False
+        for blacklisted in PACKAGE_BLACKLIST:
+            if requirement.startswith(blacklisted):
+                self.logger.level(2,
+                    "Cowardly refusing to install blacklisted "
+                    "requirement `%s'", requirement)
+                return False
 
         # # Well, the package is installed, let's just bail
         # if self.check_installed(requirement):
