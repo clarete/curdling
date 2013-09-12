@@ -21,7 +21,6 @@ class Service(object):
         return self.__class__.__name__.lower()
 
     def queue(self, package, sender_name, **data):
-        assert (sender_name == 'downloadmanager' and data.get('path')) or True
         self._queue.put((package, (sender_name, data)))
         self.logger.level(3, ' * queue(from=%s, to=%s, package=%s, data=%s)',
                           sender_name, self.name, package, data)
