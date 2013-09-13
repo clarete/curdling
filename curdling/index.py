@@ -35,8 +35,7 @@ class PackageNotFound(Exception):
     def __init__(self, spec, formats):
         pkg = parse_requirement(spec)
         msg = ['The index does not have the requested package: ']
-        msg.append(pkg.name)
-        msg.extend(','.join(''.join(spec) for spec in pkg.constraints or []))
+        msg.append(pkg.requirement)
         msg.append(formats and ' ({0})'.format(formats) or '')
         super(PackageNotFound, self).__init__(''.join(msg))
 
