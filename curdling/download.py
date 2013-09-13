@@ -101,14 +101,7 @@ class Downloader(Service):
         self.locator = get_locator(self.logger, self.conf)
 
     def handle(self, requester, package, sender_data):
-        path = self.attempt(package)
-
-        # We log all the attempts to the second level. But if we can make it,
-        # that's where we get out of the loop, avoiding the need to keep
-        # iterating over other sources.
-        if path:
-            return {"path": path}
-        raise ReportableError('Package `{0}\' not found'.format(package))
+        return {"path": self.attempt(package)}
 
     def get_servers_to_update(self):
         failures = {}
@@ -143,22 +136,15 @@ class Downloader(Service):
             b''.join(content))
 
     def attempt(self, package):
-        try:
-            prereleases = self.conf.get('prereleases', True)
-            requirement = self.locator.locate(package, prereleases)
-            if requirement is None:
-                raise RuntimeError('Package `{0}\' not found'.format(package))
+        prereleases = self.conf.get('prereleases', True)
+        requirement = self.locator.locate(package, prereleases)
+        if requirement is None:
+            raise RuntimeError('Package `{0}\' not found'.format(package))
 
-            # Here we're passing the same opener to the download function. In
-            # other words, we just want to use the same locator that was used
-            # to find the package to download it.
-            path = self.download(
-                requirement.locator.opener,
-                requirement.download_url)
-            return path
-        except BaseException as exc:
-            # Showing the cause
-            args = getattr(exc, 'args')
-            msg = args and str(args[0]) or exc.msg
-            # self.logger.level(2, '   * %s ... failed (%s)', self.name, msg)
-            self.logger.traceback(4, '', exc=exc)
+        # Here we're passing the same opener to the download function. In
+        # other words, we just want to use the same locator that was used
+        # to find the package to download it.
+        path = self.download(
+            requirement.locator.opener,
+            requirement.download_url)
+        return path
