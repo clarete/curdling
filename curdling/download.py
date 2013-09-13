@@ -10,7 +10,6 @@ from .signal import Signal
 import re
 import json
 
-
 def get_locator(logger, conf):
     return locators.AggregatingLocator(*([
         CurdlingLocator(logger, u) for u in conf.get('curdling_urls', [])
@@ -89,9 +88,36 @@ class CurdlingLocator(locators.Locator):
 
 
 class SimpleLocator(locators.SimpleScrapingLocator):
+
     def __init__(self, *args, **kwargs):
         super(SimpleLocator, self).__init__(*args, **kwargs)
         self.base_url, self.opener = get_opener(self.base_url)
+
+    def _get_project(self, name):
+        # Cleaning up our caches
+        self._seen.clear()
+        self._page_cache.clear()
+        url = urljoin(self.base_url, '%s/' % compat.quote(name))
+        return self.fetch(url, name)
+
+    def visit_link(self, project_name, link, versions):
+        self._seen.add(link)
+        locators.logger.debug('_fetch() found link: %s', link)
+        info = not self._is_platform_dependent(link) \
+            and self.convert_url_to_download_info(link, project_name) \
+            or None
+
+        if info:
+            self._update_version_data(versions, info)
+
+    def fetch(self, url, project_name):
+        locators.logger.debug('_fetch(%s, %s)', url, project_name)
+        versions = {}
+        page = self.get_page(url)
+        for link, rel in (page and page.links or []):
+            if link not in self._seen:
+                self.visit_link(project_name, link, versions)
+        return versions
 
 
 class Downloader(Service):
