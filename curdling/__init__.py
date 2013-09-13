@@ -76,15 +76,18 @@ class Env(object):
         self.installer = Installer(**args)
         self.uploader = Uploader(**args)
 
+    def report(self):
+        self.logger.level(0, 'Is there cheese in your rug?')
+        for package in self.maestro.failed:
+            path = self.maestro.mapping[package].values()[0]
+            self.logger.level(0, " * %s", path)
+
     def run(self):
         while self.maestro.pending_packages:
             time.sleep(0.5)
 
         if self.maestro.failed:
-            self.logger.level(0, "The following actions failed:")
-            for package in self.maestro.failed:
-                path = self.maestro.mapping[package].values()[0]
-                self.logger.level(0, " * %s", path)
+            self.report()
             return FAILURE
 
         # We've got everything we need, let's rock it off!

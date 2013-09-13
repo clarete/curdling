@@ -100,7 +100,8 @@ def main():
         # All the installation requests were made, let's just wait here
         return env.run()
     except KeyboardInterrupt:
-        print('\b\bIs there cheese in your rug?')
+        print('\b\b')
+        env.report()
         raise SystemExit(0)
 
 
