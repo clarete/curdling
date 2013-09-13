@@ -16,6 +16,7 @@ from .installer import Installer
 from .uploader import Uploader
 
 import re
+import time
 
 PACKAGE_BLACKLIST = (
     'setuptools',
@@ -27,6 +28,13 @@ def only(func, pattern):
     def wrapper(requester, package, **data):
         if re.match(pattern, data.get('path', '')):
             return func(requester, package, **data)
+    return wrapper
+
+
+def pkg_name(func):
+    @wraps(func)
+    def wrapper(requester, package, **data):
+        return func(package)
     return wrapper
 
 
@@ -53,14 +61,15 @@ class Env(object):
         self.uploader = Uploader(**args).start()
 
         # Building the pipeline
+        self.downloader.connect('started', pkg_name(self.maestro.file_package))
         self.downloader.connect('finished', only(self.curdler.queue, r'^(?!.*\.whl$)'))
         self.downloader.connect('finished', only(self.dependencer.queue, r'.*\.whl$'))
         self.curdler.connect('finished', self.dependencer.queue)
-        self.dependencer.connect('dependency_found', self.downloader.queue)
+        self.dependencer.connect('dependency_found', self.request_install)
+        self.dependencer.connect('built', pkg_name(self.maestro.mark_built))
 
     def wait(self):
-        import time
-        while True:
+        while self.maestro.pending_packages:
             time.sleep(0.5)
 
     def shutdown(self):
@@ -71,11 +80,11 @@ class Env(object):
         return DistributionPath().get_distribution(
             parse_requirement(package).name.replace('_', '-')) is not None
 
-    def request_install(self, requirement, requester='main', **data):
+    def request_install(self, requester, package, **data):
         # If it's a blacklisted requirement, we should cowardly refuse to
         # install
         for blacklisted in PACKAGE_BLACKLIST:
-            if requirement.startswith(blacklisted):
+            if package.startswith(blacklisted):
                 self.logger.level(2,
                     "Cowardly refusing to install blacklisted "
                     "requirement `%s'", requirement)
@@ -105,7 +114,8 @@ class Env(object):
         #     pass
 
         # Nops, we really don't have the package
-        self.downloader.queue(requester, requirement, **data)
+        self.maestro.file_package(package, dependency_of=data.get('dependency_of'))
+        self.downloader.queue(requester, package, **data)
         return False
 
     def uninstall(self, package):

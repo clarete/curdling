@@ -25,4 +25,7 @@ class SignalEmitter(object):
         print(' + {0}.emit({1}, args={2}, kw={3})'.format(
             self.name, signal, args, kwargs))
         for callback in self.get_signal_or_explode(signal):
-            callback(*args, **kwargs)
+            try:
+                callback(*args, **kwargs)
+            except BaseException as exc:
+                raise exc

@@ -342,6 +342,33 @@ def test_maestro_mapping():
     })
 
 
+
+def test_maestro_pending_packages():
+
+    # Given that I have a maestro
+    maestro = Maestro()
+
+    # When I file a package under it
+    maestro.file_package('curdling', dependency_of=None)
+
+    # Then I see it's still waiting for the dependency checking
+    maestro.pending_packages.should.equal(['curdling'])
+
+
+def test_maestro_pending_packages_no_deps():
+
+    # Given that I have a maestro with a package filed under it
+    maestro = Maestro()
+    maestro.file_package('curdling', dependency_of=None)
+
+    # When and I mark the package as `checked`,
+    # meaning that all the dependencies were checked
+    maestro.mark_built('curdling')
+
+    # Then I see it's still waiting for the dependency checking
+    maestro.pending_packages.should.equal([])
+
+
 def test_maestro_mapping_same_dependency():
 
     # Given that I have a maestro

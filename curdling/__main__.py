@@ -89,7 +89,7 @@ def prepare_env():
 
     # Request the installation of the received package
     for pkg in args.packages:
-        env.request_install(pkg)
+        env.request_install('main', pkg)
 
     return env
 

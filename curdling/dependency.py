@@ -10,6 +10,7 @@ class Dependencer(Service):
     def __init__(self, *args, **kwargs):
         super(Dependencer, self).__init__(*args, **kwargs)
         self.dependency_found = Signal()
+        self.built = Signal()
 
     def handle(self, requester, package, sender_data):
         # Find the wheel
@@ -21,3 +22,5 @@ class Dependencer(Service):
             dependency, extra = (';' in spec and spec or spec + ';').split(';')
             self.emit('dependency_found', self.name,
                 dependency, requested_by=package)
+        else:
+            self.emit('built', self.name, package)

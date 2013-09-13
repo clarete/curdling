@@ -62,7 +62,7 @@ class Service(SignalEmitter):
                 self.name, threading.current_thread().name,
                 package, sender_data)
             try:
-                self.emit('started', self.name, package, sender_data)
+                self.emit('started', self.name, package, **sender_data)
                 data = self.handle(requester, package, sender_data)
                 self._queue.task_done()
             except ReportableError as exc:
