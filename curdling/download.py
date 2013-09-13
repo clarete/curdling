@@ -38,9 +38,12 @@ def get_opener(url):
 
 
 class CurdlingLocator(locators.Locator):
+
     def __init__(self, url, **kwargs):
         super(CurdlingLocator, self).__init__(**kwargs)
+        self.original_url = url
         self.url, self.opener = get_opener(url)
+        self.packages_not_found = []
 
     def get_distribution_names(self):
         url = urljoin(self.url, 'api')
@@ -56,6 +59,7 @@ class CurdlingLocator(locators.Locator):
             # We just bail if any 404 HTTP Errors happened. Cause it just means
             # that the package was not found.
             if exc.getcode() == 404:
+                self.packages_not_found.append(name)
                 return
 
             # If anything else happens, we let it blow up, so the user can se
@@ -91,6 +95,10 @@ class SimpleLocator(locators.SimpleScrapingLocator):
 
 class Downloader(Service):
 
+    def __init__(self, *args, **kwargs):
+        super(Downloader, self).__init__(*args, **kwargs)
+        self.locator = get_locator(self.conf)
+
     def handle(self, requester, package, sender_data):
         path = self.attempt(package)
 
@@ -100,6 +108,13 @@ class Downloader(Service):
         if path:
             return {"path": path}
         raise ReportableError('No distributions found for {0}'.format(package))
+
+    def get_servers_to_update(self):
+        failures = {}
+        for locator in self.locator.locators:
+            if isinstance(locator, CurdlingLocator) and locator.packages_not_found:
+                failures[locator.original_url] = locator.packages_not_found
+        return failures
 
     # -- Private API of the Download service --
 
@@ -128,9 +143,8 @@ class Downloader(Service):
 
     def attempt(self, package):
         try:
-            locator = get_locator(self.conf)
             prereleases = self.conf.get('prereleases', True)
-            requirement = locator.locate(package, prereleases)
+            requirement = self.locator.locate(package, prereleases)
             if requirement is None:
                 raise RuntimeError(
                     'No distribution found for {0}'.format(package))
