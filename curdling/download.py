@@ -1,5 +1,5 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from urllib2 import HTTPPasswordMgrWithDefaultRealm, HTTPError
+from urllib2 import HTTPPasswordMgrWithDefaultRealm, HTTPError, URLError
 from urlparse import urljoin
 from distlib import database, metadata, compat, locators
 
@@ -11,9 +11,9 @@ import re
 import json
 
 
-def get_locator(conf):
+def get_locator(logger, conf):
     return locators.AggregatingLocator(*([
-        CurdlingLocator(u) for u in conf.get('curdling_urls', [])
+        CurdlingLocator(logger, u) for u in conf.get('curdling_urls', [])
     ] + [
         SimpleLocator(u, timeout=3.0) for u in conf.get('pypi_urls', [])
     ]), scheme='legacy')
@@ -39,9 +39,10 @@ def get_opener(url):
 
 class CurdlingLocator(locators.Locator):
 
-    def __init__(self, url, **kwargs):
+    def __init__(self, logger, url, **kwargs):
         super(CurdlingLocator, self).__init__(**kwargs)
         self.original_url = url
+        self.logger = logger
         self.url, self.opener = get_opener(url)
         self.packages_not_found = []
 
@@ -55,16 +56,16 @@ class CurdlingLocator(locators.Locator):
         url = urljoin(self.url, 'api/' + name)
         try:
             response = self.opener.open(compat.Request(url))
-        except HTTPError as exc:
+        except (URLError, HTTPError) as exc:
             # We just bail if any 404 HTTP Errors happened. Cause it just means
             # that the package was not found.
-            if exc.getcode() == 404:
+            if getattr(exc, 'getcode', lambda: -1)() == 404:
                 self.packages_not_found.append(name)
-                return
 
-            # If anything else happens, we let it blow up, so the user can se
-            # how to fix the issue.
-            raise exc
+            # We can't raise an exception here, but we can still log the
+            # exception so the user will know what's going on
+            self.logger.traceback(4, 'Error reaching curd server', exc=exc)
+            return
 
         data = json.loads(response.read())
         result = {}
@@ -97,7 +98,7 @@ class Downloader(Service):
 
     def __init__(self, *args, **kwargs):
         super(Downloader, self).__init__(*args, **kwargs)
-        self.locator = get_locator(self.conf)
+        self.locator = get_locator(self.logger, self.conf)
 
     def handle(self, requester, package, sender_data):
         path = self.attempt(package)
