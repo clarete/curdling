@@ -9,7 +9,7 @@ import os
 
 
 DEFAULT_PYPI_INDEX_LIST = [
-    'https://pypi.python.org/simple/',
+    'http://pypi.python.org/simple/',
 ]
 
 
