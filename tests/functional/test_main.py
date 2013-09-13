@@ -91,7 +91,6 @@ def test_downloader_with_no_sources():
     downloader.handle.when.called_with(
         'main', 'gherkin==0.1.0', {}).should.throw(ReportableError)
 
-
 def test_downloader():
     "It should be possible to download packages from pip repos"
 
@@ -106,7 +105,7 @@ def test_downloader():
     })
 
     # When I try to retrieve a package from it
-    package = downloader.handle('gherkin==0.1.0', 'main', {})
+    package = downloader.handle('main', 'gherkin (== 0.1.0)', {})
 
     # Then I see that the package was downloaded correctly to the storage
     index.get('gherkin==0.1.0').should_not.be.empty
@@ -130,7 +129,7 @@ def test_downloader_with_no_packages():
 
     # When I try to retrieve a package from it
     downloader.handle.when.called_with(
-        'donotexist==0.1.0', ('main', {})).should.throw(ReportableError,
+        'main', 'donotexist==0.1.0', {}).should.throw(ReportableError,
             'No distributions found for donotexist==0.1.0')
 
 
@@ -145,8 +144,8 @@ def test_curd_package():
     curdling = Curdler(**{'index': index})
 
     # When I request a curd to be created
-    package = curdling.handle('gherkin==0.1.0', ('main', {
-        'path': index.get('gherkin==0.1.0;~whl')}))
+    package = curdling.handle('main', 'gherkin==0.1.0', {
+        'path': index.get('gherkin==0.1.0;~whl')})
 
     # Then I see it's a wheel package.
     package.should.equal({
@@ -172,8 +171,8 @@ def test_install_package():
     installer = Installer(**{'index': index})
 
     # When I request a curd to be created
-    installer.handle('gherkin==0.1.0', ('main', {
-        'path': index.get('gherkin==0.1.0;whl')}))
+    installer.handle('main', 'gherkin==0.1.0', {
+        'path': index.get('gherkin==0.1.0;whl')})
 
     # Then I see that the package was installed
     Env({}).check_installed('gherkin==0.1.0').should.be.true
