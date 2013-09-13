@@ -334,9 +334,31 @@ def test_maestro_mapping():
 
     # Then I see that we have all the pacakges that were requested and we know
     # their position in the tree store
-    maestro.mapping.should.equal({
-        'curdling': [0, 0],
-        'setuptools': [0, 0, 0],
-        'sure': [0, 0, 1],
-        'forbiddenfruit': [0, 0, 1, 0],
+    dict(maestro.mapping).should.equal({
+        'curdling': {None: [0, 0]},
+        'setuptools': {None: [0, 0, 0]},
+        'sure': {None: [0, 0, 1]},
+        'forbiddenfruit': {None: [0, 0, 1, 0]},
+    })
+
+
+def test_maestro_mapping_same_dependency():
+
+    # Given that I have a maestro
+    maestro = Maestro()
+
+    # When I file the same package more than once
+    maestro.file_package('curdling', dependency_of=None)
+    maestro.file_package('sure', dependency_of='curdling')
+    maestro.file_package('forbiddenfruit (> 0.1.0)', dependency_of='curdling')
+    maestro.file_package('forbiddenfruit (>= 0.1.2)', dependency_of='sure')
+
+    # Then I see I still have just one entry in the mapping
+    dict(maestro.mapping).should.equal({
+        'curdling': {None: [0, 0]},
+        'sure': {None: [0, 0, 0]},
+        'forbiddenfruit': {
+            '> 0.1.0': [0, 0, 1],
+            '>= 0.1.2': [0, 0, 0, 0],
+        },
     })
