@@ -16,7 +16,7 @@ def get_locator(conf):
         CurdlingLocator(u) for u in conf.get('curdling_urls', [])
     ] + [
         SimpleLocator(u, timeout=3.0) for u in conf.get('pypi_urls', [])
-    ]), scheme='adaptive')
+    ]), scheme='legacy')
 
 
 def get_opener(url):
