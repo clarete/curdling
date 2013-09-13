@@ -103,7 +103,7 @@ class Env(object):
             if package.startswith(blacklisted):
                 self.logger.level(2,
                     "Cowardly refusing to install blacklisted "
-                    "requirement `%s'", requirement)
+                    "requirement `%s'", package)
                 return False
 
         # # Well, the package is installed, let's just bail
