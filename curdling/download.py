@@ -108,7 +108,7 @@ class Downloader(Service):
         # iterating over other sources.
         if path:
             return {"path": path}
-        raise RuntimeError('Package `{0}\' not found'.format(package))
+        raise ReportableError('Package `{0}\' not found'.format(package))
 
     def get_servers_to_update(self):
         failures = {}
@@ -156,7 +156,7 @@ class Downloader(Service):
                 requirement.locator.opener,
                 requirement.download_url)
             return path
-        except Exception as exc:
+        except BaseException as exc:
             # Showing the cause
             args = getattr(exc, 'args')
             msg = args and str(args[0]) or exc.msg
