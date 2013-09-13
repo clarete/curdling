@@ -101,7 +101,17 @@ class Downloader(Service):
         self.locator = get_locator(self.logger, self.conf)
 
     def handle(self, requester, package, sender_data):
-        return {"path": self.attempt(package)}
+        prereleases = self.conf.get('prereleases', True)
+        requirement = self.locator.locate(package, prereleases)
+        if requirement is None:
+            raise RuntimeError('Package `{0}\' not found'.format(package))
+
+        # Here we're passing the same opener to the download function. In
+        # other words, we just want to use the same locator that was used
+        # to find the package to download it.
+        return {"path": self.download(
+            requirement.locator.opener,
+            requirement.download_url)}
 
     def get_servers_to_update(self):
         failures = {}
@@ -134,17 +144,3 @@ class Downloader(Service):
         return self.index.from_data(
             file_name and file_name[0] or url,
             b''.join(content))
-
-    def attempt(self, package):
-        prereleases = self.conf.get('prereleases', True)
-        requirement = self.locator.locate(package, prereleases)
-        if requirement is None:
-            raise RuntimeError('Package `{0}\' not found'.format(package))
-
-        # Here we're passing the same opener to the download function. In
-        # other words, we just want to use the same locator that was used
-        # to find the package to download it.
-        path = self.download(
-            requirement.locator.opener,
-            requirement.download_url)
-        return path
