@@ -34,7 +34,8 @@ def only(func, pattern):
 def mkbuild(func):
     @wraps(func)
     def wrapper(requester, package, **data):
-        return func(package, data.get('path'))
+        assert data['path']
+        return func(package, data['path'])
     return wrapper
 
 
@@ -57,8 +58,6 @@ class Env(object):
         self.downloader = Downloader(**args).start()
         self.curdler = Curdler(**args).start()
         self.dependencer = Dependencer(**args).start()
-        self.installer = Installer(**args).start()
-        self.uploader = Uploader(**args).start()
 
         # Building the pipeline
         self.downloader.connect('started', mkbuild(self.maestro.file_package))
@@ -68,9 +67,25 @@ class Env(object):
         self.dependencer.connect('dependency_found', self.request_install)
         self.dependencer.connect('built', mkbuild(self.maestro.mark_built))
 
-    def wait(self):
+        # Not starting the installer since we don't actually have a lot to do
+        # here right now. Check the `run` method, we'll call the installer
+        # after making sure all the dependencies are installed.
+        self.installer = Installer(**args)
+
+    def run(self):
         while self.maestro.pending_packages:
             time.sleep(0.5)
+
+        # We've got everything we need, let's rock it off!
+        self.installer.start()
+        for package, versions in self.maestro.mapping.items():
+            path = versions.values()[0]
+            self.installer.queue('main', package, path=path)
+        self.installer.join()
+
+        # Upload stuff
+        # self.uploader = Uploader(**args).start()
+
 
     def shutdown(self):
         self.logger.level(2, "*table flip*")
@@ -94,27 +109,27 @@ class Env(object):
         # if self.check_installed(requirement):
         #     return True
 
-        # # Looking for built packages
-        # try:
-        #     path = self.index.get("{0};whl".format(requirement))
-        #     data.update({'path': path})
-        #     self.services['install'].queue(requirement, requester, **data)
-        #     return False
-        # except PackageNotFound:
-        #     pass
+        # Let's tell the maestro we have a new challenger
+        self.maestro.file_package(package, dependency_of=data.get('dependency_of'))
 
-        # # Looking for downloaded packages. If there's packages of any of the
-        # # following distributions, we'll just build the wheel
-        # try:
-        #     path = self.index.get("{0};~whl".format(requirement))
-        #     data.update({'path': path})
-        #     self.services['curdling'].queue(requirement, requester, **data)
-        #     return False
-        # except PackageNotFound:
-        #     pass
+        # Looking for built packages
+        try:
+            path = self.index.get("{0};whl".format(package))
+            self.dependencer.queue(requester, package, path=path)
+            return False
+        except PackageNotFound:
+            pass
+
+        # Looking for downloaded packages. If there's packages of any of the
+        # following distributions, we'll just build the wheel
+        try:
+            path = self.index.get("{0};~whl".format(package))
+            self.curdler.queue(requester, package, path=path)
+            return False
+        except PackageNotFound:
+            pass
 
         # Nops, we really don't have the package
-        self.maestro.file_package(package, dependency_of=data.get('dependency_of'))
         self.downloader.queue(requester, package, **data)
         return False
 

@@ -105,7 +105,7 @@ def __run():
     env = prepare_env()
     try:
         # All the installation requests were made, let's just wait here
-        env.wait()
+        env.run()
     except KeyboardInterrupt:
         print('\b\bIs there cheese in your rug?')
         raise SystemExit(err_code(env.shutdown()))

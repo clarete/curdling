@@ -14,7 +14,8 @@ class Dependencer(Service):
 
     def handle(self, requester, package, sender_data):
         # Find the wheel
-        wheel = Wheel(sender_data.pop('path'))
+        path = sender_data.pop('path')
+        wheel = Wheel(path)
         run_time_dependencies = wheel.metadata.requires_dist
 
         for spec in run_time_dependencies:
@@ -23,4 +24,4 @@ class Dependencer(Service):
             self.emit('dependency_found', self.name,
                 dependency, requested_by=package)
         else:
-            self.emit('built', self.name, package)
+            self.emit('built', self.name, package, path=path)
