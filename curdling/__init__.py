@@ -65,10 +65,11 @@ class Env(object):
         self.dependencer.connect('dependency_found', self.request_install)
         self.dependencer.connect('built', mkbuild(self.maestro.mark_built))
 
-        # Not starting the installer since we don't actually have a lot to do
-        # here right now. Check the `run` method, we'll call the installer
-        # after making sure all the dependencies are installed.
+        # Not starting those guys since we don't actually have a lot to do here
+        # right now. Check the `run` method, we'll call the installer and
+        # uploader after making sure all the dependencies are installed.
         self.installer = Installer(**args)
+        self.uploader = Uploader(**args)
 
     def run(self):
         while self.maestro.pending_packages:
@@ -81,8 +82,15 @@ class Env(object):
             self.installer.queue('main', package, path=path)
         self.installer.join()
 
-        # Upload stuff
-        # self.uploader = Uploader(**args).start()
+        # Upload missing stuff that we couldn't find in curdling servers
+        if self.conf.get('upload'):
+            uploader = self.uploader.start()
+            failures = self.downloader.get_servers_to_update().items()
+            for server, packages in failures:
+                for package in packages:
+                    path = self.maestro.mapping[package].values()[0]
+                    uploader.queue('main', package, path=path, server=server)
+            uploader.join()
 
     def check_installed(self, package):
         return DistributionPath().get_distribution(
