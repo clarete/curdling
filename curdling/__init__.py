@@ -31,10 +31,10 @@ def only(func, pattern):
     return wrapper
 
 
-def pkg_name(func):
+def mkbuild(func):
     @wraps(func)
     def wrapper(requester, package, **data):
-        return func(package)
+        return func(package, data.get('path'))
     return wrapper
 
 
@@ -61,12 +61,12 @@ class Env(object):
         self.uploader = Uploader(**args).start()
 
         # Building the pipeline
-        self.downloader.connect('started', pkg_name(self.maestro.file_package))
+        self.downloader.connect('started', mkbuild(self.maestro.file_package))
         self.downloader.connect('finished', only(self.curdler.queue, r'^(?!.*\.whl$)'))
         self.downloader.connect('finished', only(self.dependencer.queue, r'.*\.whl$'))
         self.curdler.connect('finished', self.dependencer.queue)
         self.dependencer.connect('dependency_found', self.request_install)
-        self.dependencer.connect('built', pkg_name(self.maestro.mark_built))
+        self.dependencer.connect('built', mkbuild(self.maestro.mark_built))
 
     def wait(self):
         while self.maestro.pending_packages:

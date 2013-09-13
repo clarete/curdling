@@ -363,7 +363,7 @@ def test_maestro_pending_packages_no_deps():
 
     # When and I mark the package as `checked`,
     # meaning that all the dependencies were checked
-    maestro.mark_built('curdling')
+    maestro.mark_built('curdling', '')
 
     # Then I see it's still waiting for the dependency checking
     maestro.pending_packages.should.equal([])
@@ -387,5 +387,31 @@ def test_maestro_mapping_same_dependency():
         'forbiddenfruit': {
             '> 0.1.0': None,
             '>= 0.1.2': None,
+        },
+    })
+
+
+def test_maestro_mark_built_update_mapping():
+
+    # Given that I have a maestro with a couple packages filed under it
+    maestro = Maestro()
+    maestro.file_package('curdling', dependency_of=None)
+    maestro.file_package('sure', dependency_of='curdling')
+    maestro.file_package('forbiddenfruit (> 0.1.0)', dependency_of='curdling')
+    maestro.file_package('forbiddenfruit (>= 0.1.2)', dependency_of='sure')
+
+    # Wehn I mark the files as built
+    maestro.mark_built('curdling', '/curds/curdling.whl')
+    maestro.mark_built('sure', '/curds/sure.whl')
+    maestro.mark_built('forbiddenfruit (> 0.1.0)', '/curds/forbiddenfruit.whl')
+    maestro.mark_built('forbiddenfruit (>= 0.1.2)', '/curds/forbiddenfruit.whl')
+
+    # Then I see I still have just one entry in the mapping
+    dict(maestro.mapping).should.equal({
+        'curdling': {None: '/curds/curdling.whl'},
+        'sure': {None: '/curds/sure.whl'},
+        'forbiddenfruit': {
+            '> 0.1.0': '/curds/forbiddenfruit.whl',
+            '>= 0.1.2': '/curds/forbiddenfruit.whl',
         },
     })

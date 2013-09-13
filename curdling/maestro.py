@@ -4,6 +4,12 @@ from distlib.util import parse_requirement
 from .service import Service
 
 
+def getversion(requirement):
+    return (
+        ''.join(' '.join(x) for x in requirement.constraints or [])
+        or None)
+
+
 class Maestro(object):
 
     def __init__(self, *args, **kwargs):
@@ -14,17 +20,17 @@ class Maestro(object):
     def file_package(self, package, dependency_of=None):
         # Reading the package description
         requirement = parse_requirement(package)
-        version = (
-            ''.join(' '.join(x) for x in requirement.constraints or [])
-            or None)
+        version = getversion(requirement)
 
         # Saving back to the mapping
         self.mapping[requirement.name].update({
             version: None,
         })
 
-    def mark_built(self, package):
-        self.built.add(parse_requirement(package).name)
+    def mark_built(self, package, path):
+        pkg = parse_requirement(package)
+        self.built.add(pkg.name)
+        self.mapping[pkg.name][getversion(pkg)] = path
 
     @property
     def pending_packages(self):
