@@ -11,6 +11,7 @@ from .maestro import Maestro
 
 from .download import Downloader
 from .wheelhouse import Curdler
+from .dependency import Dependencer
 from .installer import Installer
 from .uploader import Uploader
 
@@ -24,7 +25,7 @@ PACKAGE_BLACKLIST = (
 def only(func, pattern):
     @wraps(func)
     def wrapper(requester, package, **data):
-        if re.findall(pattern, data.get('path', '')):
+        if re.match(pattern, data.get('path', '')):
             return func(requester, package, **data)
     return wrapper
 
@@ -45,18 +46,17 @@ class Env(object):
         })
 
         self.maestro = Maestro()
-        self.download = Downloader(**args).start()
-        self.curd = Curdler(**args).start()
-        self.instal = Installer(**args).start()
-        self.upload = Uploader(**args).start()
+        self.downloader = Downloader(**args).start()
+        self.curdler = Curdler(**args).start()
+        self.dependencer = Dependencer(**args).start()
+        self.installer = Installer(**args).start()
+        self.uploader = Uploader(**args).start()
 
         # Building the pipeline
-        self.download.connect('finished', self.curd.queue)
-
-        # self.download.connect('finished', only(self.curd.queue, r'whl$'))
-        # self.download.connect('requested', self.dependency.handle)
-        # self.curd.connect('finished', self.dependency.handle)
-        # self.dependency.connect('leaf-found', self.maestro.file_package)
+        self.downloader.connect('finished', only(self.curdler.queue, r'^(?!.*\.whl$)'))
+        self.downloader.connect('finished', only(self.dependencer.queue, r'.*\.whl$'))
+        self.curdler.connect('finished', self.dependencer.queue)
+        self.dependencer.connect('dependency_found', self.downloader.queue)
 
     def wait(self):
         import time
@@ -105,7 +105,7 @@ class Env(object):
         #     pass
 
         # Nops, we really don't have the package
-        self.download.queue(requester, requirement, **data)
+        self.downloader.queue(requester, requirement, **data)
         return False
 
     def uninstall(self, package):

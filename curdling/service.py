@@ -74,6 +74,6 @@ class Service(SignalEmitter):
                     'failed to run %s (requested by:%s) for package %s:',
                     self.name, requester, package, exc=exc)
             else:
-                self.emit('finished', self.name, package, **data)
+                self.emit('finished', self.name, package, **(data or {}))
                 self.logger.level(3, ' * %s.result(package=%s): %s ... ok',
                     self.name, package, data)
