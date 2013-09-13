@@ -24,7 +24,10 @@ def api_package(package):
     fmt = lambda u: url_for('download', package=u, _external=True)
     for release in current_app.index.package_releases(package, fmt):
         releases.append(release)
-    return json.dumps(releases)
+    if releases:
+        return json.dumps(releases)
+    else:
+        return json.dumps({'status': 'error'}), 404
 
 
 class Server(object):
