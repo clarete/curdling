@@ -335,10 +335,10 @@ def test_maestro_mapping():
     # Then I see that we have all the pacakges that were requested and we know
     # their position in the tree store
     dict(maestro.mapping).should.equal({
-        'curdling': {None: [0, 0]},
-        'setuptools': {None: [0, 0, 0]},
-        'sure': {None: [0, 0, 1]},
-        'forbiddenfruit': {None: [0, 0, 1, 0]},
+        'curdling': {None: None},
+        'setuptools': {None: None},
+        'sure': {None: None},
+        'forbiddenfruit': {None: None},
     })
 
 
@@ -382,10 +382,10 @@ def test_maestro_mapping_same_dependency():
 
     # Then I see I still have just one entry in the mapping
     dict(maestro.mapping).should.equal({
-        'curdling': {None: [0, 0]},
-        'sure': {None: [0, 0, 0]},
+        'curdling': {None: None},
+        'sure': {None: None},
         'forbiddenfruit': {
-            '> 0.1.0': [0, 0, 1],
-            '>= 0.1.2': [0, 0, 0, 0],
+            '> 0.1.0': None,
+            '>= 0.1.2': None,
         },
     })
