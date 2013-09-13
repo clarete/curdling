@@ -47,12 +47,6 @@ class TreeStore(object):
         (parent or self.root).nodes.append(node)
         return node
 
-    def append_node(self, parent, node):
-        node = node
-        parent = parent or node.parent or self.root
-        (parent).nodes.append(node)
-        return node
-
     def insert(self, parent, position, **data):
         node = Node(parent, data)
         (parent or self.root).nodes.insert(position, node)
