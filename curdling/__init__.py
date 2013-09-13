@@ -86,11 +86,6 @@ class Env(object):
         # Upload stuff
         # self.uploader = Uploader(**args).start()
 
-
-    def shutdown(self):
-        self.logger.level(2, "*table flip*")
-        return {}
-
     def check_installed(self, package):
         return DistributionPath().get_distribution(
             parse_requirement(package).name.replace('_', '-')) is not None

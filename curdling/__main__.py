@@ -94,27 +94,16 @@ def prepare_env():
     return env
 
 
-def err_code(errors):
-    # This function defines what's the error number that curdling will return!
-    # Yeah, it's a big deal! It's just a stub though. For now, this naive
-    # implementation returns success if no installations failed.
-    return errors.get('install', 0)
-
-
-def __run():
+def main():
     env = prepare_env()
     try:
         # All the installation requests were made, let's just wait here
         env.run()
     except KeyboardInterrupt:
         print('\b\bIs there cheese in your rug?')
-        raise SystemExit(err_code(env.shutdown()))
-    return {}
-
-
-def main():
-    return(err_code(__run()))
+        raise SystemExit(0)
+    return 0
 
 
 if __name__ == '__main__':
-    raise SystemExit(err_code(__run()))
+    raise SystemExit(main())
