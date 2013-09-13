@@ -18,6 +18,10 @@ from .uploader import Uploader
 import re
 import time
 
+SUCCESS = 0
+
+FAILURE = 1
+
 PACKAGE_BLACKLIST = (
     'setuptools',
 )
@@ -31,7 +35,7 @@ def only(func, pattern):
     return wrapper
 
 
-def mkbuild(func):
+def mark(func):
     @wraps(func)
     def wrapper(requester, package, **data):
         return func(package, data['path'])
@@ -61,9 +65,10 @@ class Env(object):
         # Building the pipeline
         self.downloader.connect('finished', only(self.curdler.queue, r'^(?!.*\.whl$)'))
         self.downloader.connect('finished', only(self.dependencer.queue, r'.*\.whl$'))
+        self.downloader.connect('failed', mark(self.maestro.mark_failed))
         self.curdler.connect('finished', self.dependencer.queue)
         self.dependencer.connect('dependency_found', self.request_install)
-        self.dependencer.connect('built', mkbuild(self.maestro.mark_built))
+        self.dependencer.connect('built', mark(self.maestro.mark_built))
 
         # Not starting those guys since we don't actually have a lot to do here
         # right now. Check the `run` method, we'll call the installer and
@@ -74,6 +79,13 @@ class Env(object):
     def run(self):
         while self.maestro.pending_packages:
             time.sleep(0.5)
+
+        if self.maestro.failed:
+            self.logger.level(0, "The following actions failed:")
+            for package in self.maestro.failed:
+                path = self.maestro.mapping[package].values()[0]
+                self.logger.level(0, " * %s", path)
+            return FAILURE
 
         # We've got everything we need, let's rock it off!
         self.installer.start()
@@ -91,6 +103,7 @@ class Env(object):
                     path = self.maestro.mapping[package].values()[0]
                     uploader.queue('main', package, path=path, server=server)
             uploader.join()
+        return SUCCESS
 
     def check_installed(self, package):
         return DistributionPath().get_distribution(

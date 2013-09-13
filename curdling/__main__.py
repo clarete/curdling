@@ -98,11 +98,10 @@ def main():
     env = prepare_env()
     try:
         # All the installation requests were made, let's just wait here
-        env.run()
+        return env.run()
     except KeyboardInterrupt:
         print('\b\bIs there cheese in your rug?')
         raise SystemExit(0)
-    return 0
 
 
 if __name__ == '__main__':

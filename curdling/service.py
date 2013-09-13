@@ -16,7 +16,6 @@ class Service(SignalEmitter):
         self.conf = args.pop('conf', {})
         self.index = args.pop('index', None)
         self.logger = Logger(self.name, args.get('log_level'))
-        self.failures = []
 
         # Components to implement the thread pool
         self._queue = Queue()
@@ -25,6 +24,7 @@ class Service(SignalEmitter):
         # Declaring signals
         self.started = Signal()
         self.finished = Signal()
+        self.failed = Signal()
 
     def queue(self, requester, package, **data):
         self._queue.put((requester, package, data))
@@ -66,13 +66,13 @@ class Service(SignalEmitter):
                 data = self.handle(requester, package, sender_data)
                 self._queue.task_done()
             except ReportableError as exc:
-                self.failures.append((package, exc))
-                self.logger.level(0, "Error: %s", exc)
+                self.logger.level(0, " # %s.error(): %s", self.name, exc)
+                self.emit('failed', self.name, package, path=exc)
             except BaseException as exc:
-                self.failures.append((package, exc))
+                self.emit('failed', self.name, package, path=exc)
                 self.logger.traceback(4,
                     'failed to run %s (requested by:%s) for package %s:',
-                    self.name, requester, package, exc=exc)
+                    self.name, requester, package)
             else:
                 self.emit('finished', self.name, package, **(data or {}))
                 self.logger.level(3, ' * %s.result(package=%s): %s ... ok',

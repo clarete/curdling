@@ -107,7 +107,7 @@ class Downloader(Service):
         # iterating over other sources.
         if path:
             return {"path": path}
-        raise ReportableError('No distributions found for {0}'.format(package))
+        raise RuntimeError('Package `{0}\' not found'.format(package))
 
     def get_servers_to_update(self):
         failures = {}
@@ -146,8 +146,7 @@ class Downloader(Service):
             prereleases = self.conf.get('prereleases', True)
             requirement = self.locator.locate(package, prereleases)
             if requirement is None:
-                raise RuntimeError(
-                    'No distribution found for {0}'.format(package))
+                raise RuntimeError('Package `{0}\' not found'.format(package))
 
             # Here we're passing the same opener to the download function. In
             # other words, we just want to use the same locator that was used
@@ -160,5 +159,5 @@ class Downloader(Service):
             # Showing the cause
             args = getattr(exc, 'args')
             msg = args and str(args[0]) or exc.msg
-            self.logger.level(2, '... failed (%s)', msg)
+            # self.logger.level(2, '   * %s ... failed (%s)', self.name, msg)
             self.logger.traceback(4, '', exc=exc)
