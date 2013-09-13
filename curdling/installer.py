@@ -10,6 +10,12 @@ import os
 
 class Installer(Service):
 
+    def handle(self, requester, package, sender_data):
+        source = sender_data[1].pop('path')
+        wheel_dirs = [os.path.dirname(source)]
+        install([source], wheel_dirs=wheel_dirs, force=True)
+        self.find_dependencies(package)
+
     def _spec2installable(self, spec):
         pkg = distlib.database.parse_requirement(spec)
         return "{0}{1}".format(pkg.name,
@@ -29,9 +35,3 @@ class Installer(Service):
             self.env.request_install(
                 self._spec2installable(dependency),
                 sender=self.name, data={'dependency-of': package})
-
-    def handle(self, package, sender_data):
-        source = sender_data[1].pop('path')
-        wheel_dirs = [os.path.dirname(source)]
-        install([source], wheel_dirs=wheel_dirs, force=True)
-        self.find_dependencies(package)

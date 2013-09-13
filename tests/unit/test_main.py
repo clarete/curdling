@@ -307,18 +307,18 @@ def test_signal():
 
     # And a content to store results of the callback function associated with
     # the `clicked` signal in the next lines
-    ctx = {}
+    callback = Mock()
 
     # And an instance of that button class
     b = Button()
-    b.connect('clicked', lambda *args, **kwargs: ctx.update(result=kwargs))
+    b.connect('clicked', callback)
 
     # When button instance gets clicked (IOW: when we emit the `clicked`
     # signal)
     b.emit('clicked', a=1, b=2)
 
     # Then we see that the  dictionary was populated as expected
-    ctx.should.equal({'result': {'a': 1, 'b': 2}})
+    callback.assert_called_once_with(a=1, b=2)
 
 
 def test_maestro_mapping():

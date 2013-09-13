@@ -7,19 +7,16 @@ import requests
 
 
 class Uploader(Service):
-    def __init__(self, sources, *args, **kwargs):
-        self.sources = sources
-        super(Uploader, self).__init__(*args, **kwargs)
+
+    def handle(self, requester, package, sender_data):
+        path = self.index.get("{0};whl".format(package))
+        for source in self.sources:
+            self.put(path, source)
 
     def put(self, path, source):
-        # Getting the wheel we're going to send
+        self.sources = self.conf.get('curdling_urls', [])
         package = os.path.basename(path)
         url = urlparse.urljoin(source, package)
         print(' * uploader:put {0}'.format(url), end='\n')
         with open(path, 'rb') as data:
             requests.put(url, files={package: data}, data={package: package})
-
-    def handle(self, package, sender_data):
-        path = self.index.get("{0};whl".format(package))
-        for source in self.sources:
-            self.put(path, source)

@@ -5,6 +5,7 @@ from distlib import database, metadata, compat, locators
 
 from . import util, ReportableError
 from .service import Service
+from .signal import Signal
 
 import re
 import json
@@ -90,7 +91,7 @@ class SimpleLocator(locators.SimpleScrapingLocator):
 
 class Downloader(Service):
 
-    def handle(self, package, sender_data):
+    def handle(self, requester, package, sender_data):
         path = self.attempt(package)
 
         # We log all the attempts to the second level. But if we can make it,

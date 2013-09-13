@@ -1,20 +1,32 @@
 from __future__ import unicode_literals, print_function, absolute_import
 from collections import namedtuple
+from functools import wraps
 from distlib.database import DistributionPath
 from distlib.util import parse_requirement
 from pip.commands.uninstall import UninstallCommand
 
 from .logging import Logger, ReportableError
-from .download import Downloader
-from .wheelhouse import Curdling
-from .installer import Installer
 from .index import PackageNotFound
+from .maestro import Maestro
+
+from .download import Downloader
+from .wheelhouse import Curdler
+from .installer import Installer
 from .uploader import Uploader
 
+import re
 
 PACKAGE_BLACKLIST = (
     'setuptools',
 )
+
+
+def only(func, pattern):
+    @wraps(func)
+    def wrapper(requester, package, **data):
+        if re.findall(pattern, data.get('path', '')):
+            return func(requester, package, **data)
+    return wrapper
 
 
 class Env(object):
@@ -22,7 +34,6 @@ class Env(object):
         self.conf = conf
         self.index = self.conf.get('index')
         self.logger = Logger('main', conf.get('log_level'))
-        self.services = {}
 
     def start_services(self):
         # General params for all the services
@@ -33,18 +44,24 @@ class Env(object):
             'conf': self.conf,
         })
 
-        # Tiem to create our tasty services :)
-        self.services['download'] = Downloader(**args)
-        self.services['curdling'] = Curdling(**args)
-        self.services['install'] = Installer(**args)
-        self.services['upload'] = Uploader(sources=args.get('curdling_urls', []), **args)
+        self.maestro = Maestro()
+        self.download = Downloader(**args).start()
+        self.curd = Curdler(**args).start()
+        self.instal = Installer(**args).start()
+        self.upload = Uploader(**args).start()
 
-        # Starting the services
-        self.logger.level(2, "starting services")
-        [x.start() for x in self.services.values()]
+        # Building the pipeline
+        self.download.connect('finished', self.curd.queue)
+
+        # self.download.connect('finished', only(self.curd.queue, r'whl$'))
+        # self.download.connect('requested', self.dependency.handle)
+        # self.curd.connect('finished', self.dependency.handle)
+        # self.dependency.connect('leaf-found', self.maestro.file_package)
 
     def wait(self):
-        [x.wait() for x in self.services.values()]
+        import time
+        while True:
+            time.sleep(0.5)
 
     def shutdown(self):
         self.logger.level(2, "*table flip*")
@@ -88,7 +105,7 @@ class Env(object):
         #     pass
 
         # Nops, we really don't have the package
-        self.services['download'].queue(requirement, requester, **data)
+        self.download.queue(requester, requirement, **data)
         return False
 
     def uninstall(self, package):

@@ -10,7 +10,7 @@ from curdling.logging import ReportableError
 from curdling.service import Service
 from curdling.index import Index
 from curdling.installer import Installer
-from curdling.wheelhouse import Curdling
+from curdling.wheelhouse import Curdler
 
 from . import FIXTURE
 
@@ -89,7 +89,7 @@ def test_downloader_with_no_sources():
     # When I try to retrieve a package from it, than I see it just blows up
     # with a nice exception
     downloader.handle.when.called_with(
-        'main', 'gherkin==0.1.0').should.throw(ReportableError)
+        'main', 'gherkin==0.1.0', {}).should.throw(ReportableError)
 
 
 def test_downloader():
@@ -106,7 +106,7 @@ def test_downloader():
     })
 
     # When I try to retrieve a package from it
-    package = downloader.handle('gherkin==0.1.0', 'main')
+    package = downloader.handle('gherkin==0.1.0', 'main', {})
 
     # Then I see that the package was downloaded correctly to the storage
     index.get('gherkin==0.1.0').should_not.be.empty
@@ -142,7 +142,7 @@ def test_curd_package():
     index.scan()
 
     # And a curdling using that index
-    curdling = Curdling(**{'index': index})
+    curdling = Curdler(**{'index': index})
 
     # When I request a curd to be created
     package = curdling.handle('gherkin==0.1.0', ('main', {

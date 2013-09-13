@@ -1,29 +1,36 @@
 from __future__ import unicode_literals, print_function, absolute_import
 from Queue import Queue
 from .logging import ReportableError, Logger
+from .signal import Signal, SignalEmitter
+
 import threading
 import time
 
 
-class Service(object):
+class Service(SignalEmitter):
+
     def __init__(self, **args):
+        super(Service, self).__init__()
+
         self.env = args.get('env')
         self.conf = args.pop('conf', {})
         self.index = args.pop('index', None)
         self.logger = Logger(self.name, args.get('log_level'))
         self.failures = []
 
+        # Components to implement the thread pool
         self._queue = Queue()
         self.pool = []
 
-    @property
-    def name(self):
-        return self.__class__.__name__.lower()
+        # Declaring signals
+        self.started = Signal()
+        self.finished = Signal()
 
-    def queue(self, package, sender_name, **data):
-        self._queue.put((package, (sender_name, data)))
+    def queue(self, requester, package, **data):
+        self._queue.put((requester, package, data))
         self.logger.level(3, ' * queue(from=%s, to=%s, package=%s, data=%s)',
-                          sender_name, self.name, package, data)
+            requester, self.name, package, data)
+        return self
 
     def start(self):
         self.logger.level(3, ' * %s.start()', self.name)
@@ -32,6 +39,7 @@ class Service(object):
             worker.daemon = True
             worker.start()
             self.pool.append(worker)
+        return self
 
     def wait(self):
         while all(worker.is_alive() for worker in self.pool):
@@ -49,14 +57,13 @@ class Service(object):
     # -- Private API --
 
     def _worker(self):
-        for package, sender_data in iter(self._queue.get, 'STOP'):
-            self.logger.level(3, ' * %s.wait(%s)', self.name,
-                threading.current_thread().name)
-
-            self.logger.level(3, ' * %s.run(package=%s, sender_data=%s)',
-                              self.name, package, sender_data)
+        for requester, package, sender_data in iter(self._queue.get, 'STOP'):
+            self.logger.level(3, ' * %s[%s].run(package=%s, sender_data=%s)',
+                self.name, threading.current_thread().name,
+                package, sender_data)
             try:
-                data = self.handle(package, sender_data)
+                self.emit('started', self.name, package, sender_data)
+                data = self.handle(requester, package, sender_data)
                 self._queue.task_done()
             except ReportableError as exc:
                 self.failures.append((package, exc))
@@ -65,7 +72,8 @@ class Service(object):
                 self.failures.append((package, exc))
                 self.logger.traceback(4,
                     'failed to run %s (requested by:%s) for package %s:',
-                    self.name, sender_data[0], package, exc=exc)
+                    self.name, requester, package, exc=exc)
             else:
+                self.emit('finished', self.name, package, **data)
                 self.logger.level(3, ' * %s.result(package=%s): %s ... ok',
-                                  self.name, package, data)
+                    self.name, package, data)

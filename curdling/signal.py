@@ -22,5 +22,7 @@ class SignalEmitter(object):
         self.get_signal_or_explode(signal).append(callback)
 
     def emit(self, signal, *args, **kwargs):
+        print(' + {0}.emit({1}, args={2}, kw={3})'.format(
+            self.name, signal, args, kwargs))
         for callback in self.get_signal_or_explode(signal):
             callback(*args, **kwargs)

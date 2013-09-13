@@ -104,10 +104,10 @@ def unpack(package, destination):
     return Script(os.path.join(destination, setup_py))
 
 
-class Curdling(Service):
+class Curdler(Service):
 
-    def handle(self, package, sender_data):
-        source = sender_data[1].pop('path')
+    def handle(self, requester, package, sender_data):
+        source = sender_data.pop('path')
 
         # Place used to unpack the wheel
         destination = tempfile.mkdtemp()
