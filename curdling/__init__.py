@@ -34,7 +34,6 @@ def only(func, pattern):
 def mkbuild(func):
     @wraps(func)
     def wrapper(requester, package, **data):
-        assert data['path']
         return func(package, data['path'])
     return wrapper
 
@@ -60,7 +59,6 @@ class Env(object):
         self.dependencer = Dependencer(**args).start()
 
         # Building the pipeline
-        self.downloader.connect('started', mkbuild(self.maestro.file_package))
         self.downloader.connect('finished', only(self.curdler.queue, r'^(?!.*\.whl$)'))
         self.downloader.connect('finished', only(self.dependencer.queue, r'.*\.whl$'))
         self.curdler.connect('finished', self.dependencer.queue)
