@@ -116,7 +116,7 @@ class Index(object):
         requirement = parse_requirement(spec)
 
         # [First step] Looking up the package name parsed from the spec
-        versions = self.storage.get(requirement.name)
+        versions = self.storage.get(requirement.name.lower())
         if not versions:
             raise PackageNotFound(spec, format_)
 

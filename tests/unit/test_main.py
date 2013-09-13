@@ -280,6 +280,10 @@ def test_index_get():
             "The index does not have the requested package: "
             "nonexisting (== 0.2.1)"))
 
+    # Case insensitive
+    index.get('Gherkin').should.equal('gherkin-0.2.0.tar.gz')
+
+
 
 def test_index_get_corner_case_pkg_name():
     "It should be possible to search for packages that contain `_` in their name"
