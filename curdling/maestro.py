@@ -33,11 +33,11 @@ class Maestro(object):
         getattr(self, attr).add(pkg.name)
         self.mapping[pkg.name][getversion(pkg)] = data
 
-    def mark_built(self, package, path):
-        self._mark('built', package, path)
+    def mark_built(self, package, data):
+        self._mark('built', package, data)
 
-    def mark_failed(self, package, exc):
-        self._mark('failed', package, exc)
+    def mark_failed(self, package, data):
+        self._mark('failed', package, data)
 
     @property
     def pending_packages(self):

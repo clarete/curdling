@@ -66,8 +66,8 @@ class Service(SignalEmitter):
                 data = self.handle(requester, package, sender_data)
                 self._queue.task_done()
             except ReportableError as exc:
-                self.logger.level(0, " # %s.error(): %s", self.name, exc)
                 self.emit('failed', self.name, package, path=exc)
+                self.logger.level(0, " # %s.error(): %s", self.name, exc)
             except BaseException as exc:
                 self.emit('failed', self.name, package, path=exc)
                 self.logger.traceback(4,

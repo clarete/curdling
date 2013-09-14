@@ -84,6 +84,7 @@ class Env(object):
 
     def run(self):
         while self.maestro.pending_packages:
+            # print(self.maestro.built)
             time.sleep(0.5)
 
         if self.maestro.failed:
