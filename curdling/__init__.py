@@ -91,22 +91,31 @@ class Env(object):
             return FAILURE
 
         # We've got everything we need, let's rock it off!
+        self.run_installer()
+
+        # Upload missing stuff that we couldn't find in curdling servers
+        if self.conf.get('upload'):
+            self.run_uploader()
+        return SUCCESS
+
+    def run_installer(self):
         self.installer.start()
         for package, versions in self.maestro.mapping.items():
             path = versions.values()[0]
             self.installer.queue('main', package, path=path)
         self.installer.join()
 
-        # Upload missing stuff that we couldn't find in curdling servers
-        if self.conf.get('upload'):
-            uploader = self.uploader.start()
-            failures = self.downloader.get_servers_to_update().items()
-            for server, packages in failures:
-                for package in packages:
-                    path = self.maestro.mapping[package].values()[0]
-                    uploader.queue('main', package, path=path, server=server)
-            uploader.join()
-        return SUCCESS
+    def run_uploader(self):
+        failures = self.downloader.get_servers_to_update()
+        if not failures:
+            return
+
+        uploader = self.uploader.start()
+        for server, packages in failures.items():
+            for package in packages:
+                path = self.maestro.mapping[package].values()[0]
+                uploader.queue('main', package, path=path, server=server)
+        uploader.join()
 
     def check_installed(self, package):
         return DistributionPath().get_distribution(
