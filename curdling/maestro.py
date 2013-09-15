@@ -39,6 +39,10 @@ class Maestro(object):
     def mark_failed(self, package, data):
         self._mark('failed', package, data)
 
+    def should_queue(self, package):
+        pkg = parse_requirement(package)
+        return pkg.name not in self.mapping
+
     @property
     def pending_packages(self):
         return list(set(self.mapping.keys())

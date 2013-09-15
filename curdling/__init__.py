@@ -85,7 +85,6 @@ class Env(object):
 
     def run(self):
         while self.maestro.pending_packages:
-            # print(self.maestro.built)
             time.sleep(0.5)
 
         if self.maestro.failed:
@@ -136,6 +135,10 @@ class Env(object):
         # # Well, the package is installed, let's just bail
         # if self.check_installed(requirement):
         #     return True
+
+        # We shouldn't queue the same package twice
+        if not self.maestro.should_queue(package):
+            return False
 
         # Let's tell the maestro we have a new challenger
         self.maestro.file_package(package, dependency_of=data.get('dependency_of'))

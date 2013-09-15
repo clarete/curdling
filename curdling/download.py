@@ -10,6 +10,7 @@ from .signal import Signal
 import re
 import json
 
+
 def get_locator(logger, conf):
     return locators.AggregatingLocator(*([
         CurdlingLocator(logger, u) for u in conf.get('curdling_urls', [])
