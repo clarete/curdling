@@ -63,23 +63,33 @@ class PyPiLocator(locators.SimpleScrapingLocator):
             urljoin(self.base_url, '%s/' % compat.quote(name)),
             name)
 
-    def _visit_link(self, project_name, link, versions):
+    def _visit_link(self, project_name, link):
         self._seen.add(link)
         locators.logger.debug('_fetch() found link: %s', link)
         info = not self._is_platform_dependent(link) \
             and self.convert_url_to_download_info(link, project_name) \
             or None
 
+        versions = {}
         if info:
             self._update_version_data(versions, info)
+            return versions.items()[0]
+        return None, None
 
     def _fetch(self, url, project_name):
         locators.logger.debug('fetch(%s, %s)', url, project_name)
         versions = {}
         page = self.get_page(url)
         for link, rel in (page and page.links or []):
+            # Let's not see anything twice, I saw this check on distlib it
+            # might be useful.
             if link not in self._seen:
-                self._visit_link(project_name, link, versions)
+                # Well, here we're ensuring that the first link of a given
+                # version will be the one. Even if we find another package for
+                # the same version, the first one will be used.
+                version, distribution = self._visit_link(project_name, link)
+                if version and version not in versions:
+                    versions[version] = distribution
         return versions
 
     def get_page(self, url):
