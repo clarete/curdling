@@ -21,6 +21,7 @@ def get_locator(component):
 
 
 class Pool(urllib3.PoolManager):
+
     def retrieve(self, url):
         attempts = 5
         headers = {}
@@ -31,11 +32,15 @@ class Pool(urllib3.PoolManager):
             auth = '{0}:{1}'.format(parsed.username, parsed.password)
             headers = urllib3.util.make_headers(basic_auth=auth)
 
+        # Params to be passed to request. The `preload_content` must be set to
+        # False, otherwise `read()` wont honor `decode_content`.
+        params = {'headers': headers, 'preload_content': False}
+
         # Request the url and ensure we've reached the final location
-        response = self.request('GET', url, headers=headers)
+        response = self.request('GET', url, **params)
         redirect = response.get_redirect_location()
         while redirect:
-            response = self.request('GET', redirect, headers=headers)
+            response = self.request('GET', redirect, **params)
             redirect = response.get_redirect_location()
 
             # let's see if there's anyone trying to drive retrieve() crazy by
@@ -168,4 +173,5 @@ class Downloader(Service):
         header = response.headers.get('content-disposition', '')
         file_name = re.findall(r'filename=([^;]+)', header)
         return self.index.from_data(
-            file_name and file_name[0] or url, response.data)
+            file_name and file_name[0] or url, response.read(
+                cache_content=True, decode_content=False))
