@@ -130,7 +130,7 @@ class Downloader(Service):
         prereleases = self.conf.get('prereleases', True)
         requirement = self.locator.locate(package, prereleases)
         if requirement is None:
-            raise RuntimeError('Package `{0}\' not found'.format(package))
+            raise ReportableError('Package `{0}\' not found'.format(package))
 
         # Here we're passing the same opener to the download function. In
         # other words, we just want to use the same locator that was used

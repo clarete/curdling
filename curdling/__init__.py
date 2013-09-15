@@ -67,6 +67,7 @@ class Env(object):
         self.downloader.connect('finished', only(self.dependencer.queue, r'.*\.whl$'))
         self.downloader.connect('failed', mark(self.maestro.mark_failed))
         self.curdler.connect('finished', self.dependencer.queue)
+        self.curdler.connect('failed', mark(self.maestro.mark_failed))
         self.dependencer.connect('dependency_found', self.request_install)
         self.dependencer.connect('built', mark(self.maestro.mark_built))
 
@@ -79,8 +80,8 @@ class Env(object):
     def report(self):
         self.logger.level(0, 'Is there cheese in your rug?')
         for package in self.maestro.failed:
-            path = self.maestro.mapping[package].values()[0]
-            self.logger.level(0, " * %s", path)
+            data = self.maestro.mapping[package].values()[0]
+            self.logger.level(0, " * %s: %s", data.__class__.__name__, data)
 
     def run(self):
         while self.maestro.pending_packages:

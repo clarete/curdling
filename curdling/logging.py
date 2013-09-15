@@ -31,7 +31,9 @@ class Logger(object):
 
     def traceback(self, level, msg, *args, **kwargs):
         # Print out banner
-        msg = "{0} ({1})".format(msg, kwargs.get('exc'))
+        exc = kwargs.get('exc')
+        msg = msg if not exc else \
+            "{0} ({1}: {2})".format(msg, exc.__class__.__name__, exc)
         self.level(level, msg, *args, kind='error')
 
         # Than the last traceback

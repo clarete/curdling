@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from .service import Service
+from . import ReportableError
 
 import os
 import re
@@ -48,7 +49,7 @@ def guess_file_type(filename):
     for magic, filetype in SUPPORTED_FORMATS.items():
         if file_start.startswith(magic):
             return filetype
-    raise RuntimeError('Unknown compress format for file %s' % filename)
+    raise ReportableError('Unknown compress format for file %s' % filename)
 
 
 class Script(object):
