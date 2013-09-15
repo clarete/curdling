@@ -78,7 +78,8 @@ class Env(object):
         self.uploader = Uploader(**args)
 
     def report(self):
-        self.logger.level(0, 'Is there cheese in your rug?')
+        if self.maestro.failed:
+            self.logger.level(0, 'Some cheese was spilled in the process:')
         for package in self.maestro.failed:
             data = self.maestro.mapping[package].values()[0]
             self.logger.level(0, " * %s: %s", data.__class__.__name__, data)
