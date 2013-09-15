@@ -1,8 +1,14 @@
+import threading
+
+
 class Signal(list):
     pass
 
 
 class SignalEmitter(object):
+
+    def __init__(self):
+        self.lock = threading.RLock()
 
     @property
     def name(self):
@@ -10,7 +16,8 @@ class SignalEmitter(object):
 
     def get_signal_or_explode(self, signal):
         try:
-            return getattr(self, signal)
+            with self.lock:
+                return getattr(self, signal)
         except AttributeError:
             raise AttributeError(
                 "There is no such signal({0} in this emitter({1})",
