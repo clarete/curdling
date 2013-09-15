@@ -1,107 +1,57 @@
 from __future__ import absolute_import, unicode_literals, print_function
-from urllib2 import HTTPPasswordMgrWithDefaultRealm, HTTPError, URLError
-from urlparse import urljoin
 from distlib import database, metadata, compat, locators
+from urlparse import urljoin
 
 from . import util, ReportableError
 from .service import Service
 from .signal import Signal
 
 import re
-import json
+import urllib3
+
+# import logging
+# logging.basicConfig(level=logging.DEBUG)
 
 
-def get_locator(logger, conf):
-    return locators.AggregatingLocator(*([
-        CurdlingLocator(logger, u) for u in conf.get('curdling_urls', [])
-    ] + [
-        SimpleLocator(u, timeout=3.0) for u in conf.get('pypi_urls', [])
-    ]), scheme='legacy')
+def get_locator(component):
+    get = component.conf.get
+    curds = [CurdlingLocator(u) for u in get('curdling_urls', [])]
+    pypi = [PyPiLocator(u) for u in get('pypi_urls', [])]
+    return locators.AggregatingLocator(*(curds + pypi), scheme='legacy')
 
 
-def get_opener(url):
-    # Set the actual base_url, without credentials info
-    url = compat.urlparse(url)
-    base_url = lambda p=url.path: '{0}://{1}:{2}{3}'.format(
-        url.scheme, url.hostname, url.port or 80, p)
+class Pool(urllib3.PoolManager):
+    def retrieve(self, url):
+        attempts = 5
 
-    # Prepare the list of handlers that will be added to the opener
-    handlers = []
-    if url.username and url.password:
-        manager = HTTPPasswordMgrWithDefaultRealm()
-        manager.add_password(None, base_url(), url.username, url.password)
-        manager.add_password(None, base_url('/packages/'), url.username, url.password)
-        handlers.append(compat.HTTPBasicAuthHandler(manager))
+        # Request the url and ensure we've reached the final location
+        response = self.request('GET', url)
+        redirect = response.get_redirect_location()
+        while redirect:
+            response = self.request('GET', redirect)
+            redirect = response.get_redirect_location()
 
-    # Define a new opener based on the things we found above
-    return base_url(), compat.build_opener(*handlers)
+            # let's see if there's anyone trying to drive retrieve() crazy by
+            # always redirecting to another redirectable url
+            attempts -= 1
+            if not attempts:
+                raise RuntimeError('Maximum redirect attempts reached')
+
+        return response, url
 
 
-class CurdlingLocator(locators.Locator):
+class PyPiLocator(locators.SimpleScrapingLocator):
 
-    def __init__(self, logger, url, **kwargs):
-        super(CurdlingLocator, self).__init__(**kwargs)
-        self.original_url = url
-        self.logger = logger
-        self.url, self.opener = get_opener(url)
-        self.packages_not_found = []
-
-    def get_distribution_names(self):
-        url = urljoin(self.url, 'api')
-        response = self.opener.open(compat.Request(url))
-        return json.loads(response.read())
+    def __init__(self, url, **kwargs):
+        super(PyPiLocator, self).__init__(url, **kwargs)
+        self.opener = Pool()
 
     def _get_project(self, name):
-        # Retrieve the info
-        url = urljoin(self.url, 'api/' + name)
-        try:
-            response = self.opener.open(compat.Request(url))
-        except (URLError, HTTPError) as exc:
-            # We just bail if any 404 HTTP Errors happened. Cause it just means
-            # that the package was not found.
-            if getattr(exc, 'getcode', lambda: -1)() == 404:
-                self.packages_not_found.append(name)
+        return self._fetch(
+            urljoin(self.base_url, '%s/' % compat.quote(name)),
+            name)
 
-            # We can't raise an exception here, but we can still log the
-            # exception so the user will know what's going on
-            self.logger.traceback(4, 'Error reaching curd server', exc=exc)
-            return
-
-        data = json.loads(response.read())
-        result = {}
-
-        for version in data:
-            # Source url for the package
-            source_url = version['urls'][0]  # TODO: prefer whl files
-
-            # Build the metadata
-            mdata = metadata.Metadata(scheme=self.scheme)
-            mdata.name = version['name']
-            mdata.version = version['version']
-            mdata.source_url = mdata.download_url = source_url['url']
-
-            # Building the dist and associating the download url
-            distribution = database.Distribution(mdata)
-            distribution.locator = self
-            result[version['version']] = distribution
-
-        return result
-
-
-class SimpleLocator(locators.SimpleScrapingLocator):
-
-    def __init__(self, *args, **kwargs):
-        super(SimpleLocator, self).__init__(*args, **kwargs)
-        self.base_url, self.opener = get_opener(self.base_url)
-
-    def _get_project(self, name):
-        # Cleaning up our caches
-        self._seen.clear()
-        self._page_cache.clear()
-        url = urljoin(self.base_url, '%s/' % compat.quote(name))
-        return self.fetch(url, name)
-
-    def visit_link(self, project_name, link, versions):
+    def _visit_link(self, project_name, link, versions):
         self._seen.add(link)
         locators.logger.debug('_fetch() found link: %s', link)
         info = not self._is_platform_dependent(link) \
@@ -111,34 +61,89 @@ class SimpleLocator(locators.SimpleScrapingLocator):
         if info:
             self._update_version_data(versions, info)
 
-    def fetch(self, url, project_name):
-        locators.logger.debug('_fetch(%s, %s)', url, project_name)
+    def _fetch(self, url, project_name):
+        locators.logger.debug('fetch(%s, %s)', url, project_name)
         versions = {}
         page = self.get_page(url)
         for link, rel in (page and page.links or []):
             if link not in self._seen:
-                self.visit_link(project_name, link, versions)
+                self._visit_link(project_name, link, versions)
         return versions
+
+    def get_page(self, url):
+        # http://peak.telecommunity.com/DevCenter/EasyInstall#package-index-api
+        scheme, netloc, path, _, _, _ = compat.urlparse(url)
+        if scheme == 'file' and os.path.isdir(url2pathname(path)):
+            url = urljoin(ensure_slash(url), 'index.html')
+
+        # The `retrieve()` method follows any eventual redirects, so the
+        # initial url might be different from the final one
+        response, final_url = self.opener.retrieve(url)
+        content_type = response.headers.get('content-type', '')
+        if locators.HTML_CONTENT_TYPE.match(content_type):
+            data = response.data
+            encoding = response.headers.get('content-encoding')
+            if encoding:
+                decoder = self.decoders[encoding]   # fail if not found
+                data = decoder(data)
+            encoding = 'utf-8'
+            m = locators.CHARSET.search(content_type)
+            if m:
+                encoding = m.group(1)
+            try:
+                data = data.decode(encoding)
+            except UnicodeError:
+                data = data.decode('latin-1')    # fallback
+            return locators.Page(data, final_url)
+
+
+class CurdlingLocator(locators.Locator):
+
+    def __init__(self, url, **kwargs):
+        super(CurdlingLocator, self).__init__(**kwargs)
+        self.original_url = url
+        self.url = url
+        self.opener = URLOpener()
+        self.packages_not_found = []
+
+    def get_distribution_names(self):
+        return self.opener.json(urljoin(self.url, 'api'))
+
+    def _get_project(self, name):
+        # Retrieve the info
+        return {v['version']: self.get_distribution(v) for v in
+            self.opener.json(
+                urljoin(self.url, 'api/' + name))}
+
+    def _get_distribution(self, version_info):
+        # Source url for the package
+        source_url = version['urls'][0]  # TODO: prefer whl files
+
+        # Build the metadata
+        mdata = metadata.Metadata(scheme=self.scheme)
+        mdata.name = version['name']
+        mdata.version = version['version']
+        mdata.source_url = mdata.download_url = source_url['url']
+
+        # Building the dist and associating the download url
+        distribution = database.Distribution(mdata)
+        distribution.locator = self
+        return distribution
 
 
 class Downloader(Service):
 
     def __init__(self, *args, **kwargs):
         super(Downloader, self).__init__(*args, **kwargs)
-        self.locator = get_locator(self.logger, self.conf)
+        self.opener = Pool()
+        self.locator = get_locator(self.conf)
 
     def handle(self, requester, package, sender_data):
         prereleases = self.conf.get('prereleases', True)
         requirement = self.locator.locate(package, prereleases)
         if requirement is None:
             raise ReportableError('Package `{0}\' not found'.format(package))
-
-        # Here we're passing the same opener to the download function. In
-        # other words, we just want to use the same locator that was used
-        # to find the package to download it.
-        return {"path": self.download(
-            requirement.locator.opener,
-            requirement.download_url)}
+        return {"path": self.download(requirement.download_url)}
 
     def get_servers_to_update(self):
         failures = {}
@@ -149,25 +154,11 @@ class Downloader(Service):
 
     # -- Private API of the Download service --
 
-    def download(self, opener, url):
-        response = opener.open(compat.Request(url))
-        try:
-            content = []
-            headers = response.info()
-            blocksize = 8192
-            read = 0
-            while True:
-                block = response.read(blocksize)
-                if not block:
-                    break
-                read += len(block)
-                content.append(block)
-        finally:
-            response.close()
+    def download(self, url):
+        response, _ = self.opener.retrieve(url)
 
         # Now that we're sure that our request was successful
         header = response.headers.get('content-disposition', '')
         file_name = re.findall(r'filename=([^;]+)', header)
         return self.index.from_data(
-            file_name and file_name[0] or url,
-            b''.join(content))
+            file_name and file_name[0] or url, response.data)
