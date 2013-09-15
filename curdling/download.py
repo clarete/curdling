@@ -23,12 +23,19 @@ def get_locator(component):
 class Pool(urllib3.PoolManager):
     def retrieve(self, url):
         attempts = 5
+        headers = {}
+
+        # Authentication
+        parsed = compat.urlparse(url)
+        if parsed.username:
+            auth = '{0}:{1}'.format(parsed.username, parsed.password)
+            headers = urllib3.util.make_headers(basic_auth=auth)
 
         # Request the url and ensure we've reached the final location
-        response = self.request('GET', url)
+        response = self.request('GET', url, headers=headers)
         redirect = response.get_redirect_location()
         while redirect:
-            response = self.request('GET', redirect)
+            response = self.request('GET', redirect, headers=headers)
             redirect = response.get_redirect_location()
 
             # let's see if there's anyone trying to drive retrieve() crazy by
