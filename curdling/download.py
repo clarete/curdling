@@ -131,7 +131,12 @@ class CurdlingLocator(locators.Locator):
 
     def _get_project(self, name):
         # Retrieve the info
-        response, _ = self.opener.retrieve(urljoin(self.url, 'api/' + name))
+        url = urljoin(self.url, 'api/' + name)
+        try:
+            response, _ = self.opener.retrieve(url)
+        except urllib3.exceptions.MaxRetryError:
+            return None
+
         if response.status == 200:
             data = json.loads(response.data)
             return {v['version']: self._get_distribution(v) for v in data}
