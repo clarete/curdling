@@ -7,11 +7,9 @@ from .service import Service
 from .signal import Signal
 
 import re
+import json
 import urllib3
 import urllib3.exceptions
-
-# import logging
-# logging.basicConfig(level=logging.DEBUG)
 
 
 def get_locator(component):
@@ -123,19 +121,24 @@ class CurdlingLocator(locators.Locator):
         super(CurdlingLocator, self).__init__(**kwargs)
         self.original_url = url
         self.url = url
-        self.opener = URLOpener()
+        self.opener = Pool()
         self.packages_not_found = []
 
     def get_distribution_names(self):
-        return self.opener.json(urljoin(self.url, 'api'))
+        return json.loads(
+            self.opener.retrieve(
+                urljoin(self.url, 'api'))[0].data)
 
     def _get_project(self, name):
         # Retrieve the info
-        return {v['version']: self.get_distribution(v) for v in
-            self.opener.json(
-                urljoin(self.url, 'api/' + name))}
+        response, _ = self.opener.retrieve(urljoin(self.url, 'api/' + name))
+        if response.status == 200:
+            data = json.loads(response.data)
+            return {v['version']: self._get_distribution(v) for v in data}
+        else:
+            self.packages_not_found.append(name)
 
-    def _get_distribution(self, version_info):
+    def _get_distribution(self, version):
         # Source url for the package
         source_url = version['urls'][0]  # TODO: prefer whl files
 
