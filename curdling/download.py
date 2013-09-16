@@ -39,18 +39,7 @@ class Pool(urllib3.PoolManager):
 
         # Request the url and ensure we've reached the final location
         response = self.request('GET', url, **params)
-        redirect = response.get_redirect_location()
-        while redirect:
-            response = self.request('GET', redirect, **params)
-            redirect = response.get_redirect_location()
-
-            # let's see if there's anyone trying to drive retrieve() crazy by
-            # always redirecting to another redirectable url
-            attempts -= 1
-            if not attempts:
-                raise RuntimeError('Maximum redirect attempts reached')
-
-        return response, url
+        return response, response.get_redirect_location() or url
 
 
 class PyPiLocator(locators.SimpleScrapingLocator):
