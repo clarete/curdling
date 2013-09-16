@@ -12,10 +12,9 @@ import urllib3
 import urllib3.exceptions
 
 
-def get_locator(component):
-    get = component.conf.get
-    curds = [CurdlingLocator(u) for u in get('curdling_urls', [])]
-    pypi = [PyPiLocator(u) for u in get('pypi_urls', [])]
+def get_locator(conf):
+    curds = [CurdlingLocator(u) for u in conf.get('curdling_urls', [])]
+    pypi = [PyPiLocator(u) for u in conf.get('pypi_urls', [])]
     return locators.AggregatingLocator(*(curds + pypi), scheme='legacy')
 
 

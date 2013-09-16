@@ -81,15 +81,16 @@ def test_service_failure():
 
 
 def test_downloader_with_no_sources():
-    "It should be possible to download packages from pip repos"
+    "It should be possible to download packages from pip repos with no sources"
 
     # Given the following downloader component with NO SOURCES
-    downloader = Downloader(index=Index(''))
+    downloader = Downloader(**{'index': Index('')})
 
     # When I try to retrieve a package from it, than I see it just blows up
     # with a nice exception
     downloader.handle.when.called_with(
         'main', 'gherkin==0.1.0', {}).should.throw(ReportableError)
+
 
 def test_downloader():
     "It should be possible to download packages from pip repos"
@@ -130,7 +131,7 @@ def test_downloader_with_no_packages():
     # When I try to retrieve a package from it
     downloader.handle.when.called_with(
         'main', 'donotexist==0.1.0', {}).should.throw(ReportableError,
-            'No distributions found for donotexist==0.1.0')
+            'Package `donotexist==0.1.0\' not found')
 
 
 def test_curd_package():
