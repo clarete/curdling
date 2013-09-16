@@ -42,8 +42,8 @@ def test_expand_requirements(open_func):
 def test_expand_commented_requirements(open_func):
     "expand_requirements() should skip commented lines"
 
-    # Given that I have two files, called `development.txt` and
-    # `requirements.txt` with the following content:
+    # Given that I have a file `development.txt` and with the following
+    # content:
     open_func.return_value.read.return_value = (
         '# -r requirements.txt\n\n\n'   # comment
         'gherkin==0.1.0\n\n\n'          # requirements.txt
@@ -57,6 +57,24 @@ def test_expand_commented_requirements(open_func):
         'gherkin (== 0.1.0)',
     ])
 
+
+@patch('io.open')
+def test_expand_requirements_ignore_http_links(open_func):
+    "It should be possible to parse files with http links"
+
+    # Given that I have a file `development.txt` and with the following
+    # content:
+    open_func.return_value.read.return_value = (
+        'sure==0.2.1\nhttp://python.org'
+    )
+
+    # When I expand the requirements
+    requirements = expand_requirements('development.txt')
+
+    # Then I see that all the required files were retrieved
+    requirements.should.equal([
+        'sure (== 0.2.1)',
+    ])
 
 
 def test_filehash():
