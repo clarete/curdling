@@ -24,14 +24,15 @@ class Maestro(object):
         version = getversion(requirement)
 
         # Saving back to the mapping
-        self.mapping[requirement.name].update({
+        self.mapping[requirement.name.lower()].update({
             version: None,
         })
 
     def _mark(self, attr, package, data):
         pkg = parse_requirement(package)
-        getattr(self, attr).add(pkg.name)
-        self.mapping[pkg.name][getversion(pkg)] = data
+        name = pkg.name.lower()
+        getattr(self, attr).add(name)
+        self.mapping[name][getversion(pkg)] = data
 
     def mark_built(self, package, data):
         self._mark('built', package, data)
@@ -41,7 +42,7 @@ class Maestro(object):
 
     def should_queue(self, package):
         pkg = parse_requirement(package)
-        return pkg.name not in self.mapping
+        return pkg.name.lower() not in self.mapping
 
     @property
     def pending_packages(self):
