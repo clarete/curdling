@@ -2,15 +2,19 @@ from __future__ import absolute_import, unicode_literals, print_function
 from mock import call, patch, Mock
 from nose.tools import nottest
 
+import io
 import os
 import errno
 
 from curdling import Env
 from curdling.index import Index, PackageNotFound
-from curdling.util import expand_requirements
+from curdling.util import expand_requirements, filehash
 from curdling.service import Service
 from curdling.signal import Signal, SignalEmitter
 from curdling.maestro import Maestro
+
+
+# -- curdling/util.py --
 
 
 @patch('io.open')
@@ -34,6 +38,43 @@ def test_expand_requirements(open_func):
     ])
 
 
+@patch('io.open')
+def test_expand_commented_requirements(open_func):
+    "expand_requirements() should skip commented lines"
+
+    # Given that I have two files, called `development.txt` and
+    # `requirements.txt` with the following content:
+    open_func.return_value.read.return_value = (
+        '# -r requirements.txt\n\n\n'   # comment
+        'gherkin==0.1.0\n\n\n'          # requirements.txt
+    )
+
+    # When I expand the requirements
+    requirements = expand_requirements('development.txt')
+
+    # Then I see that all the required files were retrieved
+    requirements.should.equal([
+        'gherkin (== 0.1.0)',
+    ])
+
+
+
+def test_filehash():
+    "filehash() should return the hash file objects"
+
+    # Given that I have a file instance
+    fp = io.StringIO('My Content')
+
+    # When I call the filehash function
+    hashed = filehash(fp, 'md5')
+
+    # Then I see the hash was right
+    hashed.should.equal('a86c5dea3ad44078a1f79f9cf2c6786d')
+
+
+# -- curdling/__init__.py --
+
+
 @patch('curdling.DistributionPath')
 def test_check_installed(DistributionPath):
     "It should be possible to check if a certain package is currently installed"
@@ -45,7 +86,6 @@ def test_check_installed(DistributionPath):
     Env({}).check_installed('gherkin==0.1.0').should.be.false
 
 
-@nottest
 def test_request_install_no_cache():
     "Request the installation of a package when there is no cache"
 
@@ -53,36 +93,37 @@ def test_request_install_no_cache():
     index = Mock()
     index.get.side_effect = PackageNotFound('gherkin==0.1.0', 'whl')
     env = Env(conf={'index': index})
+    env.start_services()
     env.check_installed = Mock(return_value=False)
-    env.services['download'] = Mock()
+    env.downloader = Mock()
 
     # When I request an installation of a package
-    env.request_install('gherkin==0.1.0')
+    env.request_install('main', 'gherkin==0.1.0')
 
     # Then I see that the caches were checked
     env.check_installed.assert_called_once_with('gherkin==0.1.0')
+
     list(env.index.get.call_args_list).should.equal([
         call('gherkin==0.1.0;whl'),
         call('gherkin==0.1.0;~whl'),
     ])
 
     # And then I see that the download queue was populated
-    env.services['download'].queue.assert_called_once_with(
-        'gherkin==0.1.0', 'main')
+    env.downloader.queue.assert_called_once_with('main', 'gherkin==0.1.0')
 
 
-@nottest
 def test_request_install_installed_package():
     "Request the installation of an already installed package"
 
     # Given that I have an environment
     index = Mock()
     env = Env(conf={'index': index})
+    env.start_services()
     env.check_installed = Mock(return_value=True)
-    env.services['download'] = Mock()
+    env.downloader = Mock()
 
     # When I request an installation of a package
-    env.request_install('gherkin==0.1.0').should.be.true
+    env.request_install('main', 'gherkin==0.1.0').should.be.true
 
     # Then I see that, since the package was installed, the local cache was not
     # queried
@@ -90,10 +131,9 @@ def test_request_install_installed_package():
     env.index.get.called.should.be.false
 
     # And then I see that the download queue was not touched
-    env.services['download'].queue.called.should.be.false
+    env.downloader.queue.called.should.be.false
 
 
-@nottest
 def test_request_install_cached_package():
     "Request the installation of a cached package"
 
@@ -103,25 +143,26 @@ def test_request_install_cached_package():
 
     # And that I have an environment associated with that local cache
     env = Env(conf={'index': index})
+    env.start_services()
     env.check_installed = Mock(return_value=False)
-    env.services['download'] = Mock()
-    env.services['install'] = Mock()
-    env.services['curdling'] = Mock()
+    env.downloader = Mock()
+    env.installer = Mock()
+    env.curdler = Mock()
 
     # When I request an installation of a package
-    env.request_install('gherkin==0.1.0')
+    env.request_install('main', 'gherkin==0.1.0')
 
     # Then I see that, since the package was not installed, the locall cache
     # was queried and returned the right entry
     env.check_installed.assert_called_once_with('gherkin==0.1.0')
 
     # And I see that the install queue was populated
-    env.services['curdling'].queue.assert_called_once_with(
-        'gherkin==0.1.0', 'main', path='storage1/gherkin-0.1.0.tar.gz')
+    env.curdler.queue.assert_called_once_with(
+        'main', 'gherkin==0.1.0', path='storage1/gherkin-0.1.0.tar.gz')
 
     # And that the download queue was not touched
-    env.services['download'].queue.called.should.be.false
-    env.services['install'].queue.called.should.be.false
+    env.downloader.queue.called.should.be.false
+    env.installer.queue.called.should.be.false
 
 
 @nottest
@@ -151,6 +192,9 @@ def test_request_install_cached_wheels():
 
     # And that the download queue was not touched
     env.services['download'].queue.called.should.be.false
+
+
+# -- Index --
 
 
 @patch('curdling.index.os')
@@ -302,6 +346,9 @@ def test_index_get_corner_case_pkg_name():
     index.get('python-gherkin==0.1.0;~whl').should.equal('python_gherkin-0.1.0.tar.gz')
 
 
+# -- Signals --
+
+
 def test_signal():
     "It should possible to emit signals"
 
@@ -325,7 +372,29 @@ def test_signal():
     callback.assert_called_once_with(a=1, b=2)
 
 
+def test_signal_that_does_not_exist():
+    "AttributeError must be raised if a given signal does not exist"
+
+    # Given that I have a button that emits signals, but with no signals
+    class Button(SignalEmitter):
+        pass
+
+    # And an instance of that button class
+    b = Button()
+
+    # When I try to connect an unknown signal to the instance, Then I see
+    # things just explode with a nice message.
+    b.connect.when.called_with('clicked', lambda *a: a).should.throw(
+        AttributeError,
+        'There is no such signal (clicked) in this emitter (button)',
+    )
+
+
+# -- Maestro --
+
+
 def test_maestro_mapping():
+    "Maestro will trace packages and their dependencies"
 
     # Given that I have a maestro
     maestro = Maestro()
@@ -348,6 +417,7 @@ def test_maestro_mapping():
 
 
 def test_maestro_pending_packages():
+    "Maestro will keep the reference of a package if its not done or failed"
 
     # Given that I have a maestro
     maestro = Maestro()
@@ -360,6 +430,7 @@ def test_maestro_pending_packages():
 
 
 def test_maestro_pending_packages_no_deps():
+    "It shoudl be possible to mark packages as built maestro"
 
     # Given that I have a maestro with a package filed under it
     maestro = Maestro()
@@ -371,6 +442,39 @@ def test_maestro_pending_packages_no_deps():
 
     # Then I see it's still waiting for the dependency checking
     maestro.pending_packages.should.equal([])
+    maestro.built.should.equal({'curdling'})
+
+
+def test_maestro_mark_failed():
+    "It shoudl be possible to mark packages as failed in the maestro"
+
+    # Given that I have a maestro with a package filed under it
+    maestro = Maestro()
+    maestro.file_package('curdling', dependency_of=None)
+
+    # When and I mark the package as `failed`, meaning that all the
+    # dependencies were checked
+    maestro.mark_failed('curdling', '')
+
+    # Then I see it's still waiting for the dependency checking
+    maestro.pending_packages.should.equal([])
+    maestro.failed.should.equal({'curdling'})
+
+
+def test_maestro_should_queue():
+    "Our maestro should know if a package can be queued or not"
+
+    # Given that I have an empty maestro
+    maestro = Maestro()
+
+    # When I check if I can queue a package that is *not* present in the
+    # maestro instance, Then I see it returns true
+    maestro.should_queue('curdling').should.be.true
+
+    # After filing this package to the maestro, should_queue will change its
+    # results, as you can see here.
+    maestro.file_package('curdling', dependency_of=None)
+    maestro.should_queue('curdling').should.be.false
 
 
 def test_maestro_mapping_same_dependency():

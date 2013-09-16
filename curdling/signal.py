@@ -20,8 +20,8 @@ class SignalEmitter(object):
                 return getattr(self, signal)
         except AttributeError:
             raise AttributeError(
-                "There is no such signal({0} in this emitter({1})",
-                signal, self.name)
+                "There is no such signal ({0}) in this emitter ({1})".format(
+                    signal, self.name))
 
     def connect(self, signal, callback):
         # Well, now we use the list-like interface of signal to file this new
@@ -30,7 +30,4 @@ class SignalEmitter(object):
 
     def emit(self, signal, *args, **kwargs):
         for callback in self.get_signal_or_explode(signal):
-            try:
-                callback(*args, **kwargs)
-            except BaseException as exc:
-                raise exc
+            callback(*args, **kwargs)

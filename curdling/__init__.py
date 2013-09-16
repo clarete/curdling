@@ -3,7 +3,6 @@ from collections import namedtuple
 from functools import wraps
 from distlib.database import DistributionPath
 from distlib.util import parse_requirement
-from pip.commands.uninstall import UninstallCommand
 
 from .logging import Logger, ReportableError
 from .index import PackageNotFound
@@ -133,9 +132,9 @@ class Env(object):
                     "requirement `%s'", package)
                 return False
 
-        # # Well, the package is installed, let's just bail
-        # if self.check_installed(requirement):
-        #     return True
+        # Well, the package is installed, let's just bail
+        if self.check_installed(package):
+            return True
 
         # We shouldn't queue the same package twice
         if not self.maestro.should_queue(package):
@@ -166,6 +165,8 @@ class Env(object):
         return False
 
     def uninstall(self, package):
+        from pip.commands.uninstall import UninstallCommand
+
         # We just overwrite the constructor here cause it's not actualy useful
         # unless you're creating another command, not calling as a library.
         class Uninstall(UninstallCommand):

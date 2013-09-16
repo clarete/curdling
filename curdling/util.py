@@ -37,10 +37,6 @@ def expand_requirements(file_name):
         if not req:
             continue
 
-        # No comments about it...
-        if req.startswith('#'):
-            continue
-
         found = INCLUDE_PATTERN.findall(req)
         if found:
             requirements.extend(expand_requirements(found[0]))
