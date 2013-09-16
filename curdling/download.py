@@ -8,6 +8,7 @@ from .signal import Signal
 
 import re
 import urllib3
+import urllib3.exceptions
 
 # import logging
 # logging.basicConfig(level=logging.DEBUG)
@@ -76,11 +77,15 @@ class PyPiLocator(locators.SimpleScrapingLocator):
             return versions.items()[0]
         return None, None
 
-    def _fetch(self, url, project_name):
+    def _fetch(self, url, project_name, subvisit=False):
         locators.logger.debug('fetch(%s, %s)', url, project_name)
         versions = {}
         page = self.get_page(url)
         for link, rel in (page and page.links or []):
+            # Let's instrospect one level down
+            if self._should_queue(link, url, rel) and not subvisit:
+                versions.update(self._fetch(link, project_name, subvisit=True))
+
             # Let's not see anything twice, I saw this check on distlib it
             # might be useful.
             if link not in self._seen:
@@ -100,7 +105,11 @@ class PyPiLocator(locators.SimpleScrapingLocator):
 
         # The `retrieve()` method follows any eventual redirects, so the
         # initial url might be different from the final one
-        response, final_url = self.opener.retrieve(url)
+        try:
+            response, final_url = self.opener.retrieve(url)
+        except urllib3.exceptions.MaxRetryError:
+            return
+
         content_type = response.headers.get('content-type', '')
         if locators.HTML_CONTENT_TYPE.match(content_type):
             data = response.data
