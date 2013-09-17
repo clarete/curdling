@@ -19,11 +19,8 @@ class Maestro(object):
         self.failed = set()
 
     def file_package(self, package, dependency_of=None):
-        # Reading the package description
         requirement = parse_requirement(package)
         version = constraints(requirement)
-
-        # Saving back to the mapping
         self.mapping[requirement.name.lower()][version] = {
             'dependency_of': dependency_of,
             'data': None,
@@ -40,6 +37,11 @@ class Maestro(object):
 
     def mark_failed(self, package, data):
         self._mark('failed', package, data)
+
+    def get_data(self, package):
+        requirement = parse_requirement(package)
+        version = constraints(requirement)
+        return self.mapping[requirement.name.lower()][version]['data']
 
     def should_queue(self, package):
         pkg = parse_requirement(package)

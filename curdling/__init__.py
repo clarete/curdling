@@ -80,7 +80,7 @@ class Env(object):
         if self.maestro.failed:
             self.logger.level(0, 'Some cheese was spilled in the process:')
         for package in self.maestro.failed:
-            data = self.maestro.mapping[package].values()[0]
+            data = self.maestro.get_data(package)
             self.logger.level(0, " * %s: %s", data.__class__.__name__, data)
 
     def run(self):
@@ -114,7 +114,7 @@ class Env(object):
         uploader = self.uploader.start()
         for server, packages in failures.items():
             for package in packages:
-                path = self.maestro.mapping[package].values()[0]
+                path = self.maestro.get_data(package)
                 uploader.queue('main', package, path=path, server=server)
         uploader.join()
 

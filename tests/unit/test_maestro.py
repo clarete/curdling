@@ -102,3 +102,24 @@ def test_maestro_mark_built_update_mapping():
             },
         },
     })
+
+
+def test_maestro_get_data():
+    "It should be possible to retrieve data of a given requirement"
+
+    # Given that I have a maestro filled with a package
+    maestro = Maestro()
+    maestro.mapping = {
+        'forbiddenfruit': {
+            '> 0.1.0': {
+                'dependency_of': None,
+                'data': '/curds/forbiddenfruit.whl',
+            },
+        }
+    }
+
+    # When I retrieve the data from the following requirement
+    data = maestro.get_data('forbiddenfruit (> 0.1.0)')
+
+    # Then I see the correct value retrieved
+    data.should.equal('/curds/forbiddenfruit.whl')

@@ -21,6 +21,6 @@ class Dependencer(Service):
             # Packages might declare their "extras" here, so let's split it
             dependency, extra = (';' in spec and spec or spec + ';').split(';')
             self.emit('dependency_found', self.name,
-                dependency, requested_by=package)
+                dependency, dependency_of=package)
         else:
             self.emit('built', self.name, package, path=path)
