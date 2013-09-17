@@ -123,3 +123,54 @@ def test_maestro_get_data():
 
     # Then I see the correct value retrieved
     data.should.equal('/curds/forbiddenfruit.whl')
+
+
+def test_maestro_best_version():
+    "Maestro should be able to choose the right version of a package to be installed"
+
+    # Given that I have a maestro with a package that contains more than one
+    # version
+    maestro = Maestro()
+    maestro.mapping = {
+        'forbiddenfruit': {
+            '> 0.1.0': {
+                'dependency_of': None,
+                'data': '/curds/forbiddenfruit.whl',
+            },
+            '>= 0.0.9': {
+                'dependency_of': 'sure (== 0.2)',
+                'data': '/curds/forbiddenfruit.whl',
+            },
+        }
+    }
+
+    # When I retrieve the best match
+    version, data = maestro.best_version('forbiddenfruit')
+
+    # Then I see I found the entry that was directly requested by the user
+    # (IOW: The `dependency_of` field is `None`).
+    version.should.equal('> 0.1.0')
+    data.should.equal({
+        'dependency_of': None,
+        'data': '/curds/forbiddenfruit.whl',
+    })
+
+
+def test_maestro_best_version():
+    "best_version() with no direct requirements"
+
+    # Given that I have a maestro with a package that contains more than one
+    # version, but none directly requested by the user
+    maestro = Maestro()
+    maestro.mapping = {
+        'forbiddenfruit': {
+            '> 0.1.0': {
+                'dependency_of': 'luxury (== 0.1.0)',
+                'data': '/curds/forbiddenfruit.whl',
+            },
+            '>= 0.0.9': {
+                'dependency_of': 'sure (== 0.2)',
+                'data': '/curds/forbiddenfruit.whl',
+            },
+        }
+    }

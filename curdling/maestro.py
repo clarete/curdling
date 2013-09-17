@@ -43,6 +43,14 @@ class Maestro(object):
         version = constraints(requirement)
         return self.mapping[requirement.name.lower()][version]['data']
 
+    def best_version(self, package_name):
+        # We're looking for the version directly requested by the user. We
+        # find it looking for versions that contain `None` in their field
+        # `dependency_of`.
+        for version, data in self.mapping[package_name].items():
+            if data['dependency_of'] is None:
+                return version, data
+
     def should_queue(self, package):
         pkg = parse_requirement(package)
         return pkg.name.lower() not in self.mapping
