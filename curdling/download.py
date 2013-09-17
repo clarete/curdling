@@ -10,12 +10,30 @@ import re
 import json
 import urllib3
 import urllib3.exceptions
+import distlib.version
 
 
 def get_locator(conf):
     curds = [CurdlingLocator(u) for u in conf.get('curdling_urls', [])]
     pypi = [PyPiLocator(u) for u in conf.get('pypi_urls', [])]
-    return locators.AggregatingLocator(*(curds + pypi), scheme='legacy')
+    return AggregatingLocator(*(curds + pypi), scheme='legacy')
+
+
+def find_packages(locator, package, versions):
+    scheme = distlib.version.get_scheme(locator.scheme)
+    matcher = scheme.matcher(package.requirement)
+
+    result = {}
+    if versions:
+        slist = []
+        for v in versions:
+            if matcher.match(matcher.version_class(v)):
+                slist.append(v)
+        slist = sorted(slist, key=scheme.key)
+        if len(slist):
+            result = versions[slist[-1]]
+
+    return result
 
 
 class Pool(urllib3.PoolManager):
@@ -37,6 +55,17 @@ class Pool(urllib3.PoolManager):
         # Request the url and ensure we've reached the final location
         response = self.request('GET', url, **params)
         return response, response.get_redirect_location() or url
+
+
+class AggregatingLocator(locators.AggregatingLocator):
+
+    def locate(self, requirement, prereleases=True):
+        pkg = util.parse_requirement(requirement)
+        for locator in self.locators:
+            versions = locator.get_project(pkg.name)
+            package = find_packages(locator, pkg, versions)
+            if package:
+                return package
 
 
 class PyPiLocator(locators.SimpleScrapingLocator):
