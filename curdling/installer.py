@@ -16,11 +16,11 @@ def get_distribution_paths(name):
 
     paths = {
         'prefix' : '{prefix}',
+        'data'   : '{prefix}/lib/{pyver}/site-packages',
         'purelib': '{prefix}/lib/{pyver}/site-packages',
         'platlib': '{prefix}/lib/{pyver}/site-packages',
         'headers': '{prefix}/include/{pyver}/{name}',
         'scripts': '{prefix}/bin',
-        'data'   : '{prefix}',
     }
 
     # pip uses a similar path as an alternative to the system's (read-only)
