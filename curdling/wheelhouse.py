@@ -53,6 +53,7 @@ def guess_file_type(filename):
 
 
 class Script(object):
+
     def __init__(self, path):
         self.path = path
 
