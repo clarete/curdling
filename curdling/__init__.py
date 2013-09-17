@@ -80,7 +80,8 @@ class Env(object):
         if self.maestro.failed:
             self.logger.level(0, 'Some cheese was spilled in the process:')
         for package in self.maestro.failed:
-            data = self.maestro.get_data(package)
+            _, version = self.maestro.best_version(package)
+            data = version.get('data')
             self.logger.level(0, " * %s: %s", data.__class__.__name__, data)
 
     def run(self):
