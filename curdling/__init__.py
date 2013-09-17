@@ -101,9 +101,9 @@ class Env(object):
 
     def run_installer(self):
         self.installer.start()
-        for package, versions in self.maestro.mapping.items():
-            path = versions.values()[0]
-            self.installer.queue('main', package, path=path)
+        for package in self.maestro.mapping:
+            _, version = self.maestro.best_version(package)
+            self.installer.queue('main', package, path=version['data'])
         self.installer.join()
 
     def run_uploader(self):
