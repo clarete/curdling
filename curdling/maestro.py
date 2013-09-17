@@ -4,9 +4,9 @@ from distlib.util import parse_requirement
 from .service import Service
 
 
-def getversion(requirement):
+def constraints(requirement):
     return (
-        ''.join(' '.join(x) for x in requirement.constraints or [])
+        ','.join(' '.join(x) for x in requirement.constraints or ())
         or None)
 
 
@@ -21,18 +21,19 @@ class Maestro(object):
     def file_package(self, package, dependency_of=None):
         # Reading the package description
         requirement = parse_requirement(package)
-        version = getversion(requirement)
+        version = constraints(requirement)
 
         # Saving back to the mapping
-        self.mapping[requirement.name.lower()].update({
-            version: None,
-        })
+        self.mapping[requirement.name.lower()][version] = {
+            'dependency_of': dependency_of,
+            'data': None,
+        }
 
     def _mark(self, attr, package, data):
         pkg = parse_requirement(package)
         name = pkg.name.lower()
         getattr(self, attr).add(name)
-        self.mapping[name][getversion(pkg)] = data
+        self.mapping[name][constraints(pkg)]['data'] = data
 
     def mark_built(self, package, data):
         self._mark('built', package, data)
