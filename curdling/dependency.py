@@ -24,3 +24,5 @@ class Dependencer(Service):
                 dependency, dependency_of=package)
         else:
             self.emit('built', self.name, package, path=path)
+
+        return {'deps': run_time_dependencies}

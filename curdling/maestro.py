@@ -44,12 +44,18 @@ class Maestro(object):
         return self.mapping[requirement.name.lower()][version]['data']
 
     def best_version(self, package_name):
+        versions = self.mapping[package_name].items()
+
         # We're looking for the version directly requested by the user. We
         # find it looking for versions that contain `None` in their field
         # `dependency_of`.
-        for version, data in self.mapping[package_name].items():
+        for version, data in versions:
             if data['dependency_of'] is None:
                 return version, data
+
+        # There's no hard feelings about versions here. Meaning that the user
+        # didn't request this package as a primary installation target.
+        return versions[0]
 
     def should_queue(self, package):
         pkg = parse_requirement(package)

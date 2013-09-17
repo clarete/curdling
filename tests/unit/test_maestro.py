@@ -174,3 +174,14 @@ def test_maestro_best_version():
             },
         }
     }
+
+    # When I retrieve the best match
+    version, data = maestro.best_version('forbiddenfruit')
+
+    # Then I see I found the entry that was not directly requested by the user
+    # (IOW: The `dependency_of` field is not `None`).
+    version.should.equal('> 0.1.0')
+    data.should.equal({
+        'dependency_of': 'luxury (== 0.1.0)',
+        'data': '/curds/forbiddenfruit.whl',
+    })
