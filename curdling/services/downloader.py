@@ -212,14 +212,21 @@ class Downloader(Service):
     # -- Private API of the Download service --
 
     def update_url_credentials(self, base_url, other_url):
-        parsed_base = compat.urlparse(base_url)
-        parsed_other = compat.urlparse(other_url)
+        base = compat.urlparse(base_url)
+        other = compat.urlparse(other_url)
 
-        if parsed_base.username:
-            parsed_other.username = parsed_base.username
-        if parsed_base.password:
-            parsed_other.password = parsed_base.password
-        return parsed_other.geturl()
+        # If they're not from the same server, we return right away without
+        # trying to update anything
+        if base.hostname != other.hostname or base.password != other.password:
+            return other.geturl()
+
+        # Updating credentials only if the target URL doesn't have the data
+        # that we want to set
+        if base.username and not other.username:
+            other.username = base.username
+        if base.password and not other.password:
+            other.password = base.password
+        return other.geturl()
 
     def download(self, distribution):
         # This is the URL retrieved by the locator that found the given
