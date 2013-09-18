@@ -8,6 +8,7 @@ from urlparse import urljoin
 
 import re
 import json
+import httplib
 import urllib3
 import urllib3.exceptions
 import distlib.version
@@ -147,7 +148,7 @@ class CurdlingLocator(locators.Locator):
 
     def __init__(self, url, **kwargs):
         super(CurdlingLocator, self).__init__(**kwargs)
-        self.original_url = url
+        self.base_url = url
         self.url = url
         self.opener = Pool()
         self.packages_not_found = []
@@ -199,19 +200,50 @@ class Downloader(Service):
         requirement = self.locator.locate(package, prereleases)
         if requirement is None:
             raise ReportableError('Package `{0}\' not found'.format(package))
-        return {"path": self.download(requirement.download_url)}
+        return {"path": self.download(requirement)}
 
     def get_servers_to_update(self):
         failures = {}
         for locator in self.locator.locators:
             if isinstance(locator, CurdlingLocator) and locator.packages_not_found:
-                failures[locator.original_url] = locator.packages_not_found
+                failures[locator.base_url] = locator.packages_not_found
         return failures
 
     # -- Private API of the Download service --
 
-    def download(self, url):
-        response, _ = self.opener.retrieve(url)
+    def update_url_credentials(self, base_url, other_url):
+        parsed_base = compat.urlparse(base_url)
+        parsed_other = compat.urlparse(other_url)
+
+        if parsed_base.username:
+            parsed_other.username = parsed_base.username
+        if parsed_base.password:
+            parsed_other.password = parsed_base.password
+        return parsed_other.geturl()
+
+    def download(self, distribution):
+        # This is the URL retrieved by the locator that found the given
+        # distribution.
+        url = distribution.download_url
+
+        # This is the locator's `base_url` that possibly contains
+        # authentication credentials that we have to add to the URL we want to
+        # download right now.
+        base_url = distribution.locator.base_url
+
+        # Updated version of the full URL
+        final_url = self.update_url_credentials(base_url, url)
+
+        # Let's proceed with the request, but now with the right auth
+        # credentials.
+        response, _ = self.opener.retrieve(final_url)
+        if response.status != 200:
+            raise ReportableError(
+                'Failed to download url `{0}\': {1} ({2})'.format(
+                    url,
+                    response.status,
+                    httplib.responses[response.status],
+                ))
 
         # Now that we're sure that our request was successful
         header = response.headers.get('content-disposition', '')

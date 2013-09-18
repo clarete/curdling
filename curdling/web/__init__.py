@@ -61,6 +61,8 @@ class Authenticator(object):
             if not self.db.enabled():
                 return f(*args, **kwargs)
 
+            # Let's just authenticate the user, returning the actual view on
+            # success or the `self.authenticate()` result otherwise
             auth = request.authorization
             if not auth or not self.db.auth(auth.username, auth.password):
                 return self.authenticate()

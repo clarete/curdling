@@ -1,4 +1,5 @@
 from __future__ import absolute_import, unicode_literals, print_function
+from distlib import compat
 from .base import Service
 
 import io
@@ -20,10 +21,17 @@ class Uploader(Service):
         package = os.path.basename(path)
         url = urlparse.urljoin(server, 'p/{0}'.format(package))
 
+        # Authentication
+        parsed = compat.urlparse(url)
+        if parsed.username:
+            auth = '{0}:{1}'.format(parsed.username, parsed.password)
+            headers = urllib3.util.make_headers(basic_auth=auth)
+
         # Sending the file to the server. Both `method` and `url` parameters
         # for calling `request_encode_body()` must be `str()` instances, not
         # unicode.
         contents = io.open(path, 'rb').read()
         self.opener.request_encode_body(
-            b'PUT', bytes(url), {package: (package, contents)})
+            b'PUT', bytes(url), {package: (package, contents)},
+            headers=headers)
         return {'url': url}
