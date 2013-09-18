@@ -12,47 +12,43 @@ DEFAULT_PYPI_INDEX_LIST = [
 ]
 
 
-class ValidationError(Exception):
-    pass
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description='Curdles your cheesy code and extracts its binaries')
-
+def add_parser_install(subparsers):
+    parser = subparsers.add_parser(
+        'install', help='Locate and install packages')
     parser.add_argument(
         '-r', '--requirements',
         help='A requirements file')
-
     parser.add_argument(
         '-i', '--index', action='append',
         help='PyPi compatible index url. Repeat as many times as you need')
-
     parser.add_argument(
         '-c', '--curdling-index', action='append', default=[],
         help='Curdling compatible index url. Repeat as many times as you need')
-
     parser.add_argument(
         '-u', '--upload', action='store_true', default=False,
         help='Upload your packages back to the curdling index')
-
     parser.add_argument(
         '-l', '--log-level', default=1, type=int,
         help=(
             'Increases the verbosity, goes from 0 (quiet) to '
             'the infinite and beyond (chatty)'))
-
     parser.add_argument(
         'packages', metavar='PKG', nargs='*',
         help='list of files to install')
+    return parser
 
+
+def build_parser():
+    parser = argparse.ArgumentParser(
+        description='Curdles your cheesy code and extracts its binaries')
+    subparsers = parser.add_subparsers()
+    add_parser_install(subparsers)
     return parser.parse_args()
 
 
 def prepare_args(args):
-    if args.packages is None and args.requirements is None:
-        raise ValidationError(
-            'we need either at least one package or a requirements file')
+    if not args.packages and not args.requirements:
+        raise
 
     packages = [safe_name(req) for req in (args.packages or [])]
     if args.requirements:
@@ -69,7 +65,7 @@ def prepare_args(args):
 
 
 def prepare_env():
-    args = prepare_args(parse_args())
+    args = prepare_args(build_parser())
 
     # Setting up the index
     path = os.path.expanduser('~/.curds')
