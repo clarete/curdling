@@ -1,10 +1,10 @@
 from __future__ import absolute_import, unicode_literals, print_function
+from .. import util
+from ..logging import ReportableError
+from ..signal import Signal
+from .base import Service
 from distlib import database, metadata, compat, locators
 from urlparse import urljoin
-
-from . import util, ReportableError
-from .service import Service
-from .signal import Signal
 
 import re
 import json

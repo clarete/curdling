@@ -1,7 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from collections import defaultdict
 from distlib.util import parse_requirement
-from .service import Service
 
 
 def constraints(requirement):

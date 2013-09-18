@@ -4,13 +4,15 @@ from nose.tools import nottest
 import os
 import errno
 
-from curdling import util, Env
-from curdling.download import Downloader
+from curdling import util
 from curdling.logging import ReportableError
-from curdling.service import Service
 from curdling.index import Index
-from curdling.installer import Installer
-from curdling.wheelhouse import Curdler
+from curdling.install import Install
+
+from curdling.services.base import Service
+from curdling.services.downloader import Downloader
+from curdling.services.curdler import Curdler
+from curdling.services.installer import Installer
 
 from . import FIXTURE
 
@@ -176,7 +178,7 @@ def test_install_package():
         'path': index.get('gherkin==0.1.0;whl')})
 
     # Then I see that the package was installed
-    Env({}).check_installed('gherkin==0.1.0').should.be.true
+    Install({}).check_installed('gherkin==0.1.0').should.be.true
 
     # And I uninstall the package
-    Env({}).uninstall('gherkin==0.1.0')
+    Install({}).uninstall('gherkin==0.1.0')

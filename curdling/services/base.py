@@ -1,7 +1,7 @@
 from __future__ import unicode_literals, print_function, absolute_import
+from ..logging import ReportableError, Logger
+from ..signal import Signal, SignalEmitter
 from Queue import Queue
-from .logging import ReportableError, Logger
-from .signal import Signal, SignalEmitter
 
 import threading
 import time

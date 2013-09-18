@@ -6,10 +6,10 @@ import io
 import os
 import errno
 
-from curdling import Env
+from curdling.install import Install
 from curdling.index import Index, PackageNotFound
 from curdling.util import expand_requirements, filehash
-from curdling.service import Service
+from curdling.services.base import Service
 from curdling.signal import Signal, SignalEmitter
 
 
@@ -89,18 +89,18 @@ def test_filehash():
     hashed.should.equal('a86c5dea3ad44078a1f79f9cf2c6786d')
 
 
-# -- curdling/__init__.py --
+# -- curdling/install.py --
 
 
-@patch('curdling.DistributionPath')
+@patch('curdling.install.DistributionPath')
 def test_check_installed(DistributionPath):
     "It should be possible to check if a certain package is currently installed"
 
     DistributionPath.return_value.get_distribution.return_value = Mock()
-    Env({}).check_installed('gherkin==0.1.0').should.be.true
+    Install({}).check_installed('gherkin==0.1.0').should.be.true
 
     DistributionPath.return_value.get_distribution.return_value = None
-    Env({}).check_installed('gherkin==0.1.0').should.be.false
+    Install({}).check_installed('gherkin==0.1.0').should.be.false
 
 
 def test_request_install_no_cache():
@@ -109,7 +109,7 @@ def test_request_install_no_cache():
     # Given that I have an environment
     index = Mock()
     index.get.side_effect = PackageNotFound('gherkin==0.1.0', 'whl')
-    env = Env(conf={'index': index})
+    env = Install(conf={'index': index})
     env.start_services()
     env.check_installed = Mock(return_value=False)
     env.downloader = Mock()
@@ -134,7 +134,7 @@ def test_request_install_installed_package():
 
     # Given that I have an environment
     index = Mock()
-    env = Env(conf={'index': index})
+    env = Install(conf={'index': index})
     env.start_services()
     env.check_installed = Mock(return_value=True)
     env.downloader = Mock()
@@ -159,7 +159,7 @@ def test_request_install_cached_package():
     index.storage = {'gherkin': {'0.1.0': ['storage1/gherkin-0.1.0.tar.gz']}}
 
     # And that I have an environment associated with that local cache
-    env = Env(conf={'index': index})
+    env = Install(conf={'index': index})
     env.start_services()
     env.check_installed = Mock(return_value=False)
     env.downloader = Mock()
@@ -191,7 +191,7 @@ def test_request_install_cached_wheels():
     index.storage = {'gherkin': {'0.1.0': ['storage1/gherkin-0.1.0-py27-none-any.whl']}}
 
     # And that I have an environment associated with that local cache
-    env = Env(conf={'index': index})
+    env = Install(conf={'index': index})
     env.check_installed = Mock(return_value=False)
     env.services['download'] = Mock()
     env.services['install'] = Mock()
