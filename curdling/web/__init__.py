@@ -1,33 +1,32 @@
 from __future__ import unicode_literals, print_function, absolute_import
+from flask import Flask, render_template, send_file, request, Response
+from flask import Blueprint, current_app, url_for
 from gevent.pywsgi import WSGIServer
-from flask import (
-    Flask, Blueprint, render_template, send_file, request, current_app, url_for,
-)
+
+from ..index import Index, PackageNotFound
 
 import os
 import json
 
-from ..index import Index, PackageNotFound
 
+class API(Blueprint):
+    def __init__(self):
+        super(API, self).__init__('api', __name__)
+        self.add_url_rule('/', 'index', self.web_index)
+        self.add_url_rule('/<package>', 'package', self.web_package)
 
-api = Blueprint('api', __name__)
+    def web_index(self):
+        return json.dumps(current_app.index.list_packages())
 
-
-@api.route('/')
-def api_index():
-    return json.dumps(current_app.index.list_packages())
-
-
-@api.route('/<package>')
-def api_package(package):
-    releases = []
-    fmt = lambda u: url_for('download', package=u, _external=True)
-    for release in current_app.index.package_releases(package, fmt):
-        releases.append(release)
-    if releases:
-        return json.dumps(releases)
-    else:
-        return json.dumps({'status': 'error'}), 404
+    def web_package(self, package):
+        releases = []
+        fmt = lambda u: url_for('download', package=u, _external=True)
+        for release in current_app.index.package_releases(package, fmt):
+            releases.append(release)
+        if releases:
+            return json.dumps(releases)
+        else:
+            return json.dumps({'status': 'error'}), 404
 
 
 class Server(object):
@@ -41,7 +40,7 @@ class Server(object):
         self.app.index = self.index
 
         # Registering urls
-        self.app.register_blueprint(api, url_prefix='/api')
+        self.app.register_blueprint(API(), url_prefix='/api')
         self.app.add_url_rule('/', 'index', self.web_index)
         self.app.add_url_rule('/s/<query>', 'search', self.web_search)
         self.app.add_url_rule('/p/<package>', 'download', self.web_download)
