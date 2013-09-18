@@ -52,8 +52,8 @@ if __name__ == '__main__':
         include_package_data=True,
         entry_points={
             'console_scripts': [
-                'curdling = curdling.__main__:main',
-                'curdling-server = curdling.web.__main__:main',
+                'curd = curdling.__main__:main',
+                'curd-server = curdling.web.__main__:main',
             ]
         },
         classifiers=[
