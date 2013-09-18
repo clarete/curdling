@@ -115,8 +115,9 @@ class Env(object):
         uploader = self.uploader.start()
         for server, packages in failures.items():
             for package in packages:
-                path = self.maestro.get_data(package)
-                uploader.queue('main', package, path=path, server=server)
+                _, data = self.maestro.best_version(package)
+                uploader.queue('main', package,
+                    path=data.get('data'), server=server)
         uploader.join()
 
     def check_installed(self, package):
