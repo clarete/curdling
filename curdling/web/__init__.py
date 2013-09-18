@@ -2,18 +2,81 @@ from __future__ import unicode_literals, print_function, absolute_import
 from flask import Flask, render_template, send_file, request, Response
 from flask import Blueprint, current_app, url_for
 from gevent.pywsgi import WSGIServer
+from functools import wraps
 
 from ..index import Index, PackageNotFound
 
 import os
 import json
+import crypt
+
+
+class HtPasswd(object):
+
+    def __init__(self, path):
+        self.path = path
+        self.users = self.load()
+
+    def enabled(self):
+        return self.path is not None
+
+    def auth(self, username, clear_password):
+        try:
+            crypted_passwd = self.users[username]
+        except KeyError:
+            return False
+        return crypt.crypt(clear_password, crypted_passwd) == crypted_passwd
+
+    def load(self):
+        users = {}
+        if not self.enabled():
+            return users
+
+        with open(self.path) as fd:
+            for line in fd.read().splitlines():
+                line = line.split('#')[0].strip()
+                if line:
+                    username, password = line.split(':', 1)
+                    users[username] = password
+        return users
+
+
+class Authenticator(object):
+    def __init__(self, user_database_path):
+        self.db = HtPasswd(user_database_path)
+
+    def authenticate(self):
+        """Sends a 401 response that enables the basic auth"""
+        return Response(
+            'Could not verify your account info before processing that URL.\n'
+            'You have to login with proper credentials', 401, {
+                'WWW-Authenticate': 'Basic realm="Login Required"'
+            })
+
+    def __call__(self, f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            # If the user didn't provide a user database file we won't ask for
+            # authentication here
+            if not self.db.enabled():
+                return f(*args, **kwargs)
+
+            auth = request.authorization
+            if not auth or not self.db.auth(auth.username, auth.password):
+                return self.authenticate()
+            return f(*args, **kwargs)
+        return decorated
+
 
 
 class API(Blueprint):
-    def __init__(self):
+    def __init__(self, args):
         super(API, self).__init__('api', __name__)
-        self.add_url_rule('/', 'index', self.web_index)
-        self.add_url_rule('/<package>', 'package', self.web_package)
+
+        # Building the authenticator
+        auth = Authenticator(args.user_database_path)
+        self.add_url_rule('/', 'index', auth(self.web_index))
+        self.add_url_rule('/<package>', 'package', auth(self.web_package))
 
     def web_index(self):
         return json.dumps(current_app.index.list_packages())
@@ -39,12 +102,15 @@ class Server(object):
         self.app = Flask(__name__)
         self.app.index = self.index
 
+        # Building the authenticator
+        self.auth = Authenticator(args.user_database_path)
+
         # Registering urls
-        self.app.register_blueprint(API(), url_prefix='/api')
-        self.app.add_url_rule('/', 'index', self.web_index)
-        self.app.add_url_rule('/s/<query>', 'search', self.web_search)
-        self.app.add_url_rule('/p/<package>', 'download', self.web_download)
-        self.app.add_url_rule('/p/<package>', 'upload', self.web_upload,
+        self.app.register_blueprint(API(args), url_prefix='/api')
+        self.app.add_url_rule('/', 'index', self.auth(self.web_index))
+        self.app.add_url_rule('/s/<query>', 'search', self.auth(self.web_search))
+        self.app.add_url_rule('/p/<package>', 'download', self.auth(self.web_download))
+        self.app.add_url_rule('/p/<package>', 'upload', self.auth(self.web_upload),
                               methods=('PUT',))
 
     def start(self):

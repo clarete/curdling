@@ -24,6 +24,10 @@ def parse_args():
         '-p', '--port', type=int, default=8000,
         help='Port to bind')
 
+    parser.add_argument(
+        '-u', '--user-database-path',
+        help='An htpasswd-compatible file saying who can access your curd server')
+
     return parser.parse_args()
 
 
