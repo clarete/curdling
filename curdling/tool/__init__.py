@@ -1,4 +1,4 @@
-from __future__ import unicode_literals, print_function
+from __future__ import absolute_import, print_function, unicode_literals
 from ..index import Index
 from ..util import expand_requirements, safe_name, AttrDict
 from ..install import Install

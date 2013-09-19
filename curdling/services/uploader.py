@@ -1,6 +1,6 @@
-from __future__ import absolute_import, unicode_literals, print_function
-from distlib import compat
+from __future__ import absolute_import, print_function, unicode_literals
 from .base import Service
+from distlib import compat
 
 import io
 import os
