@@ -39,8 +39,6 @@ def find_packages(locator, package, versions):
 class Pool(urllib3.PoolManager):
 
     def retrieve(self, url):
-        attempts = 5
-
         # Params to be passed to request. The `preload_content` must be set to
         # False, otherwise `read()` wont honor `decode_content`.
         params = {

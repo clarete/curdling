@@ -90,12 +90,8 @@ class Install(object):
     def run(self):
         ui = InstallProgress(self)
         while ui.has_events():
+            time.sleep(0.5)
             ui.update()
-
-        # Running .update() again to make sure we've got the last amount of
-        # packages retrieved updated and to flush the line we were rewriting
-        # every half second inserting a new line char.
-        ui.update()
 
         if self.maestro.failed:
             self.report()
@@ -204,6 +200,11 @@ class InstallProgress(object):
         total = len(self.install.maestro.mapping)
         pending = len(self.install.maestro.pending_packages)
         built = total - pending
+
+        # There's no need to show any progress if there was no package
+        # requested
+        if not total:
+            return
 
         # Just a humble progressbar
         percent = int((built) / float(total) * 100.0)
