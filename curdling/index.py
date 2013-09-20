@@ -1,8 +1,8 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from collections import defaultdict
 from distlib.util import parse_requirement
+from threading import RLock
 from pkg_resources import parse_version, safe_name
-
 from curdling.util import split_name, filehash
 
 import os
@@ -41,9 +41,11 @@ class PackageNotFound(Exception):
 
 
 class Index(object):
+
     def __init__(self, base_path):
         self.base_path = base_path
         self.storage = defaultdict(lambda: defaultdict(list))
+        self.lock = RLock()
 
     def scan(self):
         if not os.path.isdir(self.base_path):
@@ -55,8 +57,9 @@ class Index(object):
 
     def ensure_path(self, destination):
         path = os.path.dirname(destination)
-        if not os.path.isdir(path):
-            os.makedirs(path)
+        with self.lock:
+            if not os.path.isdir(path):
+                os.makedirs(path)
         return destination
 
     def index(self, path):
