@@ -14,6 +14,7 @@ class Maestro(object):
     def __init__(self, *args, **kwargs):
         super(Maestro, self).__init__(*args, **kwargs)
         self.mapping = defaultdict(dict)
+        self.retrieved = set()
         self.built = set()
         self.failed = set()
 
@@ -36,6 +37,9 @@ class Maestro(object):
 
     def mark_failed(self, package, data):
         self._mark('failed', package, data)
+
+    def mark_retrieved(self, package, data):
+        self._mark('retrieved', package, data)
 
     def get_data(self, package):
         requirement = parse_requirement(package)

@@ -15,6 +15,7 @@ from .services.installer import Installer
 from .services.uploader import Uploader
 
 import re
+import sys
 import time
 
 SUCCESS = 0
@@ -42,6 +43,7 @@ def mark(func):
 
 
 class Install(object):
+
     def __init__(self, conf):
         self.conf = conf
         self.index = self.conf.get('index')
@@ -61,9 +63,10 @@ class Install(object):
         self.curdler = Curdler(**args).start()
         self.dependencer = Dependencer(**args).start()
 
-        # Building the pipeline
+        # Building the pipeline to [download -> compile -> install deps]
         self.downloader.connect('finished', only(self.curdler.queue, r'^(?!.*\.whl$)'))
         self.downloader.connect('finished', only(self.dependencer.queue, r'.*\.whl$'))
+        self.downloader.connect('finished', mark(self.maestro.mark_retrieved))
         self.downloader.connect('failed', mark(self.maestro.mark_failed))
         self.curdler.connect('finished', self.dependencer.queue)
         self.curdler.connect('failed', mark(self.maestro.mark_failed))
@@ -85,8 +88,14 @@ class Install(object):
             self.logger.level(0, " * %s: %s", data.__class__.__name__, data)
 
     def run(self):
-        while self.maestro.pending_packages:
-            time.sleep(0.5)
+        ui = InstallProgress(self)
+        while ui.has_events():
+            ui.update()
+
+        # Running .update() again to make sure we've got the last amount of
+        # packages retrieved updated and to flush the line we were rewriting
+        # every half second inserting a new line char.
+        ui.update()
 
         if self.maestro.failed:
             self.report()
@@ -149,6 +158,7 @@ class Install(object):
         try:
             path = self.index.get("{0};whl".format(package))
             self.dependencer.queue(requester, package, path=path)
+            self.maestro.mark_retrieved(package, 'whl')
             return False
         except PackageNotFound:
             pass
@@ -158,6 +168,7 @@ class Install(object):
         try:
             path = self.index.get("{0};~whl".format(package))
             self.curdler.queue(requester, package, path=path)
+            self.maestro.mark_retrieved(package, 'compressed')
             return False
         except PackageNotFound:
             pass
@@ -179,3 +190,37 @@ class Install(object):
         # the `run()` method.
         opts = namedtuple('Options', 'yes requirements')
         Uninstall().run(opts(yes=True, requirements=[]), [package])
+
+
+class InstallProgress(object):
+
+    def __init__(self, install):
+        self.install = install
+
+    def has_events(self):
+        return self.install.maestro.pending_packages
+
+    def update(self):
+        total = len(self.install.maestro.mapping)
+        pending = len(self.install.maestro.pending_packages)
+        built = total - pending
+
+        # Just a humble progressbar
+        percent = int((built) / float(total) * 100.0)
+        percent_count = percent / 10
+        progress_bar = ('#' * percent_count) + (' ' * (10 - percent_count))
+
+        # Showing a kind of a progress bar counting how many packages we've
+        # built and how many we're still downloading
+        msg = []
+        msg.append("\r[{0}] {1:>2}%. ".format(progress_bar, percent))
+        msg.append("({0} requested, {1} retrieved, {2} built)".format(
+            total, len(self.install.maestro.retrieved), built))
+
+        # Notice that this `\n` will flush the stdout for us too, so it won't
+        # be added until we're actually done retrieving things.
+        if total == built:
+            msg.append('\n')
+
+        sys.stdout.write(''.join(msg))
+        sys.stdout.flush()
