@@ -1,6 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from ..index import Index
-from ..util import expand_requirements, safe_name, AttrDict
+from ..util import expand_requirements, safe_name
 from ..install import Install
 
 import argparse
@@ -55,7 +55,7 @@ def prepare_args(args):
         for pkg in expand_requirements(args.requirements):
             packages.append(pkg)
 
-    return AttrDict(
+    return dict(
         packages=packages,
         pypi_urls=args.index or DEFAULT_PYPI_INDEX_LIST,
         curdling_urls=args.curdling_index,
@@ -83,7 +83,7 @@ def prepare_env():
     env.start_services()
 
     # Request the installation of the received package
-    for pkg in args.packages:
+    for pkg in args.get('packages'):
         env.request_install('main', pkg)
 
     return env
