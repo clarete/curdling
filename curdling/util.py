@@ -1,10 +1,11 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from distlib.util import parse_requirement
+from distlib import compat, util
 
 import io
 import os
 import re
 import hashlib
+import urllib3
 
 
 INCLUDE_PATTERN = re.compile(r'-r\s*\b([^\b]+)')
@@ -28,7 +29,7 @@ def split_name(fname):
 
 
 def safe_name(spec):
-    return parse_requirement(spec).requirement
+    return util.parse_requirement(spec).requirement
 
 
 def expand_requirements(file_name):
@@ -64,3 +65,11 @@ def filehash(f, algo, block_size=2**20):
             break
         algo.update(data)
     return algo.hexdigest()
+
+
+def get_auth_info_from_url(url):
+    parsed = compat.urlparse(url)
+    if parsed.username:
+        auth = '{0}:{1}'.format(parsed.username, parsed.password)
+        return urllib3.util.make_headers(basic_auth=auth)
+    return {}

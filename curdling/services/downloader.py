@@ -3,14 +3,13 @@ from .. import util
 from ..logging import ReportableError
 from ..signal import Signal
 from .base import Service
-from distlib import database, metadata, compat, locators
+from distlib import database, metadata, compat, locators, util as dutil
 from urlparse import urljoin
 
 import re
 import json
 import httplib
 import urllib3
-import urllib3.exceptions
 import distlib.version
 
 
@@ -41,17 +40,13 @@ class Pool(urllib3.PoolManager):
 
     def retrieve(self, url):
         attempts = 5
-        headers = {}
-
-        # Authentication
-        parsed = compat.urlparse(url)
-        if parsed.username:
-            auth = '{0}:{1}'.format(parsed.username, parsed.password)
-            headers = urllib3.util.make_headers(basic_auth=auth)
 
         # Params to be passed to request. The `preload_content` must be set to
         # False, otherwise `read()` wont honor `decode_content`.
-        params = {'headers': headers, 'preload_content': False}
+        params = {
+            'headers': util.get_auth_info_from_url(url),
+            'preload_content': False,
+        }
 
         # Request the url and ensure we've reached the final location
         response = self.request('GET', url, **params)
@@ -61,7 +56,7 @@ class Pool(urllib3.PoolManager):
 class AggregatingLocator(locators.AggregatingLocator):
 
     def locate(self, requirement, prereleases=True):
-        pkg = util.parse_requirement(requirement)
+        pkg = dutil.parse_requirement(requirement)
         for locator in self.locators:
             versions = locator.get_project(pkg.name)
             package = find_packages(locator, pkg, versions)
