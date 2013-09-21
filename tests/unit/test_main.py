@@ -11,6 +11,7 @@ from curdling.index import Index, PackageNotFound
 from curdling.util import expand_requirements, filehash
 from curdling.services.base import Service
 from curdling.signal import Signal, SignalEmitter
+from curdling.database import Database
 
 
 # -- curdling/util.py --
@@ -92,15 +93,15 @@ def test_filehash():
 # -- curdling/install.py --
 
 
-@patch('curdling.install.DistributionPath')
+@patch('curdling.database.DistributionPath')
 def test_check_installed(DistributionPath):
     "It should be possible to check if a certain package is currently installed"
 
     DistributionPath.return_value.get_distribution.return_value = Mock()
-    Install({}).check_installed('gherkin==0.1.0').should.be.true
+    Database.check_installed('gherkin==0.1.0').should.be.true
 
     DistributionPath.return_value.get_distribution.return_value = None
-    Install({}).check_installed('gherkin==0.1.0').should.be.false
+    Database.check_installed('gherkin==0.1.0').should.be.false
 
 
 def test_request_install_no_cache():
@@ -111,14 +112,14 @@ def test_request_install_no_cache():
     index.get.side_effect = PackageNotFound('gherkin==0.1.0', 'whl')
     env = Install(conf={'index': index})
     env.start_services()
-    env.check_installed = Mock(return_value=False)
+    env.database.check_installed = Mock(return_value=False)
     env.downloader = Mock()
 
     # When I request an installation of a package
     env.request_install('main', 'gherkin==0.1.0')
 
     # Then I see that the caches were checked
-    env.check_installed.assert_called_once_with('gherkin==0.1.0')
+    env.database.check_installed.assert_called_once_with('gherkin==0.1.0')
 
     list(env.index.get.call_args_list).should.equal([
         call('gherkin==0.1.0;whl'),
@@ -136,7 +137,7 @@ def test_request_install_installed_package():
     index = Mock()
     env = Install(conf={'index': index})
     env.start_services()
-    env.check_installed = Mock(return_value=True)
+    env.database.check_installed = Mock(return_value=True)
     env.downloader = Mock()
 
     # When I request an installation of a package
@@ -144,7 +145,7 @@ def test_request_install_installed_package():
 
     # Then I see that, since the package was installed, the local cache was not
     # queried
-    env.check_installed.assert_called_once_with('gherkin==0.1.0')
+    env.database.check_installed.assert_called_once_with('gherkin==0.1.0')
     env.index.get.called.should.be.false
 
     # And then I see that the download queue was not touched
@@ -161,7 +162,7 @@ def test_request_install_cached_package():
     # And that I have an environment associated with that local cache
     env = Install(conf={'index': index})
     env.start_services()
-    env.check_installed = Mock(return_value=False)
+    env.database.check_installed = Mock(return_value=False)
     env.downloader = Mock()
     env.installer = Mock()
     env.curdler = Mock()
@@ -171,7 +172,7 @@ def test_request_install_cached_package():
 
     # Then I see that, since the package was not installed, the locall cache
     # was queried and returned the right entry
-    env.check_installed.assert_called_once_with('gherkin==0.1.0')
+    env.database.check_installed.assert_called_once_with('gherkin==0.1.0')
 
     # And I see that the install queue was populated
     env.curdler.queue.assert_called_once_with(

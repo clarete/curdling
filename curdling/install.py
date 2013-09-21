@@ -1,12 +1,11 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from collections import namedtuple
 from functools import wraps
-from distlib.database import DistributionPath
 from distlib.util import parse_requirement
 
 from .logging import Logger, ReportableError
 from .index import PackageNotFound
 from .maestro import Maestro
+from .database import Database
 
 from .services.downloader import Downloader
 from .services.curdler import Curdler
@@ -48,6 +47,7 @@ class Install(object):
         self.conf = conf
         self.index = self.conf.get('index')
         self.logger = Logger('main', conf.get('log_level'))
+        self.database = Database()
 
     def start_services(self):
         # General params for all the services
@@ -125,10 +125,6 @@ class Install(object):
                     path=data.get('data'), server=server)
         uploader.join()
 
-    def check_installed(self, package):
-        return DistributionPath().get_distribution(
-            parse_requirement(package).name.replace('_', '-')) is not None
-
     def request_install(self, requester, package, **data):
         # If it's a blacklisted requirement, we should cowardly refuse to
         # install
@@ -140,7 +136,7 @@ class Install(object):
                 return False
 
         # Well, the package is installed, let's just bail
-        if self.check_installed(package):
+        if self.database.check_installed(package):
             return True
 
         # We shouldn't queue the same package twice
@@ -172,20 +168,6 @@ class Install(object):
         # Nops, we really don't have the package
         self.downloader.queue(requester, package, **data)
         return False
-
-    def uninstall(self, package):
-        from pip.commands.uninstall import UninstallCommand
-
-        # We just overwrite the constructor here cause it's not actualy useful
-        # unless you're creating another command, not calling as a library.
-        class Uninstall(UninstallCommand):
-            def __init__(self):
-                pass
-
-        # Just creating an object that pretends to be the option container for
-        # the `run()` method.
-        opts = namedtuple('Options', 'yes requirements')
-        Uninstall().run(opts(yes=True, requirements=[]), [package])
 
 
 class InstallProgress(object):

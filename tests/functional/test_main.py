@@ -8,6 +8,7 @@ from curdling import util
 from curdling.logging import ReportableError
 from curdling.index import Index
 from curdling.install import Install
+from curdling.database import Database
 
 from curdling.services.base import Service
 from curdling.services.downloader import Downloader
@@ -178,7 +179,7 @@ def test_install_package():
         'path': index.get('gherkin==0.1.0;whl')})
 
     # Then I see that the package was installed
-    Install({}).check_installed('gherkin==0.1.0').should.be.true
+    Database.check_installed('gherkin==0.1.0').should.be.true
 
     # And I uninstall the package
-    Install({}).uninstall('gherkin==0.1.0')
+    Database.uninstall('gherkin==0.1.0')
