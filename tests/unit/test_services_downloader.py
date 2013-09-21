@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from mock import Mock, patch
-from curdling.services.downloader import Pool
+from curdling.services.downloader import Pool, AggregatingLocator
 
 
 class TestPool(Pool):
@@ -68,3 +68,38 @@ def test_pool_retrieve(util):
     response.should.be.property("method").being.equal("GET")
     response.should.be.property("url").being.equal("http://github.com")
     util.get_auth_info_from_url.assert_called_once_with('http://github.com')
+
+
+
+@patch('curdling.services.downloader.dutil')
+@patch('curdling.services.downloader.find_packages')
+def test_aggregating_locator_locate(find_packages, dutil):
+    ("AggregatingLocator#locate should return the first package "
+     "that matches the given version")
+    # Background:
+
+    # parse_requirement is mocked and will return a mocked pkg
+    pkg = dutil.parse_requirement.return_value
+
+    # find_packages will return a package right away
+    find_packages.return_value = 'the awesome "foo" package :)'
+
+
+    # Specification:
+
+    # Given a mocked locator
+    locator = Mock()
+
+    # And that the AggregatingLocator has a list containing that one locator
+    class TestLocator(AggregatingLocator):
+        def __init__(self):
+            self.locators = [locator]
+
+    # And an instance of AggregatingLocator
+    instance = TestLocator()
+
+    # When I try to locate a package with certain requirement
+    found = instance.locate("foo==1.1.1")
+
+    # Then it should be the expected package
+    found.should.equal('the awesome "foo" package :)')
