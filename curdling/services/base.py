@@ -72,7 +72,7 @@ class Service(SignalEmitter):
                 self.emit('failed', self.name, package, path=exc)
                 self.logger.traceback(4,
                     'failed to run %s (requested by:%s) for package %s:',
-                    self.name, requester, package)
+                    self.name, requester, package, exc=exc)
             else:
                 self.emit('finished', self.name, package, **(data or {}))
                 self.logger.level(3, ' * %s.result(package=%s): %s ... ok',
