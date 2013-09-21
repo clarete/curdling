@@ -211,8 +211,6 @@ class Progress(object):
 class RetrieveAndBuildProgress(Progress):
 
     def update(self):
-        # Showing a kind of a progress bar counting how many packages we've
-        # built and how many we're still downloading
         total, processed, percent = self.processed_packages()
         msg = [self.bar("Retrieving", percent)]
         msg.append("({0} requested, {1} retrieved, {2} built)".format(
@@ -224,8 +222,6 @@ class RetrieveAndBuildProgress(Progress):
 class InstallProgress(Progress):
 
     def update(self):
-        # Showing a kind of a progress bar counting how many packages we've
-        # built and how many we're still downloading
         total, processed, percent = self.processed_packages()
         msg = [self.bar("Installing", percent)]
         msg.append("({0}/{1})".format(processed, total))
