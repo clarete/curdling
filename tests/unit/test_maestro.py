@@ -12,7 +12,7 @@ def test_maestro_pending_packages():
     maestro.file_package('curdling', dependency_of=None)
 
     # Then I see it's still waiting for the dependency checking
-    maestro.pending_packages.should.equal(['curdling'])
+    maestro.pending('built').should.equal(['curdling'])
 
 
 def test_maestro_pending_packages_no_deps():
@@ -24,10 +24,10 @@ def test_maestro_pending_packages_no_deps():
 
     # When and I mark the package as `checked`,
     # meaning that all the dependencies were checked
-    maestro.mark_built('curdling', '')
+    maestro.mark('built', 'curdling', '')
 
     # Then I see it's still waiting for the dependency checking
-    maestro.pending_packages.should.equal([])
+    maestro.pending('built').should.equal([])
     maestro.built.should.equal({'curdling'})
 
 
@@ -40,10 +40,10 @@ def test_maestro_mark_failed():
 
     # When and I mark the package as `failed`, meaning that all the
     # dependencies were checked
-    maestro.mark_failed('curdling', '')
+    maestro.mark('failed', 'curdling', '')
 
     # Then I see it's still waiting for the dependency checking
-    maestro.pending_packages.should.equal([])
+    maestro.pending('built').should.equal([])
     maestro.failed.should.equal({'curdling'})
 
 
@@ -73,10 +73,10 @@ def test_maestro_mark_built_update_mapping():
     maestro.file_package('forbiddenfruit (>= 0.1.2)', dependency_of='sure (== 0.1.2)')
 
     # Wehn I mark the files as built
-    maestro.mark_built('curdling', '/curds/curdling.whl')
-    maestro.mark_built('sure (== 0.1.2)', '/curds/sure.whl')
-    maestro.mark_built('forbiddenfruit (> 0.1.0)', '/curds/forbiddenfruit.whl')
-    maestro.mark_built('forbiddenfruit (>= 0.1.2)', '/curds/forbiddenfruit.whl')
+    maestro.mark('built', 'curdling', '/curds/curdling.whl')
+    maestro.mark('built', 'sure (== 0.1.2)', '/curds/sure.whl')
+    maestro.mark('built', 'forbiddenfruit (> 0.1.0)', '/curds/forbiddenfruit.whl')
+    maestro.mark('built', 'forbiddenfruit (>= 0.1.2)', '/curds/forbiddenfruit.whl')
 
     # Then I see I still have just one entry in the mapping
     dict(maestro.mapping).should.equal({

@@ -34,11 +34,10 @@ def only(func, pattern):
     return wrapper
 
 
-def mark(func):
-    @wraps(func)
-    def wrapper(requester, package, **data):
-        return func(package, data['path'])
-    return wrapper
+def mark(maestro, set_name):
+    def marker(requester, package, **data):
+        return maestro.mark(set_name, package, data.get('path'))
+    return marker
 
 
 class Install(object):
@@ -63,21 +62,24 @@ class Install(object):
         self.curdler = Curdler(**args).start()
         self.dependencer = Dependencer(**args).start()
 
-        # Building the pipeline to [download -> compile -> install deps]
-        self.downloader.connect('finished', only(self.curdler.queue, r'^(?!.*\.whl$)'))
-        self.downloader.connect('finished', only(self.dependencer.queue, r'.*\.whl$'))
-        self.downloader.connect('finished', mark(self.maestro.mark_retrieved))
-        self.downloader.connect('failed', mark(self.maestro.mark_failed))
-        self.curdler.connect('finished', self.dependencer.queue)
-        self.curdler.connect('failed', mark(self.maestro.mark_failed))
-        self.dependencer.connect('dependency_found', self.request_install)
-        self.dependencer.connect('built', mark(self.maestro.mark_built))
-
         # Not starting those guys since we don't actually have a lot to do here
         # right now. Check the `run` method, we'll call the installer and
         # uploader after making sure all the dependencies are installed.
         self.installer = Installer(**args)
         self.uploader = Uploader(**args)
+
+        # Building the pipeline to [download -> compile -> install deps]
+        self.downloader.connect('finished', only(self.curdler.queue, r'^(?!.*\.whl$)'))
+        self.downloader.connect('finished', only(self.dependencer.queue, r'.*\.whl$'))
+        self.downloader.connect('finished', mark(self.maestro, 'retrieved'))
+        self.downloader.connect('failed', mark(self.maestro, 'failed'))
+        self.curdler.connect('finished', self.dependencer.queue)
+        self.curdler.connect('failed', mark(self.maestro, 'failed'))
+        self.dependencer.connect('dependency_found', self.request_install)
+        self.dependencer.connect('built', mark(self.maestro, 'built'))
+
+        # Installer pipeline
+        self.installer.connect('finished', mark(self.maestro, 'installed'))
 
     def report(self):
         if self.maestro.failed:
@@ -88,8 +90,8 @@ class Install(object):
             self.logger.level(0, " * %s: %s", data.__class__.__name__, data)
 
     def run(self):
-        ui = InstallProgress(self)
-        while ui.has_events():
+        ui = RetrieveAndBuildProgress(self, 'built')
+        while ui:
             time.sleep(0.5)
             ui.update()
 
@@ -110,7 +112,21 @@ class Install(object):
         for package in self.maestro.mapping:
             _, version = self.maestro.best_version(package)
             self.installer.queue('main', package, path=version['data'])
-        self.installer.join()
+
+        ui = InstallProgress(self, 'installed')
+        while ui:
+            time.sleep(0.5)
+            ui.update()
+
+        # We're the last service to write a progress bar so far, so we need to
+        # append the newline right here. It will definitely go away (or move to
+        # `run_uploader`) when changing the uploader to have a nice UI
+        sys.stdout.write('\n')
+
+        if self.maestro.failed:
+            return FAILURE
+
+        return SUCCESS
 
     def run_uploader(self):
         failures = self.downloader.get_servers_to_update()
@@ -150,7 +166,7 @@ class Install(object):
         try:
             path = self.index.get("{0};whl".format(package))
             self.dependencer.queue(requester, package, path=path)
-            self.maestro.mark_retrieved(package, 'whl')
+            self.maestro.mark('retrieved', package, 'whl')
             return False
         except PackageNotFound:
             pass
@@ -160,7 +176,7 @@ class Install(object):
         try:
             path = self.index.get("{0};~whl".format(package))
             self.curdler.queue(requester, package, path=path)
-            self.maestro.mark_retrieved(package, 'compressed')
+            self.maestro.mark('retrieved', package, 'compressed')
             return False
         except PackageNotFound:
             pass
@@ -170,40 +186,48 @@ class Install(object):
         return False
 
 
-class InstallProgress(object):
+class Progress(object):
 
-    def __init__(self, install):
+    def __init__(self, install, watch):
         self.install = install
+        self.watch = watch
 
-    def has_events(self):
-        return self.install.maestro.pending_packages
+    def __nonzero__(self):
+        return bool(self.install.maestro.pending(self.watch))
 
-    def update(self):
+    def processed_packages(self):
         total = len(self.install.maestro.mapping)
-        pending = len(self.install.maestro.pending_packages)
-        built = total - pending
+        pending = len(self.install.maestro.pending(self.watch))
+        processed = total - pending
+        percent = int((processed) / float(total) * 100.0)
+        return total, processed, percent
 
-        # There's no need to show any progress if there was no package
-        # requested
-        if not total:
-            return
-
-        # Just a humble progressbar
-        percent = int((built) / float(total) * 100.0)
+    def bar(self, prefix, percent):
         percent_count = percent / 10
         progress_bar = ('#' * percent_count) + (' ' * (10 - percent_count))
+        return "\r\033[K{0}: [{1}] {2:>2}% ".format(prefix, progress_bar, percent)
 
+
+class RetrieveAndBuildProgress(Progress):
+
+    def update(self):
         # Showing a kind of a progress bar counting how many packages we've
         # built and how many we're still downloading
-        msg = []
-        msg.append("\r[{0}] {1:>2}%. ".format(progress_bar, percent))
+        total, processed, percent = self.processed_packages()
+        msg = [self.bar("Retrieving", percent)]
         msg.append("({0} requested, {1} retrieved, {2} built)".format(
-            total, len(self.install.maestro.retrieved), built))
+            total, len(self.install.maestro.retrieved), processed))
+        sys.stdout.write(''.join(msg))
+        sys.stdout.flush()
 
-        # Notice that this `\n` will flush the stdout for us too, so it won't
-        # be added until we're actually done retrieving things.
-        if total == built:
-            msg.append('\n')
 
+class InstallProgress(Progress):
+
+    def update(self):
+        # Showing a kind of a progress bar counting how many packages we've
+        # built and how many we're still downloading
+        total, processed, percent = self.processed_packages()
+        msg = [self.bar("Installing", percent)]
+        msg.append("({0}/{1})".format(processed, total))
         sys.stdout.write(''.join(msg))
         sys.stdout.flush()

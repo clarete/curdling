@@ -14,9 +14,12 @@ class Maestro(object):
     def __init__(self, *args, **kwargs):
         super(Maestro, self).__init__(*args, **kwargs)
         self.mapping = defaultdict(dict)
+
+        # The possible states of a package
+        self.failed = set()
         self.retrieved = set()
         self.built = set()
-        self.failed = set()
+        self.installed = set()
 
     def file_package(self, package, dependency_of=None):
         requirement = parse_requirement(package)
@@ -26,25 +29,28 @@ class Maestro(object):
             'data': None,
         }
 
-    def _mark(self, attr, package, data):
-        pkg = parse_requirement(package)
-        name = pkg.name.lower()
-        getattr(self, attr).add(name)
-        self.mapping[name][constraints(pkg)]['data'] = data
-
-    def mark_built(self, package, data):
-        self._mark('built', package, data)
-
-    def mark_failed(self, package, data):
-        self._mark('failed', package, data)
-
-    def mark_retrieved(self, package, data):
-        self._mark('retrieved', package, data)
-
     def get_data(self, package):
         requirement = parse_requirement(package)
         version = constraints(requirement)
         return self.mapping[requirement.name.lower()][version]['data']
+
+    def set_data(self, package, data):
+        pkg = parse_requirement(package)
+        version = constraints(pkg)
+        self.mapping[pkg.name.lower()][version]['data'] = data
+
+    def mark(self, attr, package, data):
+        pkg = parse_requirement(package)
+        name = pkg.name.lower()
+        getattr(self, attr).add(name)
+
+        # The 'installed' label doesn't actually need to save any data, so we
+        # just skip it. Going a little deeper, it's not possible cause we don't
+        # actually have the version information when we are installing
+        # packages. Needed to find the right bucket inside of the
+        # project_name+version sub-dictionary structure.
+        if data is not None:
+            self.set_data(package, data)
 
     def best_version(self, package_name):
         versions = self.mapping[package_name].items()
@@ -64,8 +70,7 @@ class Maestro(object):
         pkg = parse_requirement(package)
         return pkg.name.lower() not in self.mapping
 
-    @property
-    def pending_packages(self):
+    def pending(self, set_name):
         return list(set(self.mapping.keys())
-            .difference(self.built)
+            .difference(getattr(self, set_name))
             .difference(self.failed))
