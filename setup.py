@@ -52,7 +52,7 @@ if __name__ == '__main__':
         include_package_data=True,
         entry_points={
             'console_scripts': [
-                'curd = curdling.__main__:main',
+                'curd = curdling.tool:main',
                 'curd-server = curdling.web.__main__:main',
             ]
         },
