@@ -5,7 +5,7 @@ import os
 import errno
 
 from curdling import util
-from curdling.logging import ReportableError
+from curdling.exceptions import ReportableError
 from curdling.index import Index
 from curdling.install import Install
 from curdling.database import Database

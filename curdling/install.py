@@ -2,7 +2,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 from functools import wraps
 from distlib.util import parse_requirement
 
-from .logging import Logger, ReportableError
+from .logging import Logger
 from .index import PackageNotFound
 from .maestro import Maestro
 from .database import Database

@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from ..logging import ReportableError
+from ..exceptions import ReportableError
 from .base import Service
 
 import os

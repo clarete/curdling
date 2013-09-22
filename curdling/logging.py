@@ -3,10 +3,6 @@ import traceback
 import sys
 
 
-class ReportableError(Exception):
-    pass
-
-
 class Logger(object):
     def __init__(self, name, run_level):
         self.name = name

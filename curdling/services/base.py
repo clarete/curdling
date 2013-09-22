@@ -1,5 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from ..logging import ReportableError, Logger
+from ..exceptions import ReportableError
+from ..logging import Logger
 from ..signal import Signal, SignalEmitter
 from Queue import Queue
 
