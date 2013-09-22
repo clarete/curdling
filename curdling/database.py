@@ -16,7 +16,7 @@ class Database(object):
 
     @classmethod
     def check_installed(cls, package):
-        return DistributionPath().get_distribution(
+        return DistributionPath(include_egg=True).get_distribution(
             parse_requirement(package).name.replace('_', '-')) is not None
 
     @classmethod
