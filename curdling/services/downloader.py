@@ -63,7 +63,6 @@ class AggregatingLocator(locators.AggregatingLocator):
 
 
 class PyPiLocator(locators.SimpleScrapingLocator):
-
     def __init__(self, url, **kwargs):
         super(PyPiLocator, self).__init__(url, **kwargs)
         self.opener = Pool()

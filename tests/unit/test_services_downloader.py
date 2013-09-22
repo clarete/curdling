@@ -2,7 +2,17 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from mock import Mock, patch
-from curdling.services.downloader import Pool, AggregatingLocator
+from curdling.services.downloader import (
+    Pool,
+    AggregatingLocator,
+    PyPiLocator,
+)
+
+
+class TestPyPiLocator(PyPiLocator):
+    def __init__(self, *args, **kw):
+        super(TestPyPiLocator, self).__init__(*args, **kw)
+        self.opener = Mock()
 
 
 class TestPool(Pool):
@@ -103,3 +113,16 @@ def test_aggregating_locator_locate(find_packages, dutil):
 
     # Then it should be the expected package
     found.should.equal('the awesome "foo" package :)')
+
+
+def test_pypilocator_get_project():
+    ("PyPiLocator#_get_project should fetch based on the base_url")
+    # Given an instance of PyPiLocator that mocks out the _fetch method
+    instance = TestPyPiLocator("http://github.com")
+    instance._fetch = Mock()
+
+    # When _get_project gets called
+    response = instance._get_project("forbiddenfruit")
+
+    # Then it should have called _fetch
+    instance._fetch.assert_called_once_with(u'http://github.com/forbiddenfruit/', u'forbiddenfruit')
