@@ -6,6 +6,7 @@ from curdling.services.downloader import (
     Pool,
     AggregatingLocator,
     PyPiLocator,
+    find_packages,
 )
 
 
@@ -25,6 +26,39 @@ class TestPool(Pool):
         response.method = method
         response.url = url
         return response
+
+
+@patch('curdling.services.downloader.distlib')
+def test_find_packages(distlib):
+    ("find_packages should use the scheme from the "
+     "locator to match the best result")
+    # Background
+    # The scheme is mocked
+    scheme = distlib.version.get_scheme.return_value
+    # As well as the matcher
+    matcher = scheme.matcher.return_value
+    # And a version class
+    version_class = matcher.version_class.return_value
+
+    # Given a locator
+    locator = Mock()
+    # And a package
+    package = Mock()
+    # And a versions dictionary
+    distribution = Mock()
+    versions = {
+        '1.0': distribution
+    }
+
+    # When I invoke find_packages
+    result = find_packages(locator, package, versions)
+    # Then the result should be the expected distribution
+    result.should.equal(distribution)
+    # And the method calls should be correct (sorry for this sad test,
+    # I'm still getting to know the codebase)
+    matcher.match.assert_called_once_with(version_class)
+    scheme.matcher.assert_called_once_with(package.requirement)
+    distlib.version.get_scheme.assert_called_once_with(locator.scheme)
 
 
 @patch('curdling.services.downloader.util')
@@ -125,4 +159,48 @@ def test_pypilocator_get_project():
     response = instance._get_project("forbiddenfruit")
 
     # Then it should have called _fetch
-    instance._fetch.assert_called_once_with(u'http://github.com/forbiddenfruit/', u'forbiddenfruit')
+    instance._fetch.assert_called_once_with(
+        u'http://github.com/forbiddenfruit/',
+        u'forbiddenfruit',
+    )
+
+
+def test_visit_link_when_platform_dependent():
+    ("PyPiLocator#_visit_link() should return (None, None) "
+     "if link is platform dependent")
+
+    # Given an instance of PyPiLocator
+    instance = TestPyPiLocator("http://github.com")
+    # And that calling _is_platform_dependent will return True
+    instance._is_platform_dependent = Mock(return_value=True)
+
+    # When I call _visit_link
+    result = instance._visit_link("github", "some-link")
+
+    # Then it should be a tuple with 2 `None` items
+    result.should.equal((None, None))
+
+
+def test_visit_link_when_not_platform_dependent():
+    ("PyPiLocator#_visit_link() should return ('package-name', 'version') "
+     "when link is not platform dependent")
+
+    # Given an instance of PyPiLocator that mocks out the expected
+    # private method calls
+    class PyPiLocatorMock(TestPyPiLocator):
+        _is_platform_dependent = Mock(return_value=False)
+        def convert_url_to_download_info(self, link, project_name):
+            return "HELLO, I AM A PROJECT INFO"
+
+        def _update_version_data(self, versions, info):
+            versions['sure'] = '4.0'
+            info.should.equal('HELLO, I AM A PROJECT INFO')
+
+    # And an instance of the locator
+    instance = PyPiLocatorMock('http://curdling.io')
+
+    # When I call _visit_link
+    result = instance._visit_link('package-name', 'some-link')
+
+    # Then it should be a tuple with 2
+    result.should.equal(('sure', '4.0'))
