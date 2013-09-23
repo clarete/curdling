@@ -71,3 +71,7 @@ or trust the default *pypi* repository)
 After downloading, building and installing your package, if ran with `-u`
 *curdling* will also try to send the compiled package back to the servers you
 informed with `-c`.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/clarete/curdling/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
