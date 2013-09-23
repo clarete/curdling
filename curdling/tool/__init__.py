@@ -35,66 +35,59 @@ def add_parser_install(subparsers):
     parser.add_argument(
         'packages', metavar='PKG', nargs='*',
         help='list of files to install')
+    parser.set_defaults(command='install')
     return parser
 
 
-def build_parser():
-    parser = argparse.ArgumentParser(
-        description='Curdles your cheesy code and extracts its binaries')
-    subparsers = parser.add_subparsers()
-    add_parser_install(subparsers)
-    return parser.parse_args()
-
-
-def prepare_args(args):
+def get_packages_from_args(args):
     if not args.packages and not args.requirements:
-        raise
+        return []
 
     packages = [safe_name(req) for req in (args.packages or [])]
     if args.requirements:
         for pkg in expand_requirements(args.requirements):
             packages.append(pkg)
-
-    return dict(
-        packages=packages,
-        pypi_urls=args.index or DEFAULT_PYPI_INDEX_LIST,
-        curdling_urls=args.curdling_index,
-        upload=args.upload,
-        log_level=args.log_level,
-    )
+    return packages
 
 
-def prepare_env():
-    args = prepare_args(build_parser())
-
-    # Setting up the index
-    path = os.path.expanduser('~/.curds')
-    index = Index(path)
+def get_install_command(args):
+    index = Index(os.path.expanduser('~/.curds'))
     index.scan()
 
-    # Configuration values for the environment
-    args.update({
+    cmd = Install({
+        'log_level': args.log_level,
+        'pypi_urls': args.index or DEFAULT_PYPI_INDEX_LIST,
+        'curdling_urls': args.curdling_index,
+        'upload': args.upload,
         'index': index,
-        'concurrency': 10,
     })
 
-    # Let's create the environment and start the required services
-    env = Install(args)
-    env.start_services()
-
-    # Request the installation of the received package
-    for pkg in args.get('packages'):
-        env.request_install('main', pkg)
-
-    return env
+    # Let's start the required services and request the installation of the
+    # received packages before returning the command instance
+    cmd.start_services()
+    for pkg in get_packages_from_args(args):
+        cmd.request_install('main', pkg)
+    return cmd
 
 
 def main():
-    env = prepare_env()
+    parser = argparse.ArgumentParser(
+        description='Curdles your cheesy code and extracts its binaries')
+    subparsers = parser.add_subparsers()
+    add_parser_install(subparsers)
+    args = parser.parse_args()
+
+    # Here we choose which function will be called to setup the command
+    # instance that will be ran. Notice that all the `add_parser_*` functions
+    # *MUST* set the variable `command` using `parser.set_defaults` otherwise
+    # we'll get an error here.
+    command = {
+        'install': get_install_command,
+    }[args.command](args)
+
     try:
-        # All the installation requests were made, let's just wait here
-        return env.run()
+        return command.run()
     except KeyboardInterrupt:
         print('\b\b')
-        env.report()
+        command.report()
         raise SystemExit(0)
