@@ -152,7 +152,7 @@ class Install(object):
                 return False
 
         # Well, the package is installed, let's just bail
-        if self.database.check_installed(package):
+        if not self.conf.get('force') and self.database.check_installed(package):
             return True
 
         # We shouldn't queue the same package twice

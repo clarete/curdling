@@ -30,6 +30,9 @@ def add_parser_install(subparsers):
         '-u', '--upload', action='store_true', default=False,
         help='Upload your packages back to the curdling index')
     parser.add_argument(
+        '-f', '--force', action='store_true', default=False,
+        help='Skip checking if the package requested is already installed')
+    parser.add_argument(
         'packages', metavar='PKG', nargs='*',
         help='list of files to install')
     parser.set_defaults(command='install')
@@ -68,6 +71,7 @@ def get_install_command(args):
         'log_level': args.log_level,
         'pypi_urls': args.index or DEFAULT_PYPI_INDEX_LIST,
         'curdling_urls': args.curdling_index,
+        'force': args.force,
         'upload': args.upload,
         'index': index,
     })
