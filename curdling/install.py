@@ -45,7 +45,7 @@ class Install(object):
     def __init__(self, conf):
         self.conf = conf
         self.index = self.conf.get('index')
-        self.logger = Logger('main', conf.get('log_level'))
+        self.logger = Logger('install', conf.get('log_level'))
         self.database = Database()
 
     def start_services(self):
