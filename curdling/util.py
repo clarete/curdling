@@ -23,8 +23,8 @@ def split_name(fname):
     return name, ext[1:], frag
 
 
-def safe_name(spec):
-    return util.parse_requirement(spec).requirement
+def safe_name(name):
+    return name.lower().replace('_', '-')
 
 
 def expand_requirements(file_name):
@@ -48,7 +48,7 @@ def expand_requirements(file_name):
             continue
 
         # Finally, we're sure that it's just a package description
-        requirements.append(safe_name(req))
+        requirements.append(util.parse_requirement(req).requirement)
     return requirements
 
 
