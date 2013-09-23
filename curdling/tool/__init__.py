@@ -1,7 +1,9 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from ..index import Index
 from ..util import expand_requirements, safe_name
+
 from ..install import Install
+from ..uninstall import Uninstall
 
 import argparse
 import os
@@ -28,14 +30,22 @@ def add_parser_install(subparsers):
         '-u', '--upload', action='store_true', default=False,
         help='Upload your packages back to the curdling index')
     parser.add_argument(
-        '-l', '--log-level', default=1, type=int,
-        help=(
-            'Increases the verbosity, goes from 0 (quiet) to '
-            'the infinite and beyond (chatty)'))
-    parser.add_argument(
         'packages', metavar='PKG', nargs='*',
         help='list of files to install')
     parser.set_defaults(command='install')
+    return parser
+
+
+def add_parser_uninstall(subparsers):
+    parser = subparsers.add_parser(
+        'uninstall', help='Locate and uninstall packages')
+    parser.add_argument(
+        '-r', '--requirements',
+        help='A requirements file listing packages to be uninstalled')
+    parser.add_argument(
+        'packages', metavar='PKG', nargs='*',
+        help='list of files to uninstall')
+    parser.set_defaults(command='uninstall')
     return parser
 
 
@@ -70,11 +80,30 @@ def get_install_command(args):
     return cmd
 
 
+def get_uninstall_command(args):
+    cmd = Uninstall({
+        'log_level': args.log_level,
+    })
+
+    for pkg in get_packages_from_args(args):
+        cmd.request_uninstall(pkg)
+    return cmd
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Curdles your cheesy code and extracts its binaries')
+
+    # General arguments. All the commands have access to the following options
+    parser.add_argument(
+        '-l', '--log-level', default=1, type=int,
+        help=(
+            'Increases the verbosity, goes from 0 (quiet) to '
+            'the infinite and beyond (chatty)'))
+
     subparsers = parser.add_subparsers()
     add_parser_install(subparsers)
+    add_parser_uninstall(subparsers)
     args = parser.parse_args()
 
     # Here we choose which function will be called to setup the command
@@ -83,6 +112,7 @@ def main():
     # we'll get an error here.
     command = {
         'install': get_install_command,
+        'uninstall': get_uninstall_command,
     }[args.command](args)
 
     try:
