@@ -36,3 +36,6 @@ class Database(object):
         # Let's now remove all the installed files
         for path, hash_, size in distribution.list_installed_files():
             os.unlink(os.path.join(base, path))
+
+        # Removing the package directories
+        os.rmdir(distribution.path)
