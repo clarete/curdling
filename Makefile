@@ -67,9 +67,9 @@ run_test:
 		if [ "`ls tests/$(suite)/*.py`" = "tests/$(suite)/__init__.py" ] ; then \
 			echo "No \033[0;32m$(suite)\033[0m tests...";                   \
 		else                                                                    \
-			echo "=======================================";                 \
-			echo "* Running \033[0;32m$(suite)\033[0m test suite *";        \
-			echo "=======================================";                 \
+			printf "=======================================\n";             \
+			printf "|\033[0;32m Running $(suite) test suite \033[0m|\n";    \
+			printf "=======================================\n";             \
 			nosetests                                                       \
 	                  --rednose                                                     \
                           --stop                                                        \
