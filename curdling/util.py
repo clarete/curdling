@@ -62,6 +62,11 @@ def filehash(f, algo, block_size=2**20):
     return algo.hexdigest()
 
 
+def spaces(count, text):
+    return '\n'.join('{0}{1}'.format(' ' * count, line)
+        for line in text.splitlines())
+
+
 def get_auth_info_from_url(url):
     parsed = compat.urlparse(url)
     if parsed.username:

@@ -1,5 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from ..exceptions import ReportableError
+from ..exceptions import UnpackingError, BuildingError
+from ..util import spaces
 from .base import Service
 
 import os
@@ -49,7 +50,7 @@ def guess_file_type(filename):
     for magic, filetype in SUPPORTED_FORMATS.items():
         if file_start.startswith(magic):
             return filetype
-    raise ReportableError('Unknown compress format for file %s' % filename)
+    raise UnpackingError('Unknown compress format for file %s' % filename)
 
 
 class Script(object):
@@ -75,12 +76,16 @@ class Script(object):
         args.extend(custom_args)
 
         # Boom! Executing the command.
-        null = open(os.devnull, 'w')
-        subprocess.call(args, cwd=cwd, stdout=null, stderr=null)
+        builder = subprocess.Popen(args, cwd=cwd,
+            stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        _, errs = builder.communicate()
+        if builder.returncode != 0:
+            raise Exception(errs)
 
-        # Returning the path pointing to the generated file
-        dist_dir = os.path.join(cwd, 'dist')
-        return os.path.join(dist_dir, os.listdir(dist_dir)[0])
+        # Directory where the wheel will be saved after building it, returning
+        # the path pointing to the generated file
+        output_dir = os.path.join(cwd, 'dist')
+        return os.path.join(output_dir, os.listdir(output_dir)[0])
 
 
 def unpack(package, destination):
@@ -120,9 +125,8 @@ class Curdler(Service):
         try:
             setup_py = unpack(package=source, destination=destination)
             wheel_file = setup_py('bdist_wheel')
-            path = self.index.from_file(wheel_file)
+            return {'path': self.index.from_file(wheel_file)}
+        except BaseException as exc:
+            raise BuildingError('{0}\n{1}'.format(package, spaces(3, str(exc))))
         finally:
             shutil.rmtree(destination)
-
-        # Finally, we just say where in the storage the file is
-        return {'path': path}

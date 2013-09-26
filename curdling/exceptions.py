@@ -17,5 +17,13 @@ class ReportableError(CurdlingError):
     """
 
 
+class UnpackingError(ReportableError):
+    """Raised when a package can't be unpacked"""
+
+
+class BuildingError(ReportableError):
+    """Raised when a package can't be built using the setup.py script"""
+
+
 class PackageNotInstalled(CurdlingError):
     pass
