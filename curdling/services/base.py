@@ -55,10 +55,17 @@ class Service(SignalEmitter):
             worker.join()
         self.workers = []
 
+    def handle(self, requester, package, sender_data):
+        raise NotImplementedError(
+            "The service subclass should override this method")
+
     # -- Private API --
 
     def _worker(self):
-        for requester, package, sender_data in iter(self._queue.get, 'STOP'):
+        # If the service consumer invokes `.queue(None, None)` it causes the
+        # worker to die elegantly by matching the following sentinel:
+        sentinel = (None, None, {})
+        for requester, package, sender_data in iter(self._queue.get, sentinel):
             self.logger.level(3, ' * %s[%s].run(package=%s, sender_data=%s)',
                 self.name, threading.current_thread().name,
                 package, sender_data)

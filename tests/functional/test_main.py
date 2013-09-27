@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from mock import Mock
+from mock import Mock, ANY
 from nose.tools import nottest
 import os
 import errno
@@ -18,36 +18,31 @@ from curdling.services.installer import Installer
 from . import FIXTURE
 
 
-@nottest
 def test_service():
-    "Service() should implement the basic needs of an async service"
+    "Service#_worker() should stop when hitting the sentinel"
 
     # Given the following service
     class MyService(Service):
-        def __init__(self, my_mock, result_queue=None):
-            self.my_mock = my_mock
-            super(MyService, self).__init__(
-                callback=self.run,
-                result_queue=result_queue,
-            )
+        pass
 
-        def run(self, package, sender_data):
-            self.my_mock.ran = package
+    callback = Mock()
+    service = MyService()
+    service.connect('failed', callback)
 
-    my_mock = Mock()
-    queue = JoinableQueue()
-    service = MyService(my_mock, result_queue=queue)
+    # When I queue one package to be processed than I queue the stop sentinel
+    service.queue('main', 'package')
+    service.queue(None, None)
+    service._worker()
 
-    # When I queue a package to be processed by my service and start the
-    # service with 1 concurrent worker
-    service.queue('gherkin==0.1.0', 'main')
-    service.consume()
+    # Then I see that the package is indeed processed but the service dies
+    # properly when it receives the sentinel.
+    callback.assert_called_once_with('myservice', 'package', path=ANY)
 
-    # Then I see that the package processed
-    package = queue.get()
-    package.should.equal('gherkin==0.1.0')
-
-    my_mock.ran.should.equal('gherkin==0.1.0')
+    # And that in the `path` parameter we receive an exception (Unfortunately
+    # we can't compare NotImplementedError() instances :(
+    callback.call_args_list[0][1]['path'].message.should.equal(
+        'The service subclass should override this method'
+    )
 
 
 @nottest
