@@ -83,7 +83,7 @@ class Service(SignalEmitter):
                 self.emit('failed', self.name, package, path=exc)
                 self.logger.exception(
                     'failed to run %s (requested by:%s) for package %s:',
-                    self.name, requester, package, exc=exc)
+                    self.name, requester, package, exc)
             else:
                 self.emit('finished', self.name, package, **(data or {}))
                 self.logger.info(' * %s.result(package=%s): %s ... OK',
