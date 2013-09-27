@@ -157,7 +157,7 @@ def test_maestro_best_version():
     })
 
 
-def test_maestro_best_version():
+def test_maestro_best_version_no_direct_req():
     "best_version() with no direct requirements"
 
     # Given that I have a maestro with a package that contains more than one
