@@ -2,8 +2,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 from collections import defaultdict
 from distlib.util import parse_requirement
 from threading import RLock
-from pkg_resources import parse_version, safe_name
+from pkg_resources import parse_version
 from curdling.util import split_name, filehash
+
+from .util import safe_name
 
 import os
 import re
@@ -12,7 +14,7 @@ import shutil
 FORMATS = ('whl', 'gz', 'bz', 'zip')
 
 PKG_NAMES = [
-    r'([\w\-]+)-([\d\.]+\d)[\.\-]',
+    r'([\w\-\_]+)-([\d\.]+\d)[\.\-]',
     r'(\w+)-(.+)\.\w+$',
 ]
 
@@ -119,7 +121,7 @@ class Index(object):
         requirement = parse_requirement(spec)
 
         # [First step] Looking up the package name parsed from the spec
-        versions = self.storage.get(requirement.name.lower())
+        versions = self.storage.get(safe_name(requirement.name))
         if not versions:
             raise PackageNotFound(spec, format_)
 

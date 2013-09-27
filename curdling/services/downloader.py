@@ -188,11 +188,21 @@ class Downloader(Service):
         self.locator = get_locator(self.conf)
 
     def handle(self, requester, package, sender_data):
+        found = None
         prereleases = self.conf.get('prereleases', True)
-        requirement = self.locator.locate(package, prereleases)
-        if requirement is None:
+
+        # It sounds lame, but we're trying to match packages with more than one
+        # word separated with either `_` or `-`. Notice that we prefer hyphens
+        # cause theres currently way more packages using hyphens than
+        # underscores in pypi.p.o. Let's wait for the best here.
+        for option in [package.replace('_', '-'), package.replace('-', '_')]:
+            found = self.locator.locate(option, prereleases)
+            if found:
+                break
+
+        if not found:
             raise ReportableError('Package `{0}\' not found'.format(package))
-        return {"path": self.download(requirement)}
+        return {"path": self.download(found)}
 
     def get_servers_to_update(self):
         failures = {}

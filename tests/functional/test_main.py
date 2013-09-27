@@ -102,6 +102,52 @@ def test_downloader():
     index.delete()
 
 
+def test_downloader_hyphen_on_pkg_name():
+    "The Downloader() service should be able to locate packages with hyphens on the name"
+
+    # Given the following downloader component associated with a temporary
+    # index
+    index = Index(FIXTURE('tmpindex'))
+    downloader = Downloader(**{
+        'index': index,
+        'conf': {
+            'pypi_urls': ['http://localhost:8000/simple'],
+        },
+    })
+
+    # When I try to retrieve a package from it
+    package = downloader.handle('main', 'fake-pkg (== 0.0.0)', {})
+
+    # Then I see that the package was downloaded correctly to the storage
+    index.get('fake-pkg (== 0.0.0)').should_not.be.empty
+
+    # And I cleanup the mess
+    index.delete()
+
+
+def test_downloader_underscore_on_pkg_name():
+    "The Downloader() service should be able to locate packages with underscores on the name"
+
+    # Given the following downloader component associated with a temporary
+    # index
+    index = Index(FIXTURE('tmpindex'))
+    downloader = Downloader(**{
+        'index': index,
+        'conf': {
+            'pypi_urls': ['http://localhost:8000/simple'],
+        },
+    })
+
+    # When I try to retrieve a package from it
+    package = downloader.handle('main', 'fake_pkg (== 0.0.0)', {})
+
+    # Then I see that the package was downloaded correctly to the storage
+    index.get('fake_pkg (== 0.0.0)').should_not.be.empty
+
+    # And I cleanup the mess
+    index.delete()
+
+
 def test_downloader_with_no_packages():
     "After downloading packages, the result queue should be fed"
 
