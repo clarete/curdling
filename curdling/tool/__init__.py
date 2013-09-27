@@ -112,13 +112,24 @@ def main():
         choices=filter(lambda x: not isinstance(x, int),
             logging._levelNames.values()))
 
+    parser.add_argument(
+        '--logger-name', default=None,
+        help=(
+            'Name of the logger you want to set the level with '
+            '`-d` (for the nerdests)'
+        ))
+
     subparsers = parser.add_subparsers()
     add_parser_install(subparsers)
     add_parser_uninstall(subparsers)
     args = parser.parse_args()
 
-    # Enable debug if requested by user
-    logging.basicConfig(level=args.debug)
+    # Set the log level for the requested logger
+    handler = logging.StreamHandler()
+    handler.setLevel(args.debug)
+    handler.setFormatter(logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s'))
+    logging.getLogger(args.logger_name).setLevel(level=args.debug)
+    logging.getLogger(args.logger_name).addHandler(handler)
 
     # Here we choose which function will be called to setup the command
     # instance that will be ran. Notice that all the `add_parser_*` functions
