@@ -5,6 +5,7 @@ from ..util import expand_requirements, safe_name
 from ..install import Install
 from ..uninstall import Uninstall
 
+import logging
 import argparse
 import os
 
@@ -105,10 +106,19 @@ def main():
             'Increases the verbosity, goes from 0 (quiet) to '
             'the infinite and beyond (chatty)'))
 
+    parser.add_argument(
+        '-d', '--debug', default='CRITICAL',
+        help='Library debug level (for nerds)',
+        choices=filter(lambda x: not isinstance(x, int),
+            logging._levelNames.values()))
+
     subparsers = parser.add_subparsers()
     add_parser_install(subparsers)
     add_parser_uninstall(subparsers)
     args = parser.parse_args()
+
+    # Enable debug if requested by user
+    logging.basicConfig(level=args.debug)
 
     # Here we choose which function will be called to setup the command
     # instance that will be ran. Notice that all the `add_parser_*` functions
