@@ -1,7 +1,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from ..exceptions import ReportableError
-from ..logging import Logger
 from ..signal import Signal, SignalEmitter
+from ..util import logger
 from Queue import Queue
 
 import threading
@@ -20,7 +20,7 @@ class Service(SignalEmitter):
         self.env = args.get('env')
         self.conf = args.pop('conf', {})
         self.index = args.pop('index', None)
-        self.logger = Logger(self.name, args.get('log_level'))
+        self.logger = logger(__name__)
 
         # Components to implement the thread pool
         self._queue = Queue()
@@ -33,12 +33,12 @@ class Service(SignalEmitter):
 
     def queue(self, requester, package, **data):
         self._queue.put((requester, package, data))
-        self.logger.level(3, ' * queue(from=%s, to=%s, package=%s, data=%s)',
+        self.logger.info(' * queue(from=%s, to=%s, package=%s, data=%s)',
             requester, self.name, package, data)
         return self
 
     def start(self):
-        self.logger.level(3, ' * %s.start()', self.name)
+        self.logger.info(' * %s.start()', self.name)
         for worker_num in range(self.conf.get('concurrency', 10)):
             worker = threading.Thread(target=self._worker)
             worker.daemon = True
@@ -69,7 +69,7 @@ class Service(SignalEmitter):
         # If the service consumer invokes `.queue(None, None)` it causes the
         # worker to die elegantly by matching the following sentinel:
         for requester, package, sender_data in iter(self._queue.get, SENTINEL):
-            self.logger.level(3, ' * %s[%s].run(package=%s, sender_data=%s)',
+            self.logger.debug(' * %s[%s].run(package=%s, sender_data=%s)',
                 self.name, threading.current_thread().name,
                 package, sender_data)
             try:
@@ -78,13 +78,13 @@ class Service(SignalEmitter):
                 self._queue.task_done()
             except ReportableError as exc:
                 self.emit('failed', self.name, package, path=exc)
-                self.logger.level(3, " # %s.error(): %s", self.name, exc)
+                self.logger.info(" # %s.error(): %s", self.name, exc)
             except BaseException as exc:
                 self.emit('failed', self.name, package, path=exc)
-                self.logger.traceback(4,
+                self.logger.exception(
                     'failed to run %s (requested by:%s) for package %s:',
                     self.name, requester, package, exc=exc)
             else:
                 self.emit('finished', self.name, package, **(data or {}))
-                self.logger.level(3, ' * %s.result(package=%s): %s ... ok',
+                self.logger.info(' * %s.result(package=%s): %s ... OK',
                     self.name, package, data)

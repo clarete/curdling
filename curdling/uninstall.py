@@ -3,16 +3,15 @@ from distlib.util import parse_requirement
 
 from . import exceptions
 from .database import Database
-from .logging import Logger
-from .util import safe_name
+from .util import safe_name, logger
 
 
 class Uninstall(object):
 
     def __init__(self, conf):
         self.conf = conf
-        self.logger = Logger('uninstall', conf.get('log_level'))
         self.packages = []
+        self.logger = logger(__name__)
 
     def report(self):
         pass
@@ -22,9 +21,9 @@ class Uninstall(object):
 
     def run(self):
         for package in self.packages:
-            self.logger.level(2, "Removing package %s", package)
+            self.logger.info("Removing package %s", package)
 
             try:
                 Database.uninstall(package)
             except exceptions.PackageNotInstalled:
-                self.logger.level(1, "Package %s does not exist, skipping", package)
+                self.logger.error("Package %s does not exist, skipping", package)

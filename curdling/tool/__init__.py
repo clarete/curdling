@@ -100,23 +100,17 @@ def main():
         description='Curdles your cheesy code and extracts its binaries')
 
     # General arguments. All the commands have access to the following options
-    parser.add_argument(
-        '-l', '--log-level', default=1, type=int,
-        help=(
-            'Increases the verbosity, goes from 0 (quiet) to '
-            'the infinite and beyond (chatty)'))
 
+    levels = filter(lambda x: not isinstance(x, int), logging._levelNames.keys())
     parser.add_argument(
-        '-d', '--debug', default='CRITICAL',
-        help='Library debug level (for nerds)',
-        choices=filter(lambda x: not isinstance(x, int),
-            logging._levelNames.values()))
+        '-l', '--log-level', default='CRITICAL', choices=levels,
+        help='Log verbosity level (for nerds): {0}'.format(', '.join(levels)))
 
     parser.add_argument(
         '--logger-name', default=None,
         help=(
             'Name of the logger you want to set the level with '
-            '`-d` (for the nerdests)'
+            '`-l` (for the nerdests)'
         ))
 
     subparsers = parser.add_subparsers()
@@ -126,9 +120,9 @@ def main():
 
     # Set the log level for the requested logger
     handler = logging.StreamHandler()
-    handler.setLevel(args.debug)
+    handler.setLevel(args.log_level)
     handler.setFormatter(logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s'))
-    logging.getLogger(args.logger_name).setLevel(level=args.debug)
+    logging.getLogger(args.logger_name).setLevel(level=args.log_level)
     logging.getLogger(args.logger_name).addHandler(handler)
 
     # Here we choose which function will be called to setup the command

@@ -2,10 +2,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 from functools import wraps
 from distlib.util import parse_requirement
 
-from .logging import Logger
 from .index import PackageNotFound
 from .maestro import Maestro
 from .database import Database
+from .util import logger
 
 from .services.downloader import Downloader
 from .services.curdler import Curdler
@@ -45,8 +45,8 @@ class Install(object):
     def __init__(self, conf):
         self.conf = conf
         self.index = self.conf.get('index')
-        self.logger = Logger('install', conf.get('log_level'))
         self.database = Database()
+        self.logger = logger(__name__)
 
     def start_services(self):
         # General params for all the services
@@ -83,11 +83,11 @@ class Install(object):
 
     def report(self):
         if self.maestro.failed:
-            self.logger.level(0, 'Some milk was spilled in the process:')
+            print('Some milk was spilled in the process:')
         for package in self.maestro.failed:
             _, version = self.maestro.best_version(package)
             data = version.get('data')
-            self.logger.level(0, " * %s: %s", data.__class__.__name__, data)
+            print(" * {0}: {1}".format(data.__class__.__name__, data))
 
     def run(self):
         ui = RetrieveAndBuildProgress(self, 'built')
@@ -146,7 +146,7 @@ class Install(object):
         # install
         for blacklisted in PACKAGE_BLACKLIST:
             if package.startswith(blacklisted):
-                self.logger.level(2,
+                self.logger.info(
                     "Cowardly refusing to install blacklisted "
                     "requirement `%s'", package)
                 return False

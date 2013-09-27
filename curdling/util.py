@@ -5,12 +5,15 @@ import io
 import os
 import re
 import hashlib
+import logging
 import urllib3
 
 
 INCLUDE_PATTERN = re.compile(r'-r\s*\b([^\b]+)')
 
 LINK_PATTERN = re.compile(r'^([^\:]+):\/\/.+')
+
+ROOT_LOGGER = logging.getLogger('curdling')
 
 
 def split_name(fname):
@@ -73,3 +76,9 @@ def get_auth_info_from_url(url):
         auth = '{0}:{1}'.format(parsed.username, parsed.password)
         return urllib3.util.make_headers(basic_auth=auth)
     return {}
+
+
+def logger(name):
+    logger_instance = logging.getLogger(name)
+    logger_instance.parent = ROOT_LOGGER
+    return logger_instance
