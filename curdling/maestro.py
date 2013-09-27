@@ -2,6 +2,8 @@ from __future__ import absolute_import, unicode_literals, print_function
 from collections import defaultdict
 from distlib.util import parse_requirement
 
+from . import util
+
 
 def constraints(requirement):
     return (
@@ -24,7 +26,7 @@ class Maestro(object):
     def file_package(self, package, dependency_of=None):
         requirement = parse_requirement(package)
         version = constraints(requirement)
-        self.mapping[requirement.name.lower()][version] = {
+        self.mapping[util.safe_name(requirement.name)][version] = {
             'dependency_of': dependency_of,
             'data': None,
         }
@@ -32,17 +34,16 @@ class Maestro(object):
     def get_data(self, package):
         requirement = parse_requirement(package)
         version = constraints(requirement)
-        return self.mapping[requirement.name.lower()][version]['data']
+        return self.mapping[util.safe_name(requirement.name)][version]['data']
 
     def set_data(self, package, data):
         pkg = parse_requirement(package)
         version = constraints(pkg)
-        self.mapping[pkg.name.lower()][version]['data'] = data
+        self.mapping[util.safe_name(pkg.name)][version]['data'] = data
 
     def mark(self, attr, package, data):
         pkg = parse_requirement(package)
-        name = pkg.name.lower()
-        getattr(self, attr).add(name)
+        getattr(self, attr).add(util.safe_name(pkg.name))
 
         # The 'installed' label doesn't actually need to save any data, so we
         # just skip it. Going a little deeper, it's not possible cause we don't
@@ -53,7 +54,7 @@ class Maestro(object):
             self.set_data(package, data)
 
     def best_version(self, package_name):
-        versions = self.mapping[package_name].items()
+        versions = self.mapping[util.safe_name(package_name)].items()
 
         # We're looking for the version directly requested by the user. We
         # find it looking for versions that contain `None` in their field
@@ -68,7 +69,7 @@ class Maestro(object):
 
     def should_queue(self, package):
         pkg = parse_requirement(package)
-        return pkg.name.lower() not in self.mapping
+        return util.safe_name(pkg.name) not in self.mapping
 
     def pending(self, set_name):
         return list(set(self.mapping.keys())
