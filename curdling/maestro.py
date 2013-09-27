@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from collections import defaultdict
 from distlib.util import parse_requirement
+from distlib.version import LegacyVersion
 
 from . import util
 
@@ -63,9 +64,12 @@ class Maestro(object):
             if data['dependency_of'] is None:
                 return version, data
 
-        # There's no hard feelings about versions here. Meaning that the user
-        # didn't request this package as a primary installation target.
-        return versions[0]
+        # The user didn't inform any specific version in the main requirements
+        # (the ones received from the command line arguments, handled
+        # above). So, here we'll just choose the newest one. Which might be a
+        # bad thing for some cases but good enough for now.
+        return sorted(versions, reverse=True, key=lambda i: LegacyVersion(i[0]))[0]
+
 
     def should_queue(self, package):
         pkg = parse_requirement(package)
