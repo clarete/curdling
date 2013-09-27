@@ -7,6 +7,10 @@ from Queue import Queue
 import threading
 import time
 
+# See `Service._worker()`. This is the sentinel that gently stops the iterator
+# over there.
+SENTINEL = (None, None, {})
+
 
 class Service(SignalEmitter):
 
@@ -50,7 +54,7 @@ class Service(SignalEmitter):
         # We need to separate loops cause we can't actually tell which thread
         # got each sentinel
         for worker in self.pool:
-            self._queue.put('STOP')  # Sending a sentinel
+            self._queue.put(SENTINEL)
         for worker in self.pool:
             worker.join()
         self.workers = []
@@ -64,8 +68,7 @@ class Service(SignalEmitter):
     def _worker(self):
         # If the service consumer invokes `.queue(None, None)` it causes the
         # worker to die elegantly by matching the following sentinel:
-        sentinel = (None, None, {})
-        for requester, package, sender_data in iter(self._queue.get, sentinel):
+        for requester, package, sender_data in iter(self._queue.get, SENTINEL):
             self.logger.level(3, ' * %s[%s].run(package=%s, sender_data=%s)',
                 self.name, threading.current_thread().name,
                 package, sender_data)
