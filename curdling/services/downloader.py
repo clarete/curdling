@@ -56,11 +56,7 @@ class AggregatingLocator(locators.AggregatingLocator):
     def locate(self, requirement, prereleases=True):
         pkg = dutil.parse_requirement(requirement)
         for locator in self.locators:
-            # We're not using `util.safe_name` here cause it does actually the
-            # opposite of what we need. PyPi packages with underscores (`_`)
-            # will fall back to hyphens (`-`) but the opposite is not true.
-            name = pkg.name.lower().replace('-', '_')
-            versions = locator.get_project(name)
+            versions = locator.get_project(pkg.name)
             package = find_packages(locator, pkg, versions)
             if package:
                 return package
