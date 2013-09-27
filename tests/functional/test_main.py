@@ -45,37 +45,26 @@ def test_service():
     )
 
 
-@nottest
-def test_service_failure():
-    "Service() should handle custom callback failures"
+def test_service_success():
+    "Service#_worker() should execute self#handler() method successfully"
 
     # Given the following service
     class MyService(Service):
-        def __init__(self, result_queue=None):
-            super(MyService, self).__init__(
-                callback=self.run,
-                result_queue=result_queue,
-            )
+        def handle(self, requester, package, sender_data):
+            return {'package': 'processed-package'}
 
-        def run(self, package, sender_data):
-            raise ValueError("I don't want to do anything")
+    callback = Mock()
+    service = MyService()
+    service.connect('finished', callback)
 
-    queue = JoinableQueue()
-    service = MyService(result_queue=queue)
+    # When I queue one package to be processed than I queue the stop sentinel
+    service.queue('main', 'package')
+    service.queue(None, None)
+    service._worker()
 
-    # When I queue a package to be processed by my service and start the
-    # service with 1 concurrent worker
-    service.queue('gherkin==0.1.0', 'main')
-    service.consume()
-    service.pool.join()         # Ensure we finish spawning the greenlet
-
-    # Then I see that no package was processed
-    queue.qsize().should.equal(0)
-
-    # And that the list of failed packages was updated
-    service.failed_queue[0][0].should.equal('gherkin==0.1.0')
-    service.failed_queue[0][1].should.be.a(ValueError)
-    service.failed_queue[0][1].message.should.equal("I don't want to do anything")
+    # Then I see that the right signal was emitted
+    callback.assert_called_once_with(
+        'myservice', 'package', package='processed-package')
 
 
 def test_downloader_with_no_sources():
