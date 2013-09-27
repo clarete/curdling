@@ -83,7 +83,7 @@ class Install(object):
 
     def report(self):
         if self.maestro.failed:
-            self.logger.level(0, 'Some cheese was spilled in the process:')
+            self.logger.level(0, 'Some milk was spilled in the process:')
         for package in self.maestro.failed:
             _, version = self.maestro.best_version(package)
             data = version.get('data')
