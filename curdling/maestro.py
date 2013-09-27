@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from collections import defaultdict
 from distlib.util import parse_requirement
-from distlib.version import LegacyVersion
+from distlib.version import LegacyMatcher
 
 from . import util
 
@@ -68,7 +68,8 @@ class Maestro(object):
         # (the ones received from the command line arguments, handled
         # above). So, here we'll just choose the newest one. Which might be a
         # bad thing for some cases but good enough for now.
-        return sorted(versions, reverse=True, key=lambda i: LegacyVersion(i[0]))[0]
+        return sorted([v for v in versions if v], reverse=True,
+            key=lambda i: LegacyMatcher('{0} ({1})'.format(package_name, i[0])))[0] or versions[0]
 
 
     def should_queue(self, package):
