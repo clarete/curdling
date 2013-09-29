@@ -14,9 +14,17 @@ def constraints(requirement):
 
 class Maestro(object):
 
-    def __init__(self, *args, **kwargs):
-        super(Maestro, self).__init__(*args, **kwargs)
-        self.mapping = defaultdict(dict)
+    def __init__(self):
+        # This is the structure that saves all the meta-data about all the
+        # requested packages. If you want to see how this structure looks like
+        # when it contains actuall data.
+        #
+        # You should take a look in the file # `tests/unit/test_maestro.py`.
+        # It contains all the possible combinations of values stored in this
+        # structure.
+        self.mapping = defaultdict(
+            lambda: defaultdict(
+                lambda: dict(dependency_of=[], data=None)))
 
         # The possible states of a package
         self.failed = set()
@@ -27,10 +35,9 @@ class Maestro(object):
     def file_package(self, package, dependency_of=None):
         requirement = parse_requirement(package)
         version = constraints(requirement)
-        self.mapping[util.safe_name(requirement.name)][version] = {
-            'dependency_of': dependency_of,
-            'data': None,
-        }
+        entry = self.mapping[util.safe_name(requirement.name)][version]
+        if dependency_of is not None:
+            entry['dependency_of'].append(dependency_of)
 
     def get_data(self, package):
         requirement = parse_requirement(package)

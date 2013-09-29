@@ -66,23 +66,23 @@ def test_maestro_mark_built_update_mapping():
     dict(maestro.mapping).should.equal({
         'curdling': {
             None: {
-                'dependency_of': None,
+                'dependency_of': [],
                 'data': '/curds/curdling.whl',
             },
         },
         'sure': {
             '== 0.1.2': {
-                'dependency_of': 'curdling',
+                'dependency_of': ['curdling'],
                 'data': '/curds/sure.whl'
             },
         },
         'forbiddenfruit': {
             '> 0.1.0': {
-                'dependency_of': 'curdling',
+                'dependency_of': ['curdling'],
                 'data': '/curds/forbiddenfruit.whl',
             },
             '>= 0.1.2': {
-                'dependency_of': 'sure (== 0.1.2)',
+                'dependency_of': ['sure (== 0.1.2)'],
                 'data': '/curds/forbiddenfruit.whl',
             },
         },
@@ -128,7 +128,7 @@ def test_maestro_get_data():
     maestro.mapping = {
         'forbiddenfruit': {
             '> 0.1.0': {
-                'dependency_of': None,
+                'dependency_of': [],
                 'data': '/curds/forbiddenfruit.whl',
             },
         }
@@ -150,11 +150,11 @@ def test_maestro_best_version():
     maestro.mapping = {
         'forbiddenfruit': {
             '> 0.1.0': {
-                'dependency_of': None,
+                'dependency_of': [],
                 'data': '/curds/forbiddenfruit.whl',
             },
             '>= 0.0.9': {
-                'dependency_of': 'sure (== 0.2)',
+                'dependency_of': ['sure (== 0.2)'],
                 'data': '/curds/forbiddenfruit.whl',
             },
         }
@@ -167,7 +167,7 @@ def test_maestro_best_version():
     # (IOW: The `dependency_of` field is `None`).
     version.should.equal('> 0.1.0')
     data.should.equal({
-        'dependency_of': None,
+        'dependency_of': [],
         'data': '/curds/forbiddenfruit.whl',
     })
 
@@ -181,11 +181,11 @@ def test_maestro_best_version_no_direct_req():
     maestro.mapping = {
         'forbiddenfruit': {
             '> 0.1.0': {
-                'dependency_of': 'luxury (== 0.1.0)',
+                'dependency_of': ['luxury (== 0.1.0)'],
                 'data': '/curds/forbiddenfruit.whl',
             },
             '>= 0.0.9': {
-                'dependency_of': 'sure (== 0.2)',
+                'dependency_of': ['sure (== 0.2)'],
                 'data': '/curds/forbiddenfruit.whl',
             },
         }
@@ -198,7 +198,7 @@ def test_maestro_best_version_no_direct_req():
     # (IOW: The `dependency_of` field is not `None`).
     version.should.equal('> 0.1.0')
     data.should.equal({
-        'dependency_of': 'luxury (== 0.1.0)',
+        'dependency_of': ['luxury (== 0.1.0)'],
         'data': '/curds/forbiddenfruit.whl',
     })
 
@@ -211,16 +211,16 @@ def test_maestro_best_version_no_direct_req_with_null():
     maestro = Maestro()
     maestro.mapping = {
         None: {
-            'dependency_of': 'moto',
+            'dependency_of': ['moto'],
             'data': '/curds/forbiddenfruit.whl',
         },
         'forbiddenfruit': {
             '> 0.1.0': {
-                'dependency_of': 'luxury (== 0.1.0)',
+                'dependency_of': ['luxury (== 0.1.0)'],
                 'data': '/curds/forbiddenfruit.whl',
             },
             '>= 0.0.9': {
-                'dependency_of': 'sure (== 0.2)',
+                'dependency_of': ['sure (== 0.2)'],
                 'data': '/curds/forbiddenfruit.whl',
             },
         }
