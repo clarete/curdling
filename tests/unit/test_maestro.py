@@ -47,22 +47,6 @@ def test_maestro_mark_failed():
     maestro.failed.should.equal({'curdling'})
 
 
-def test_maestro_should_queue():
-    "Our maestro should know if a package can be queued or not"
-
-    # Given that I have an empty maestro
-    maestro = Maestro()
-
-    # When I check if I can queue a package that is *not* present in the
-    # maestro instance, Then I see it returns true
-    maestro.should_queue('curdling').should.be.true
-
-    # After filing this package to the maestro, should_queue will change its
-    # results, as you can see here.
-    maestro.file_package('curdling', dependency_of=None)
-    maestro.should_queue('curdling').should.be.false
-
-
 def test_maestro_mark_built_update_mapping():
 
     # Given that I have a maestro with a couple packages filed under it
@@ -103,6 +87,37 @@ def test_maestro_mark_built_update_mapping():
             },
         },
     })
+
+
+def test_maestro_mark_installed():
+    "Maestro should be able to track installed packages"
+
+    # Given a maestro with a few packages
+    maestro = Maestro()
+    maestro.file_package('curdling')
+    maestro.file_package('sure')
+
+    # When I mark `curdling` as installed
+    maestro.mark('installed', 'sure', data=None)
+
+    # Then I see that the package was marked as installed
+    maestro.installed.should.equal({'sure'})
+
+
+def test_maestro_should_queue():
+    "Our maestro should know if a package can be queued or not"
+
+    # Given that I have an empty maestro
+    maestro = Maestro()
+
+    # When I check if I can queue a package that is *not* present in the
+    # maestro instance, Then I see it returns true
+    maestro.should_queue('curdling').should.be.true
+
+    # After filing this package to the maestro, should_queue will change its
+    # results, as you can see here.
+    maestro.file_package('curdling', dependency_of=None)
+    maestro.should_queue('curdling').should.be.false
 
 
 def test_maestro_get_data():
