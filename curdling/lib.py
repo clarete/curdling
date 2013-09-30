@@ -1,41 +1,48 @@
+from __future__ import absolute_import, print_function, unicode_literals
 from distlib.util import parse_requirement
-from distlib.version import LegacyVersion
+from distlib.version import LegacyVersion, LegacyMatcher
 from .util import safe_name
 
 
-def compare(operator, left_value, right_value):
-    return {
-        '<':  lambda l, r: l <  r,
-        '>':  lambda l, r: l >  r,
-        '>=': lambda l, r: l >= r,
-        '<=': lambda l, r: l <= r,
-    }[operator](left_value, right_value)
-
-
 def combine_requirements(requirements):
-    package_names = set()
-    constraints = []
+    constraints = set()
+    strict_versions = set()
 
     lower_bound = None
     upper_bound = None
 
     for spec in requirements:
         requirement = parse_requirement(spec)
-
-        # Saving all the package names to raise an exception later if the
-        # user tried to return
         package_name = safe_name(requirement.name)
-        package_names.add(package_name)
 
-        # Iterate over all the constraints present in each specific
+        # Iterate over all the constraints present in each strict
         # requirement.
         for operator, version_name in requirement.constraints or []:
             version = LegacyVersion(version_name)
+            version_str = '{0} {1}'.format(operator, version)
+
+            # Saving the list of requested versions. It's slightly different to
+            # save strict versions cause we don't want to:
+            #
+            # 1) Add the operator to the final string, so it won't look like
+            #    "package (== x.y.z)" but rather like "package (x.y.z)";
+            #
+            # 2) Append the strict version to the constraint list without being
+            #    able to filter it later. Cause the `constraints` variable here
+            #    just holds references to all the versions we need to
+            #    compare;
+            #
+            # Check the variable `combined_version` in the end of this function
+            # and you'll see that building the final string that describes the
+            # version found and comparing the compatibility between those
+            # versions is a separate work.
+
+            constraints.add(version_str)
             if operator == '==':
-                return '{0} ({1})'.format(package_name, version)
+                strict_versions.add(version_str)
 
             # do not deal with the `=` of the requirement yet. Only with both
-            # `>` and `<` symbols;
+            # `>` and `<` symbols.
             strict = len(operator) == 1
             if operator[0] == '>':
                 if (not lower_bound or (version > lower_bound)) or \
@@ -45,9 +52,40 @@ def combine_requirements(requirements):
                 if (not upper_bound or (version < upper_bound)) or \
                    (strict and version == upper_bound):
                     upper_bound = version
-            constraints.append('{0} {1}'.format(operator, version))
 
+    # If the user informed more than one `strict` versions we should just
+    # fail. Since we're using `set`s to manage strict_versions, duplications
+    # will be ignored.
+    if len(strict_versions) > 1:
+        raise RuntimeError('Incompatible versions')
+    if len(strict_versions) == 1:
+        strict_version_number = list(strict_versions)[0].split()[1]
+
+    # We need to separate the version number from the package name to apply the
+    # logic that determines if we're good or not. This helper is just an easy
+    # way to build the package name again.
+    full_name = lambda constraint: '{0} ({1})'.format(package_name, constraint)
+
+    # This code won't run unless we're dealing with both strict and range
+    # versions. It will basically make sure that the strict version will be the
+    # chosen one. However, we have to make sure that it is compatible to all
+    # the other versions requested.
+    if strict_versions and constraints.difference(strict_versions):
+        compatible_versions = [
+            LegacyMatcher(full_name(c)).match(strict_version_number)
+            for c in constraints]
+        if all(compatible_versions):
+            return full_name(strict_version_number)
+        raise RuntimeError('Incompatible versions')
+
+    # The following comparison will tell if we're requiring two incompatible
+    # versions.
     if lower_bound > upper_bound:
         raise RuntimeError('Incompatible versions')
 
-    return '{0} ({1})'.format(list(package_names)[0], ', '.join(constraints))
+    # The user requested specific versions of the requirement we're dealing
+    # with. They must be compatible among each other and compatible with the
+    # other requested versions.
+    combined_version = strict_versions and strict_version_number or \
+        ', '.join(constraints.difference(strict_versions))
+    return full_name(combined_version)
