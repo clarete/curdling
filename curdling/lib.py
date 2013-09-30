@@ -14,10 +14,11 @@ def combine_requirements(requirements):
     for spec in requirements:
         requirement = parse_requirement(spec)
         package_name = safe_name(requirement.name)
+        found_constraints = requirement.constraints or []
 
         # Iterate over all the constraints present in each strict
         # requirement.
-        for operator, version_name in requirement.constraints or []:
+        for operator, version_name in found_constraints:
             version = LegacyVersion(version_name)
             version_str = '{0} {1}'.format(operator, version)
 
@@ -64,6 +65,11 @@ def combine_requirements(requirements):
         if all(compatible_versions):
             return full_name(strict_version_number)
         raise RuntimeError('Incompatible versions')
+
+    # There's no need to validate the version boundaries when we have only one
+    # version to join
+    if len(constraints) == 1:
+        return full_name(list(constraints)[0])
 
     # The following comparison will tell if we're requiring two incompatible
     # versions.

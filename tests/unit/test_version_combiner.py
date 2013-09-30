@@ -7,13 +7,13 @@ def test_combining_single_requirement():
     "Version Combiner should not touch a single requirement"
 
     # Given that I have a single requirement
-    requirements = ['forbiddenfruit (0.1.2)']
+    requirements = ['forbiddenfruit (>= 0.1.2)']
 
     # When I pass it to `combine_requirements()`
     combined = combine_requirements(requirements)
 
     # Then I see the same requirement
-    combined.should.equal('forbiddenfruit (0.1.2)')
+    combined.should.equal('forbiddenfruit (>= 0.1.2)')
 
 
 def test_combining_compatible_requirements():
