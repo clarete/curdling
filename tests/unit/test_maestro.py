@@ -105,7 +105,7 @@ def test_maestro_mark_installed():
 
 
 def test_maestro_should_queue():
-    "Our maestro should know if a package can be queued or not"
+    "Maestro#should_queue should not allow repeated packages in the maestro"
 
     # Given that I have an empty maestro
     maestro = Maestro()
@@ -116,8 +116,21 @@ def test_maestro_should_queue():
 
     # After filing this package to the maestro, should_queue will change its
     # results, as you can see here.
-    maestro.file_package('curdling', dependency_of=None)
+    maestro.file_package('curdling')
     maestro.should_queue('curdling').should.be.false
+
+
+def test_maestro_should_queue_versions():
+    "Maestro#should_queue should be aware of versions too"
+
+    # Given that I have a maestro with one package with its version set
+    maestro = Maestro()
+    maestro.file_package('ejson (0.1.3)')
+
+    # When I try to insert another version of the same package but with a
+    # different version; Then I see that it works
+    maestro.should_queue('ejson (0.1.5)').should.be.true
+    maestro.should_queue('ejson (>= 1.5)').should.be.true
 
 
 def test_maestro_get_data():

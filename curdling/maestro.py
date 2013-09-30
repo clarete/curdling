@@ -4,6 +4,7 @@ from distlib.util import parse_requirement
 from distlib.version import LegacyMatcher
 
 from . import util
+from .lib import combine_requirements
 
 
 def constraints(requirement):
@@ -76,10 +77,22 @@ class Maestro(object):
         # above). This will be improved by fixing the issue #13.
         return versions[0]
 
+    def should_queue(self, requirement):
+        parsed_requirement = parse_requirement(requirement)
+        package_name = util.safe_name(parsed_requirement.name)
+        currently_present = self.mapping.get(package_name)
 
-    def should_queue(self, package):
-        pkg = parse_requirement(package)
-        return util.safe_name(pkg.name) not in self.mapping
+        # If the package is not currently present in the maestro, we know that
+        # it's safe to add it
+        if not currently_present:
+            return True
+
+        # Now let's retrieve all the versions requested so far and see if any
+        # of them match the request we're dealing with right now. If it does
+        # match, we don't need to add the same requirement again.
+        versions = currently_present.keys()
+        matcher = LegacyMatcher(combine_requirements([requirement]))
+        return not any(matcher.match(v) for v in versions)
 
     def pending(self, set_name):
         return list(set(self.mapping.keys())
