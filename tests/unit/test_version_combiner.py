@@ -1,5 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from curdling.lib import combine_requirements
+from nose.tools import nottest
 
 
 def test_combining_compatible_requirements():
@@ -62,3 +63,38 @@ def test_combining_range_with_strict_versions():
 
     # Then I see that the chosen one was the strict version
     combined.should.equal('forbiddenfruit (0.1.5)')
+
+
+def test_combining_range_with_compatible_negative_versions():
+    "Version Combiner should work with negative versions"
+
+    # Given that I have a couple different versions of the same package
+    requirements = [
+        'forbiddenfruit (> 0.1.4)',
+        'forbiddenfruit (!= 0.1.5)',
+        'forbiddenfruit (< 0.1.7)',
+    ]
+
+    # When I try to combine the requirements above
+    combined = combine_requirements(requirements)
+
+    # Then I see it worked cause the negative is compatible with the two
+    # informed ranges
+    combined.should.equal('forbiddenfruit (> 0.1.4, < 0.1.7, != 0.1.5)')
+
+
+@nottest
+def test_combining_range_with_negatives():
+    "Version Combiner should take negative versions into account when checking for compatibility"
+
+    # Given that I have a couple different versions of the same package
+    requirements = [
+        'forbiddenfruit (> 0.1.4)',
+        'forbiddenfruit (!= 0.1.5)',
+        'forbiddenfruit (< 0.1.6)',
+    ]
+
+    # When I try to combine the requirements above; Then I see it won't work
+    # cause the set above is just broken
+    combine_requirements.when.called_with(requirements).should.throw(
+        RuntimeError, "Incompatible versions")
