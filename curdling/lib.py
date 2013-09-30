@@ -22,36 +22,23 @@ def combine_requirements(requirements):
             version_str = '{0} {1}'.format(operator, version)
 
             # Saving the list of requested versions. It's slightly different to
-            # save strict versions cause we don't want to:
-            #
-            # 1) Add the operator to the final string, so it won't look like
-            #    "package (== x.y.z)" but rather like "package (x.y.z)";
-            #
-            # 2) Append the strict version to the constraint list without being
-            #    able to filter it later. Cause the `constraints` variable here
-            #    just holds references to all the versions we need to
-            #    compare;
+            # save strict versions cause we don't want to append the strict
+            # version to the constraint list without being able to filter it
+            # out later. Cause the `constraints` variable here just holds
+            # references to all the versions we need to compare;
             #
             # Check the variable `combined_version` in the end of this function
             # and you'll see that building the final string that describes the
             # version found and comparing the compatibility between those
             # versions is a separate work.
-
             constraints.add(version_str)
+
             if operator == '==':
                 strict_versions.add(version_str)
-
-            # do not deal with the `=` of the requirement yet. Only with both
-            # `>` and `<` symbols.
-            strict = len(operator) == 1
-            if operator[0] == '>':
-                if (not lower_bound or (version > lower_bound)) or \
-                   (strict and version == lower_bound):
-                    lower_bound = version
+            elif operator[0] == '>':
+                lower_bound = version
             else:
-                if (not upper_bound or (version < upper_bound)) or \
-                   (strict and version == upper_bound):
-                    upper_bound = version
+                upper_bound = version
 
     # If the user informed more than one `strict` versions we should just
     # fail. Since we're using `set`s to manage strict_versions, duplications

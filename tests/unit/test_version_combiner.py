@@ -55,7 +55,7 @@ def test_combining_range_with_strict_versions():
     "Version Combiner should always choose strict versions over ranges"
 
     # Given that I have a couple different versions of the same package
-    requirements = ['forbiddenfruit (>= 0.1.2)', 'forbiddenfruit (0.1.5)']
+    requirements = ['forbiddenfruit (<= 1.5, >= 0.1.2)', 'forbiddenfruit (0.1.5)']
 
     # When I try to combine the requirements above
     combined = combine_requirements(requirements)
