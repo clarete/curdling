@@ -227,7 +227,11 @@ def test_maestro_best_version():
     maestro = Maestro()
     maestro.mapping = {
         'forbiddenfruit': {
-            '> 0.1.0': {
+            '>= 0.3.9': {
+                'dependency_of': ['luxury'],
+                'data': '/curds/forbiddenfruit.whl',
+            },
+            '> 0.0.3': {
                 'dependency_of': [],
                 'data': '/curds/forbiddenfruit.whl',
             },
@@ -243,7 +247,7 @@ def test_maestro_best_version():
 
     # Then I see I found the entry that was directly requested by the user
     # (IOW: The `dependency_of` field is `None`).
-    version.should.equal('> 0.1.0')
+    version.should.equal('> 0.0.3')
     data.should.equal({
         'dependency_of': [],
         'data': '/curds/forbiddenfruit.whl',

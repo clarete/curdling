@@ -82,7 +82,7 @@ class Maestro(object):
         # find it looking for versions that contain `None` in their field
         # `dependency_of`.
         for version, data in versions:
-            if data['dependency_of'] is None:
+            if not data['dependency_of']:
                 return version, data
 
         # The user didn't inform any specific version in the main requirements
