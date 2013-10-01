@@ -168,6 +168,36 @@ def test_maestro_should_queue_versions():
     maestro.should_queue('ejson (>= 1.5)').should.be.true
 
 
+def test_maestro_should_queue_prefer_version_info():
+    "Maestro#should_queue should always prefer packages with version info over bare package names"
+
+    # Given that I have a maestro with a package without any strict version
+    # requirement
+    maestro = Maestro()
+    maestro.file_package('ejson')
+
+    # When I try to queue this same package with version info
+    should_queue = maestro.should_queue('ejson (0.1.3)')
+
+    # Then I see we always prefer packages with version info
+    should_queue.should.be.true
+
+
+def test_maestro_should_queue_prefer_version_info_2():
+    "Maestro#should_queue should prefer packages with version info when there's already a non-versioned package"
+
+    # Given that I have a maestro with a package without any strict version
+    # requirement
+    maestro = Maestro()
+    maestro.file_package('ejson (0.1.3)')
+
+    # When I try to queue this same package without version info
+    should_queue = maestro.should_queue('ejson')
+
+    # Then I see it shouldn't be allowed
+    should_queue.should.be.false
+
+
 def test_maestro_get_data():
     "It should be possible to retrieve data of a given requirement"
 

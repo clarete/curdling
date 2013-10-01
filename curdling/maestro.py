@@ -104,8 +104,21 @@ class Maestro(object):
         # of them match the request we're dealing with right now. If it does
         # match, we don't need to add the same requirement again.
         versions = currently_present.keys()
-        matcher = LegacyMatcher(combine_requirements([requirement]))
-        return not any(matcher.match(v) for v in versions)
+
+        # Do not add requirements without version info if there's any other
+        # version already filled.
+        if not parsed_requirement.constraints and versions:
+            return False
+
+        # Ensuring that we always prefer packages with version information:
+        #
+        # Knowing that when the caller files a package without version info,
+        # we'll use `None` as the version key. That said, we have to remove
+        # this version before comparing things.
+        versions.count(None) and versions.remove(None)
+        combined_requirements = combine_requirements([requirement])
+        matcher = LegacyMatcher(combined_requirements)
+        return (not any(matcher.match(v) for v in versions))
 
     def pending(self, set_name):
         return list(set(self.mapping.keys())
