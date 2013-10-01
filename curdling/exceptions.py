@@ -21,7 +21,7 @@ class UnpackingError(ReportableError):
     """Raised when a package can't be unpacked"""
 
 
-class BuildingError(ReportableError):
+class BuildError(ReportableError):
     """Raised when a package can't be built using the setup.py script"""
 
 

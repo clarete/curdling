@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from ..exceptions import UnpackingError, BuildingError, NoSetupScriptFound
+from ..exceptions import UnpackingError, BuildError, NoSetupScriptFound
 from ..util import spaces
 from .base import Service
 
@@ -130,6 +130,6 @@ class Curdler(Service):
             wheel_file = setup_py('bdist_wheel')
             return {'path': self.index.from_file(wheel_file)}
         except BaseException as exc:
-            raise BuildingError('{0}: {1}'.format(package, spaces(3, str(exc))))
+            raise BuildError('{0}: {1}'.format(package, spaces(3, str(exc))))
         finally:
             shutil.rmtree(destination)
