@@ -14,6 +14,11 @@ import urllib3
 import distlib.version
 
 
+# Hardcoded vaue for the size of the http pool used a couple times in this
+# module. Not the perfect place, I know. life is not fair.
+POOL_MAX_SIZE = 10
+
+
 def get_locator(conf):
     curds = [CurdlingLocator(u) for u in conf.get('curdling_urls', [])]
     pypi = [PyPiLocator(u) for u in conf.get('pypi_urls', [])]
@@ -66,7 +71,7 @@ class AggregatingLocator(locators.AggregatingLocator):
 class PyPiLocator(locators.SimpleScrapingLocator):
     def __init__(self, url, **kwargs):
         super(PyPiLocator, self).__init__(url, **kwargs)
-        self.opener = Pool()
+        self.opener = Pool(maxsize=POOL_MAX_SIZE)
 
     def _get_project(self, name):
         return self._fetch(
@@ -143,7 +148,7 @@ class CurdlingLocator(locators.Locator):
         super(CurdlingLocator, self).__init__(**kwargs)
         self.base_url = url
         self.url = url
-        self.opener = Pool()
+        self.opener = Pool(maxsize=POOL_MAX_SIZE)
         self.packages_not_found = []
 
     def get_distribution_names(self):
@@ -185,7 +190,7 @@ class Downloader(Service):
 
     def __init__(self, *args, **kwargs):
         super(Downloader, self).__init__(*args, **kwargs)
-        self.opener = Pool()
+        self.opener = Pool(maxsize=POOL_MAX_SIZE)
         self.locator = get_locator(self.conf)
 
     def handle(self, requester, package, sender_data):
