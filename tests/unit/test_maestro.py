@@ -32,7 +32,7 @@ def test_maestro_pending_packages_no_deps():
     maestro.built.should.equal({'curdling'})
 
 
-def test_maestro_mark_failed():
+def test_mark_failed():
     "It shoudl be possible to mark packages as failed in the maestro"
 
     # Given that I have a maestro with a package filed under it
@@ -48,7 +48,7 @@ def test_maestro_mark_failed():
     maestro.failed.should.equal({'curdling'})
 
 
-def test_maestro_get_parents():
+def test_get_parents():
     "Maestro#get_parents() should return a list of requesters of a given package"
 
     # Given that I have a maestro with two packages depending on the same library
@@ -83,7 +83,7 @@ def test_marking_parent_packages_as_failed_when_a_dependency_fails():
     maestro.pending('built').should.be.empty
 
 
-def test_maestro_mark_built_update_mapping():
+def test_mark_built_update_mapping():
 
     # Given that I have a maestro with a couple packages filed under it
     maestro = Maestro()
@@ -125,7 +125,7 @@ def test_maestro_mark_built_update_mapping():
     })
 
 
-def test_maestro_mark_installed():
+def test_mark_installed():
     "Maestro should be able to track installed packages"
 
     # Given a maestro with a few packages
@@ -140,7 +140,7 @@ def test_maestro_mark_installed():
     maestro.installed.should.equal({'sure'})
 
 
-def test_maestro_should_queue():
+def test_should_queue():
     "Maestro#should_queue should not allow repeated packages in the maestro"
 
     # Given that I have an empty maestro
@@ -156,7 +156,7 @@ def test_maestro_should_queue():
     maestro.should_queue('curdling').should.be.false
 
 
-def test_maestro_should_queue_versions():
+def test_should_queue_versions():
     "Maestro#should_queue should be aware of versions too"
 
     # Given that I have a maestro with one package with its version set
@@ -169,7 +169,7 @@ def test_maestro_should_queue_versions():
     maestro.should_queue('ejson (>= 1.5)').should.be.true
 
 
-def test_maestro_should_queue_prefer_version_info():
+def test_should_queue_prefer_version_info():
     "Maestro#should_queue should always prefer packages with version info over bare package names"
 
     # Given that I have a maestro with a package without any strict version
@@ -184,7 +184,7 @@ def test_maestro_should_queue_prefer_version_info():
     should_queue.should.be.true
 
 
-def test_maestro_should_queue_prefer_version_info_2():
+def test_should_queue_prefer_version_info_2():
     "Maestro#should_queue should prefer packages with version info when there's already a non-versioned package"
 
     # Given that I have a maestro with a package without any strict version
@@ -199,7 +199,7 @@ def test_maestro_should_queue_prefer_version_info_2():
     should_queue.should.be.false
 
 
-def test_maestro_get_data():
+def test_get_data():
     "It should be possible to retrieve data of a given requirement"
 
     # Given that I have a maestro filled with a package
@@ -220,7 +220,7 @@ def test_maestro_get_data():
     data.should.equal('/curds/forbiddenfruit.whl')
 
 
-def test_maestro_best_version():
+def test_best_version():
     "Maestro should be able to choose the right version of a package to be installed"
 
     # Given that I have a maestro with a package that contains more than one
@@ -255,7 +255,7 @@ def test_maestro_best_version():
     })
 
 
-def test_maestro_best_version_filter_out_none_values_before_determining_top_requirements():
+def test_best_version_filter_out_none_values_before_determining_top_requirements():
     "Maestro#best_version should filter out None values from dependency list before determining top requirements"
 
     # Given that I have a maestro with a package that contains more than one
@@ -315,7 +315,7 @@ def test_best_version_no_strict_requirements_but_strict_version():
     })
 
 
-def test_maestro_best_version_no_direct_req():
+def test_best_version_no_direct_req():
     "best_version() with no direct requirements"
 
     # Given that I have a maestro with a package that contains more than one
@@ -346,7 +346,7 @@ def test_maestro_best_version_no_direct_req():
     })
 
 
-def test_maestro_best_version_no_direct_req_with_null():
+def test_best_version_no_direct_req_with_null():
     "best_version() with no direct requirements"
 
     # Given that I have a maestro with a package that contains more than one
