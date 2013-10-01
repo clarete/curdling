@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from ..exceptions import UnpackingError, BuildingError
+from ..exceptions import UnpackingError, BuildingError, NoSetupScriptFound
 from ..util import spaces
 from .base import Service
 
@@ -102,10 +102,13 @@ def unpack(package, destination):
     # Find the setup.py script among the other contents
     try:
         setup_scripts = [x for x in get_names() if x.endswith('setup.py')]
-        setup_py = sorted(setup_scripts, key=lambda e: len(e))[0]
-        fp.extractall(destination)
+        if setup_scripts:
+            setup_py = sorted(setup_scripts, key=lambda e: len(e))[0]
+            fp.extractall(destination)
+        else:
+            raise NoSetupScriptFound()
     except ValueError:
-        raise RuntimeError('No setup.py script was found here')
+        raise NoSetupScriptFound('No setup.py script was found here')
     finally:
         fp.close()
     return Script(os.path.join(destination, setup_py))
@@ -127,6 +130,6 @@ class Curdler(Service):
             wheel_file = setup_py('bdist_wheel')
             return {'path': self.index.from_file(wheel_file)}
         except BaseException as exc:
-            raise BuildingError('{0}\n{1}'.format(package, spaces(3, str(exc))))
+            raise BuildingError('{0}: {1}'.format(package, spaces(3, str(exc))))
         finally:
             shutil.rmtree(destination)
