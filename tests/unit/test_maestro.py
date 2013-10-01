@@ -255,6 +255,40 @@ def test_maestro_best_version():
     })
 
 
+def test_maestro_best_version_filter_out_none_values_before_determining_top_requirements():
+    "Maestro#best_version should filter out None values from dependency list before determining top requirements"
+
+    # Given that I have a maestro with a package that contains more than one
+    # version
+    maestro = Maestro()
+    maestro.mapping = {
+        'forbiddenfruit': {
+            '>= 0.3.9': {
+                'dependency_of': ['luxury'],
+                'data': '/curds/forbiddenfruit.whl',
+            },
+            '> 0.0.3': {
+                'dependency_of': [None, None],
+                'data': '/curds/forbiddenfruit.whl',
+            },
+            '>= 0.0.9': {
+                'dependency_of': ['sure (== 0.2)'],
+                'data': '/curds/forbiddenfruit.whl',
+            },
+        }
+    }
+
+    # When I retrieve the best match
+    version, data = maestro.best_version('forbiddenfruit')
+
+    # Then I see I found the entry that was directly requested by the user
+    # (IOW: The `dependency_of` field is `None`).
+    version.should.equal('> 0.0.3')
+    data.should.equal({
+        'dependency_of': [None, None],
+        'data': '/curds/forbiddenfruit.whl',
+    })
+
 def test_maestro_best_version_no_direct_req():
     "best_version() with no direct requirements"
 
