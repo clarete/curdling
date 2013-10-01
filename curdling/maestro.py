@@ -97,6 +97,20 @@ class Maestro(object):
             available_versions.add(data['data'].split('-')[1])
             requirement_names.append(requirement_name)
 
+        # If it's not a top-requirement, we still have to deal with
+        # requirements without version info. If there's no version info at all,
+        # we just say that we want the only version we have.
+        requirement_names = filter(None, requirement_names)
+
+        # The list `requirement_names` will not be empty unless we're dealing
+        # with a second-level-requirement (meaning that it's a dependency of
+        # another package) and there's no version info, that happens when we
+        # receive something like this:
+        #
+        # >>> request_install('package')  # no version like in 'package (2.0)'
+        if not requirement_names:
+            return versions[0]
+
         spec = '{0} ({1})'.format(package_name, ', '.join(requirement_names))
         matcher = LegacyMatcher(spec)
         compatible_versions = [v for v in available_versions if matcher.match(v)]

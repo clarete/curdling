@@ -289,6 +289,32 @@ def test_maestro_best_version_filter_out_none_values_before_determining_top_requ
         'data': '/curds/forbiddenfruit.whl',
     })
 
+
+def test_best_version_no_strict_requirements_but_strict_version():
+    "Maestro#best_version should still work when the caller doesn't inform any strict version for a given dependency"
+
+    # Given that I have a maestro with a package that contains more than one
+    # version, but none directly requested by the user
+    maestro = Maestro()
+    maestro.mapping = {
+        'forbiddenfruit': {
+            None: {
+                'dependency_of': ['sure (== 0.2.1)'],
+                'data': '/curds/forbiddenfruit-0.1.0.whl',
+            },
+        }
+    }
+
+    # When I retrieve the best match
+    version, data = maestro.best_version('forbiddenfruit')
+
+    version.should.be.none
+    data.should.equal({
+        'dependency_of': ['sure (== 0.2.1)'],
+        'data': '/curds/forbiddenfruit-0.1.0.whl',
+    })
+
+
 def test_maestro_best_version_no_direct_req():
     "best_version() with no direct requirements"
 
