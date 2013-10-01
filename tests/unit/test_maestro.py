@@ -102,7 +102,7 @@ def test_mark_built_update_mapping():
     dict(maestro.mapping).should.equal({
         'curdling': {
             None: {
-                'dependency_of': [],
+                'dependency_of': [None],
                 'data': '/curds/curdling-0.3.5.whl',
             },
         },
@@ -353,10 +353,6 @@ def test_best_version_no_direct_req_with_null():
     # version, but none directly requested by the user
     maestro = Maestro()
     maestro.mapping = {
-        None: {
-            'dependency_of': ['moto'],
-            'data': '/curds/forbiddenfruit-0.1.2.whl',
-        },
         'forbiddenfruit': {
             '> 0.1.0': {
                 'dependency_of': ['luxury (== 0.1.0)'],
@@ -435,3 +431,28 @@ def test_best_version_should_blow_up_on_version_conflicts():
         'Requirement: forbiddenfruit (>= 0.1.8, <= 0.1.0, >= 0.0.9), '
         'Available versions: 0.1.8, 0.1.0'
     )
+
+
+def test_best_version_skip_broken_dependencies():
+    "best_version() should be smart enough to handle package marked as broken"
+
+    # Given that I have a maestro with a package that references a broken
+    # package in the dependency list
+    maestro = Maestro()
+    maestro.file_package('sure (0.1.2)')
+    maestro.file_package('forbiddenfruit (0.1.0)', dependency_of='sure (0.1.2)')
+    maestro.mark('failed', 'forbiddenfruit (0.1.0)', exceptions.BrokenDependency(
+        'forbiddenfruit (0.1.0): We\'re doomed, setup.py failed!'))
+
+    exception = maestro.get_data('forbiddenfruit (== 0.1.0)')
+    exception.should.be.a(exceptions.BrokenDependency)
+    exception.message.should.equal("forbiddenfruit (0.1.0): We're doomed, setup.py failed!")
+
+    exception = maestro.get_data('sure (0.1.2)')
+    exception.should.be.a(exceptions.BrokenDependency)
+    exception.message.should.equal("forbiddenfruit (0.1.0)")
+
+    version, data = maestro.best_version('forbiddenfruit')
+    version.should.equal('== 0.1.0')
+    data['dependency_of'].should.equal(['sure (0.1.2)'])
+    data['data'].message.should.equal("forbiddenfruit (0.1.0): We're doomed, setup.py failed!")

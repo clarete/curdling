@@ -7,6 +7,8 @@ from . import util
 from .lib import combine_requirements
 from .exceptions import BrokenDependency, VersionConflict
 
+import threading
+
 
 def constraints(requirement):
     return (
@@ -34,11 +36,14 @@ class Maestro(object):
         self.built = set()
         self.installed = set()
 
+        self.lock = threading.RLock()
+
     def file_package(self, package, dependency_of=None):
         requirement = parse_requirement(package)
         version = constraints(requirement)
-        entry = self.mapping[util.safe_name(requirement.name)][version]
-        if dependency_of is not None:
+
+        with self.lock:
+            entry = self.mapping[util.safe_name(requirement.name)][version]
             entry['dependency_of'].append(dependency_of)
 
     def get_data(self, package):
@@ -66,7 +71,7 @@ class Maestro(object):
         # Since we couldn't install this package, we should also mark its
         # requesters as failed too.
         if attr == 'failed':
-            for parent in self.get_parents(package):
+            for parent in filter(None, self.get_parents(package)):
                 self.mark('failed', parent, BrokenDependency(package))
 
     def get_parents(self, spec):
@@ -91,6 +96,10 @@ class Maestro(object):
         requirement_names = []
         available_versions = set()
         for requirement_name, data in versions:
+            # We don't really know how to deal with this kind of thing here
+            if isinstance(data['data'], BaseException):
+                continue
+
             # ['forbiddenfruit', '0.1.1', 'cp27', 'none', 'macosx_10_8_x86_64.whl']
             #                       ^
             #   this is the guy we get in that crazy split!
@@ -111,7 +120,11 @@ class Maestro(object):
         if not requirement_names:
             return versions[0]
 
+        # Spec `version` might contain hyphens, like this guy: mrjob (==
+        # 0.4-RC1) and we'll look for 0.4_RC1.
         spec = '{0} ({1})'.format(package_name, ', '.join(requirement_names))
+        spec = spec.replace('-', '_')
+
         matcher = LegacyMatcher(spec)
         compatible_versions = [v for v in available_versions if matcher.match(v)]
         if not compatible_versions:
@@ -128,16 +141,7 @@ class Maestro(object):
 
         # If the package is not currently present in the maestro, we know that
         # it's safe to add it
-        if not currently_present:
-            return True
-
-        # Now let's retrieve all the versions requested so far and see if any
-        # of them match the request we're dealing with right now. If it does
-        # match, we don't need to add the same requirement again;
-        #
-        # Do not add requirements without version info if there's any other
-        # version already filled.
-        return currently_present.keys() and parsed_requirement.constraints
+        return not currently_present
 
     def pending(self, set_name):
         return list(set(self.mapping.keys())

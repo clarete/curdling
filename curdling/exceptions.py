@@ -32,8 +32,10 @@ class BrokenDependency(ReportableError):
 class VersionConflict(ReportableError):
     """Raised when Maestro.best_version() can't find versions for all the requests"""
 
+
 class NoSetupScriptFound(ReportableError):
     pass
+
 
 class PackageNotInstalled(CurdlingError):
     pass

@@ -79,6 +79,9 @@ class Service(SignalEmitter):
             except ReportableError as exc:
                 self.emit('failed', self.name, package, path=exc)
                 self.logger.info(" # %s.error(): %s", self.name, exc)
+                self.logger.exception(
+                    'failed to run %s (requested by:%s) for package %s:',
+                    self.name, requester, package)
             except BaseException as exc:
                 self.emit('failed', self.name, package, path=exc)
                 self.logger.exception(
