@@ -27,17 +27,6 @@ functional: setup
 	@make dummypypi_stop
 
 
-acceptance: setup
-	@make dummypypi_start
-	export CURDIR=`pwd`				&& \
-	source `which virtualenvwrapper.sh` 		&& \
-	mktmpenv -r requirements.txt >/dev/null		&& \
-	cd $$CURDIR					&& \
-	cucumber tests					&& \
-	deactivate
-	@make dummypypi_stop
-
-
 dummypypi_start:
 	@make dummypypi_stop
 	@(cd tests/dummypypi && python -m SimpleHTTPServer >/dev/null 2>&1 &) && \
