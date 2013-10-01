@@ -5,6 +5,7 @@ from distlib.version import LegacyMatcher
 
 from . import util
 from .lib import combine_requirements
+from .exceptions import BrokenDependency
 
 
 def constraints(requirement):
@@ -61,6 +62,18 @@ class Maestro(object):
         # project_name+version sub-dictionary structure.
         if data is not None:
             self.set_data(package, data)
+
+        # Since we couldn't install this package, we should also mark its
+        # requesters as failed too.
+        if attr == 'failed':
+            for parent in self.get_parents(package):
+                self.mark('failed', parent, BrokenDependency(package))
+
+    def get_parents(self, spec):
+        requirement = parse_requirement(spec)
+        versions = self.mapping[util.safe_name(requirement.name)]
+        version = versions[constraints(requirement)]
+        return version['dependency_of']
 
     def best_version(self, package_name):
         versions = self.mapping[util.safe_name(package_name)].items()

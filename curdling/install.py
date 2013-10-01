@@ -77,6 +77,7 @@ class Install(object):
         self.curdler.connect('failed', mark(self.maestro, 'failed'))
         self.dependencer.connect('dependency_found', self.request_install)
         self.dependencer.connect('built', mark(self.maestro, 'built'))
+        self.dependencer.connect('failed', mark(self.maestro, 'failed'))
 
         # Installer pipeline
         self.installer.connect('finished', mark(self.maestro, 'installed'))

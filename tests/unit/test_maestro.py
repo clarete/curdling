@@ -47,6 +47,41 @@ def test_maestro_mark_failed():
     maestro.failed.should.equal({'curdling'})
 
 
+def test_maestro_get_parents():
+    "Maestro#get_parents() should return a list of requesters of a given package"
+
+    # Given that I have a maestro with two packages depending on the same library
+    maestro = Maestro()
+    maestro.file_package('curdling', dependency_of=None)
+    maestro.file_package('requests', dependency_of=None)
+    maestro.file_package('urllib3', dependency_of='curdling')
+    maestro.file_package('urllib3', dependency_of='requests')
+
+    # When I get the parents of the `urllib3` package
+    parents = maestro.get_parents('urllib3')
+
+    # Then I see both packages that depend on `urllib3` were returned
+    parents.should.equal(['curdling', 'requests'])
+
+
+def test_marking_parent_packages_as_failed_when_a_dependency_fails():
+    "Packages should be marked as failed when one or more of its dependencies can't be built"
+
+    # Given that I have a maestro with a package and a dependency filed
+    maestro = Maestro()
+    maestro.file_package('curdling', dependency_of=None)
+    maestro.file_package('urllib3', dependency_of='curdling')
+
+    # When I mark the package `urllib3` as failed
+    maestro.mark('failed', 'urllib3', Exception('P0wned!!!'))
+
+    # Then I see the `curdling` package was also marked as failed
+    maestro.failed.should.equal({'curdling', 'urllib3'})
+
+    # And then I see that we don't have any packages pending
+    maestro.pending('built').should.be.empty
+
+
 def test_maestro_mark_built_update_mapping():
 
     # Given that I have a maestro with a couple packages filed under it

@@ -25,5 +25,9 @@ class BuildingError(ReportableError):
     """Raised when a package can't be built using the setup.py script"""
 
 
+class BrokenDependency(ReportableError):
+    """Raised to inform that a dependency couldn't be installed"""
+
+
 class PackageNotInstalled(CurdlingError):
     pass
