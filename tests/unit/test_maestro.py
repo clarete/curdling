@@ -1,5 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from curdling.maestro import Maestro
+from curdling import exceptions
 
 
 def test_maestro_pending_packages():
@@ -92,33 +93,33 @@ def test_maestro_mark_built_update_mapping():
     maestro.file_package('forbiddenfruit (>= 0.1.2)', dependency_of='sure (== 0.1.2)')
 
     # Wehn I mark the files as built
-    maestro.mark('built', 'curdling', '/curds/curdling.whl')
-    maestro.mark('built', 'sure (== 0.1.2)', '/curds/sure.whl')
-    maestro.mark('built', 'forbiddenfruit (> 0.1.0)', '/curds/forbiddenfruit.whl')
-    maestro.mark('built', 'forbiddenfruit (>= 0.1.2)', '/curds/forbiddenfruit.whl')
+    maestro.mark('built', 'curdling', '/curds/curdling-0.3.5.whl')
+    maestro.mark('built', 'sure (== 0.1.2)', '/curds/sure-0.1.2.whl')
+    maestro.mark('built', 'forbiddenfruit (> 0.1.0)', '/curds/forbiddenfruit-0.1.2.whl')
+    maestro.mark('built', 'forbiddenfruit (>= 0.1.2)', '/curds/forbiddenfruit-0.1.2.whl')
 
     # Then I see I still have just one entry in the mapping
     dict(maestro.mapping).should.equal({
         'curdling': {
             None: {
                 'dependency_of': [],
-                'data': '/curds/curdling.whl',
+                'data': '/curds/curdling-0.3.5.whl',
             },
         },
         'sure': {
             '== 0.1.2': {
                 'dependency_of': ['curdling'],
-                'data': '/curds/sure.whl'
+                'data': '/curds/sure-0.1.2.whl'
             },
         },
         'forbiddenfruit': {
             '> 0.1.0': {
                 'dependency_of': ['curdling'],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.1.2.whl',
             },
             '>= 0.1.2': {
                 'dependency_of': ['sure (== 0.1.2)'],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.1.2.whl',
             },
         },
     })
@@ -264,11 +265,11 @@ def test_maestro_best_version_no_direct_req():
         'forbiddenfruit': {
             '> 0.1.0': {
                 'dependency_of': ['luxury (== 0.1.0)'],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.1.0.whl',
             },
             '>= 0.0.9': {
                 'dependency_of': ['sure (== 0.2)'],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.1.0.whl',
             },
         }
     }
@@ -281,7 +282,7 @@ def test_maestro_best_version_no_direct_req():
     version.should.equal('> 0.1.0')
     data.should.equal({
         'dependency_of': ['luxury (== 0.1.0)'],
-        'data': '/curds/forbiddenfruit.whl',
+        'data': '/curds/forbiddenfruit-0.1.0.whl',
     })
 
 
@@ -294,16 +295,16 @@ def test_maestro_best_version_no_direct_req_with_null():
     maestro.mapping = {
         None: {
             'dependency_of': ['moto'],
-            'data': '/curds/forbiddenfruit.whl',
+            'data': '/curds/forbiddenfruit-0.1.2.whl',
         },
         'forbiddenfruit': {
             '> 0.1.0': {
                 'dependency_of': ['luxury (== 0.1.0)'],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.1.2.whl',
             },
             '>= 0.0.9': {
                 'dependency_of': ['sure (== 0.2)'],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.1.2.whl',
             },
         }
     }
@@ -313,3 +314,64 @@ def test_maestro_best_version_no_direct_req_with_null():
 
     # Then I see I found the entry that was not directly requested by the user
     version.should.equal('> 0.1.0')
+
+
+def test_best_version_should_prefer_newest_version():
+    "Maestro#best_version should prefer newest versions when there's no override"
+
+    # Given that I have a couple versions of the same package but all of them
+    # were requested by some other package
+    maestro = Maestro()
+    maestro.mapping = {
+        'forbiddenfruit': {
+            '>= 0.0.9': {
+                'dependency_of': ['sure (== 0.2)'],
+                'data': '/curds/forbiddenfruit-0.1.0-cp27-none-macosx_10_8_x86_64.whl',
+            },
+            '<= 0.1.8': {
+                'dependency_of': ['luxury (== 0.1.0)'],
+                'data': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl',
+            },
+            '>= 0.1.7': {
+                'dependency_of': ['luxury (== 0.1.0)'],
+                'data': '/curds/forbiddenfruit-0.1.7-cp27-none-macosx_10_8_x86_64.whl',
+            },
+        }
+    }
+
+    maestro.best_version('forbiddenfruit').should.equal(
+        ('<= 0.1.8', {
+        'dependency_of': ['luxury (== 0.1.0)'],
+        'data': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl',
+        })
+    )
+
+
+def test_best_version_should_blow_up_on_version_conflicts():
+    "Maestro#best_version should blow up if the versions downloaded can't fulfill all the dependencies"
+
+    # Given that I have a couple versions of the same package but all of them
+    # were requested by some other package
+    maestro = Maestro()
+    maestro.mapping = {
+        'forbiddenfruit': {
+            '>= 0.1.8': {
+                'dependency_of': ['luxury (== 0.1.0)'],
+                'data': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl',
+            },
+            '<= 0.1.0': {
+                'dependency_of': ['luxury (== 0.0.9)'],
+                'data': '/curds/forbiddenfruit-0.1.0-cp27-none-macosx_10_8_x86_64.whl',
+            },
+            '>= 0.0.9': {
+                'dependency_of': ['sure (== 0.2)'],
+                'data': '/curds/forbiddenfruit-0.1.0-cp27-none-macosx_10_8_x86_64.whl',
+            },
+        }
+    }
+
+    maestro.best_version.when.called_with('forbiddenfruit').should.throw(
+        exceptions.VersionConflict,
+        'Requirement: forbiddenfruit (>= 0.1.8, <= 0.1.0, >= 0.0.9), '
+        'Available versions: 0.1.8, 0.1.0'
+    )

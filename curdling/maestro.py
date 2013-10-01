@@ -1,11 +1,11 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from collections import defaultdict
 from distlib.util import parse_requirement
-from distlib.version import LegacyMatcher
+from distlib.version import LegacyVersion, LegacyMatcher
 
 from . import util
 from .lib import combine_requirements
-from .exceptions import BrokenDependency
+from .exceptions import BrokenDependency, VersionConflict
 
 
 def constraints(requirement):
@@ -88,6 +88,23 @@ class Maestro(object):
         # The user didn't inform any specific version in the main requirements
         # (the ones received from the command line arguments, handled
         # above). This will be improved by fixing the issue #13.
+        requirement_names = []
+        available_versions = set()
+        for requirement_name, data in versions:
+            # ['forbiddenfruit', '0.1.1', 'cp27', 'none', 'macosx_10_8_x86_64.whl']
+            #                       ^
+            #   this is the guy we get in that crazy split!
+            available_versions.add(data['data'].split('-')[1])
+            requirement_names.append(requirement_name)
+
+        spec = '{0} ({1})'.format(package_name, ', '.join(requirement_names))
+        matcher = LegacyMatcher(spec)
+        compatible_versions = [v for v in available_versions if matcher.match(v)]
+        if not compatible_versions:
+            raise VersionConflict(
+                'Requirement: {0}, Available versions: {1}'.format(
+                    spec, ', '.join(available_versions)))
+
         return versions[0]
 
     def should_queue(self, requirement):
@@ -102,23 +119,11 @@ class Maestro(object):
 
         # Now let's retrieve all the versions requested so far and see if any
         # of them match the request we're dealing with right now. If it does
-        # match, we don't need to add the same requirement again.
-        versions = currently_present.keys()
-
+        # match, we don't need to add the same requirement again;
+        #
         # Do not add requirements without version info if there's any other
         # version already filled.
-        if not parsed_requirement.constraints and versions:
-            return False
-
-        # Ensuring that we always prefer packages with version information:
-        #
-        # Knowing that when the caller files a package without version info,
-        # we'll use `None` as the version key. That said, we have to remove
-        # this version before comparing things.
-        versions.count(None) and versions.remove(None)
-        combined_requirements = combine_requirements([requirement])
-        matcher = LegacyMatcher(combined_requirements)
-        return (not any(matcher.match(v) for v in versions))
+        return currently_present.keys() and parsed_requirement.constraints
 
     def pending(self, set_name):
         return list(set(self.mapping.keys())

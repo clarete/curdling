@@ -29,5 +29,9 @@ class BrokenDependency(ReportableError):
     """Raised to inform that a dependency couldn't be installed"""
 
 
+class VersionConflict(ReportableError):
+    """Raised when Maestro.best_version() can't find versions for all the requests"""
+
+
 class PackageNotInstalled(CurdlingError):
     pass
