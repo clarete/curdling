@@ -15,7 +15,8 @@ import distlib.version
 
 
 # Hardcoded vaue for the size of the http pool used a couple times in this
-# module. Not the perfect place, I know. life is not fair.
+# module. Not the perfect place, though might fix the ClosedPoolError we're
+# getting eventually.
 POOL_MAX_SIZE = 10
 
 
