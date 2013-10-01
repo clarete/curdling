@@ -204,3 +204,70 @@ def test_visit_link_when_not_platform_dependent():
 
     # Then it should be a tuple with 2
     result.should.equal(('sure', '4.0'))
+
+
+def test_pypilocator_fetch_when_page_is_falsy():
+    ("PyPiLocator#_fetch() should return empty if "
+     "get_page returns a falsy value")
+
+    # Given an instance of PyPiLocator that mocks the get_page method
+    # so it returns None
+    class PyPiLocatorMock(TestPyPiLocator):
+        get_page = Mock(return_value=None)
+
+    # And an instance of the locator
+    instance = PyPiLocatorMock('http://curdling.io')
+
+    # When I try to fetch a url
+    response = instance._fetch('http://somewhere.com/package', 'some-name')
+
+    # Then it should be an empty dictionary
+    response.should.be.a(dict)
+    response.should.be.empty
+
+
+def test_pypilocator_fetch_when_page_links_are_falsy():
+    ("PyPiLocator#_fetch() should return empty if "
+     "get_page returns a page with no links")
+
+    # Given a page that has no links
+    page = Mock(links=[])
+
+    # And that PyPiLocator#get_page returns that page
+    class PyPiLocatorMock(TestPyPiLocator):
+        get_page = Mock(return_value=page)
+
+    # And an instance of the locator
+    instance = PyPiLocatorMock('http://curdling.io')
+
+    # When I try to fetch a url
+    response = instance._fetch('http://somewhere.com/package', 'some-name')
+
+    # Then it should be an empty dictionary
+    response.should.be.a(dict)
+    response.should.be.empty
+
+
+def test_pypilocator_fetch_when_not_seen():
+    ("PyPiLocator#_fetch() should visit an unseen link and "
+     "grab its distribution into a dict")
+
+    # Given a page that has one link
+    page = Mock(links=[('http://someserver.com/package.tgz', 'some-rel')])
+
+    # Given an instance of PyPiLocator that mocks the get_page method
+    # to return a page with no links
+    class PyPiLocatorMock(TestPyPiLocator):
+        get_page = Mock(return_value=page)
+        _visit_link = Mock(return_value=('0.0.1', 'distribution'))
+
+    # And an instance of the locator
+    instance = PyPiLocatorMock('http://curdling.io')
+
+    # When I try to fetch a url
+    response = instance._fetch('http://somewhere.com/package', 'some-name')
+
+    # Then it should equal the existing distribution
+    response.should.equal({
+        '0.0.1': 'distribution'
+    })
