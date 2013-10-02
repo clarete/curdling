@@ -137,7 +137,11 @@ class Maestro(object):
     def should_queue(self, requirement):
         parsed_requirement = parse_requirement(requirement)
         package_name = util.safe_name(parsed_requirement.name)
-        currently_present = self.mapping.get(package_name)
+
+        # There might be people trying to write in our mapping and we always
+        # need the updated values.
+        with self.lock:
+            currently_present = self.mapping.get(package_name)
 
         # If the package is not currently present in the maestro, we know that
         # it's safe to add it
