@@ -5,7 +5,7 @@ from .. import util
 from .base import Service
 
 from distlib import database, metadata, compat, locators, util as dutil
-from urlparse import urljoin
+from urlparse import urljoin, urlunparse
 
 import re
 import json
@@ -226,16 +226,13 @@ class Downloader(Service):
 
         # If they're not from the same server, we return right away without
         # trying to update anything
-        if base.hostname != other.hostname or base.password != other.password:
+        if base.hostname != other.hostname or base.port != other.port:
             return other.geturl()
 
-        # Updating credentials only if the target URL doesn't have the data
-        # that we want to set
-        if base.username and not other.username:
-            other.username = base.username
-        if base.password and not other.password:
-            other.password = base.password
-        return other.geturl()
+        # Since I can't change the `ParseResult` object returned by `urlparse`,
+        # I'll have to do that manually and that stinks.
+        scheme, netloc, path, params, query, fragment = list(other)
+        return urlunparse((scheme, base.netloc, path, params, query, fragment))
 
     def download(self, distribution):
         # This is the URL retrieved by the locator that found the given
