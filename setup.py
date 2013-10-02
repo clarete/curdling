@@ -41,7 +41,7 @@ if __name__ == '__main__':
     setup(
         name="curdling",
         version='0.2.3',
-        description="curdling",
+        description="Curdles your cheesy code and extracts its binaries",
         long_description=local_file('README.md'),
         author='Lincoln Clarete',
         author_email='lincoln@clarete.li',
