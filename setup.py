@@ -40,7 +40,7 @@ install_requires, dependency_links = \
 if __name__ == '__main__':
     setup(
         name="curdling",
-        version='0.2.2',
+        version='0.2.3',
         description="curdling",
         long_description=local_file('README.md'),
         author='Lincoln Clarete',
