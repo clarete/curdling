@@ -109,7 +109,11 @@ class Install(object):
         return SUCCESS
 
     def run_installer(self):
-        self.installer.start()
+        if not self.maestro.mapping:
+            return SUCCESS
+        else:
+            self.installer.start()
+
         for package in self.maestro.mapping:
             _, version = self.maestro.best_version(package)
             self.installer.queue('main', package, path=version['data'])
@@ -132,7 +136,7 @@ class Install(object):
     def run_uploader(self):
         failures = self.downloader.get_servers_to_update()
         if not failures:
-            return
+            return SUCCESS
 
         uploader = self.uploader.start()
         for server, packages in failures.items():
@@ -141,6 +145,7 @@ class Install(object):
                 uploader.queue('main', package,
                     path=data.get('data'), server=server)
         uploader.join()
+        return SUCCESS
 
     def request_install(self, requester, package, **data):
         # If it's a blacklisted requirement, we should cowardly refuse to
