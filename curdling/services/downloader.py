@@ -43,6 +43,21 @@ def find_packages(locator, requirement, versions):
     return result
 
 
+def update_url_credentials(base_url, other_url):
+    base = compat.urlparse(base_url)
+    other = compat.urlparse(other_url)
+
+    # If they're not from the same server, we return right away without
+    # trying to update anything
+    if base.hostname != other.hostname or base.port != other.port:
+        return other.geturl()
+
+    # Since I can't change the `ParseResult` object returned by `urlparse`,
+    # I'll have to do that manually and that stinks.
+    scheme, netloc, path, params, query, fragment = list(other)
+    return urlunparse((scheme, base.netloc, path, params, query, fragment))
+
+
 class Pool(urllib3.PoolManager):
 
     def retrieve(self, url):
@@ -230,20 +245,6 @@ class Downloader(Service):
 
     # -- Private API of the Download service --
 
-    def update_url_credentials(self, base_url, other_url):
-        base = compat.urlparse(base_url)
-        other = compat.urlparse(other_url)
-
-        # If they're not from the same server, we return right away without
-        # trying to update anything
-        if base.hostname != other.hostname or base.port != other.port:
-            return other.geturl()
-
-        # Since I can't change the `ParseResult` object returned by `urlparse`,
-        # I'll have to do that manually and that stinks.
-        scheme, netloc, path, params, query, fragment = list(other)
-        return urlunparse((scheme, base.netloc, path, params, query, fragment))
-
     def download(self, distribution):
         # This is the URL retrieved by the locator that found the given
         # distribution.
@@ -257,7 +258,7 @@ class Downloader(Service):
             base_url = distribution.locator.base_url
 
             # Updated version of the full URL
-            final_url = self.update_url_credentials(base_url, url)
+            final_url = update_url_credentials(base_url, url)
 
         # Let's proceed with the request, but now with the right auth
         # credentials.
