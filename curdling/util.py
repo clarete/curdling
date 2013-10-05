@@ -68,13 +68,8 @@ def expand_requirements(file_name):
             requirements.extend(expand_requirements(include[0]))
             continue
 
-        # Handling links, let's do nothing with this guy right now
-        link = LINK_PATTERN.findall(req)
-        if link:
-            continue
-
         # Finally, we're sure that it's just a package description
-        requirements.append(util.parse_requirement(req).requirement)
+        requirements.append(req)
     return requirements
 
 
