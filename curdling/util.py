@@ -16,6 +16,11 @@ LINK_PATTERN = re.compile(r'^([^\:]+):\/\/.+')
 ROOT_LOGGER = logging.getLogger('curdling')
 
 
+def parse_requirement(spec):
+    requirement = util.parse_requirement(spec)
+    return requirement
+
+
 def split_name(fname):
     name, ext = os.path.splitext(fname)
 

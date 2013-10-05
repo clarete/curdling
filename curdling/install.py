@@ -1,6 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from functools import wraps
-from distlib.util import parse_requirement
 
 from .index import PackageNotFound
 from .maestro import Maestro

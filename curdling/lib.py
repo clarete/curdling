@@ -1,7 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from distlib.util import parse_requirement
 from distlib.version import LegacyVersion, LegacyMatcher
-from .util import safe_name
+from .util import safe_name, parse_requirement
 
 
 def combine_requirements(requirements):

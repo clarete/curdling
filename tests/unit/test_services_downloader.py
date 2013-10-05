@@ -115,15 +115,15 @@ def test_pool_retrieve(util):
 
 
 
-@patch('curdling.services.downloader.dutil')
+@patch('curdling.services.downloader.util')
 @patch('curdling.services.downloader.find_packages')
-def test_aggregating_locator_locate(find_packages, dutil):
+def test_aggregating_locator_locate(find_packages, util):
     ("AggregatingLocator#locate should return the first package "
      "that matches the given version")
     # Background:
 
     # parse_requirement is mocked and will return a mocked pkg
-    pkg = dutil.parse_requirement.return_value
+    pkg = util.parse_requirement.return_value
 
     # find_packages will return a package right away
     find_packages.return_value = 'the awesome "foo" package :)'

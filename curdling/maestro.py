@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from collections import defaultdict
-from distlib.util import parse_requirement
 from distlib.version import LegacyVersion, LegacyMatcher
 
 from . import util
@@ -39,7 +38,7 @@ class Maestro(object):
         self.lock = threading.RLock()
 
     def file_package(self, package, dependency_of=None):
-        requirement = parse_requirement(package)
+        requirement = util.parse_requirement(package)
         version = constraints(requirement)
 
         with self.lock:
@@ -47,17 +46,17 @@ class Maestro(object):
             entry['dependency_of'].append(dependency_of)
 
     def get_data(self, package):
-        requirement = parse_requirement(package)
+        requirement = util.parse_requirement(package)
         version = constraints(requirement)
         return self.mapping[util.safe_name(requirement.name)][version]['data']
 
     def set_data(self, package, data):
-        pkg = parse_requirement(package)
+        pkg = util.parse_requirement(package)
         version = constraints(pkg)
         self.mapping[util.safe_name(pkg.name)][version]['data'] = data
 
     def mark(self, attr, package, data):
-        pkg = parse_requirement(package)
+        pkg = util.parse_requirement(package)
         getattr(self, attr).add(util.safe_name(pkg.name))
 
         # The 'installed' label doesn't actually need to save any data, so we
@@ -75,7 +74,7 @@ class Maestro(object):
                 self.mark('failed', parent, BrokenDependency(package))
 
     def get_parents(self, spec):
-        requirement = parse_requirement(spec)
+        requirement = util.parse_requirement(spec)
         versions = self.mapping[util.safe_name(requirement.name)]
         version = versions[constraints(requirement)]
         return version['dependency_of']
@@ -135,7 +134,7 @@ class Maestro(object):
         return versions[0]
 
     def should_queue(self, requirement):
-        parsed_requirement = parse_requirement(requirement)
+        parsed_requirement = util.parse_requirement(requirement)
         package_name = util.safe_name(parsed_requirement.name)
 
         # There might be people trying to write in our mapping and we always

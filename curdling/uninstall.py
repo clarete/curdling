@@ -1,9 +1,8 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from distlib.util import parse_requirement
 
 from . import exceptions
 from .database import Database
-from .util import safe_name, logger
+from .util import safe_name, logger, parse_requirement
 
 
 class Uninstall(object):

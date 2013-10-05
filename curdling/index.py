@@ -1,11 +1,8 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from collections import defaultdict
-from distlib.util import parse_requirement
 from threading import RLock
 from pkg_resources import parse_version
-from curdling.util import split_name, filehash
-
-from .util import safe_name
+from .util import split_name, filehash, safe_name, parse_requirement
 
 import os
 import re

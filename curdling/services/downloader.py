@@ -4,7 +4,7 @@ from ..signal import Signal
 from .. import util
 from .base import Service
 
-from distlib import database, metadata, compat, locators, util as dutil
+from distlib import database, metadata, compat, locators
 from urlparse import urljoin, urlunparse
 
 import re
@@ -61,7 +61,7 @@ class Pool(urllib3.PoolManager):
 class AggregatingLocator(locators.AggregatingLocator):
 
     def locate(self, requirement, prereleases=True):
-        pkg = dutil.parse_requirement(requirement)
+        pkg = util.parse_requirement(requirement)
         for locator in self.locators:
             versions = locator.get_project(pkg.name)
             package = find_packages(locator, pkg, versions)
