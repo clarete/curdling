@@ -209,7 +209,6 @@ class Downloader(Service):
 
     def handle(self, requester, requirement, sender_data):
         found = None
-        prereleases = self.conf.get('prereleases', True)
 
         # It sounds lame, but we're trying to match requirements with more than
         # one word separated with either `_` or `-`. Notice that we prefer
@@ -217,17 +216,7 @@ class Downloader(Service):
         # underscores in pypi.p.o. Let's wait for the best here.
         options = requirement.replace('_', '-'), requirement.replace('-', '_')
         for option in options:
-            found = False
-
-            if not util.parse_requirement(requirement).is_link:
-                # We're dealing with the regular requirements: "name (x.y.z)"
-                found = self.locator.locate(option, prereleases)
-            else:
-                # We're dealing with a link
-                mdata = metadata.Metadata(scheme=self.locator.scheme)
-                mdata.source_url = mdata.download_url = requirement
-                found = database.Distribution(mdata)
-
+            found = self.find(option)
             if found:
                 break
 
@@ -244,6 +233,18 @@ class Downloader(Service):
         return failures
 
     # -- Private API of the Download service --
+
+    def find(self, requirement):
+        prereleases = self.conf.get('prereleases', True)
+
+        if not util.parse_requirement(requirement).is_link:
+            # We're dealing with the regular requirements: "name (x.y.z)"
+            return self.locator.locate(requirement, prereleases)
+        else:
+            # We're dealing with a link
+            mdata = metadata.Metadata(scheme=self.locator.scheme)
+            mdata.source_url = mdata.download_url = requirement
+            return database.Distribution(mdata)
 
     def download(self, distribution):
         # This is the URL retrieved by the locator that found the given
