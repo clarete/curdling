@@ -3,6 +3,7 @@ from ..exceptions import UnpackingError, BuildError, NoSetupScriptFound
 from ..util import spaces, execute_command
 from .base import Service
 
+import io
 import os
 import re
 import sys
@@ -45,7 +46,7 @@ def get_paths(directory='', check=False):
 
 
 def guess_file_type(filename):
-    with open(filename) as f:
+    with io.open(filename, 'rb') as f:
         file_start = f.read(SUPPORTED_FORMATS_MAX_LEN)
     for magic, filetype in SUPPORTED_FORMATS.items():
         if file_start.startswith(magic):
@@ -125,7 +126,6 @@ class Curdler(Service):
                 setup_py = Script(os.path.join(source, 'setup.py'))
             else:
                 setup_py = unpack(package=source, destination=destination)
-
             wheel_file = setup_py('bdist_wheel')
             return {'path': self.index.from_file(wheel_file)}
         except BaseException as exc:

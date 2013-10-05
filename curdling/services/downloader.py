@@ -268,7 +268,7 @@ class Downloader(Service):
         }
 
         try:
-            handler = filter(lambda i: i.findall(url), protocol_mapping.keys())[0]
+            handler = [i for i in protocol_mapping.keys() if i.findall(url)][0]
         except IndexError:
             raise UnknownProtocol('\n'.join([
                 url,
