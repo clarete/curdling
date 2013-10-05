@@ -194,7 +194,7 @@ class CurdlingLocator(locators.Locator):
 
         if response.status == 200:
             data = json.loads(response.data)
-            return {v['version']: self._get_distribution(v) for v in data}
+            return dict((v['version'], self._get_distribution(v)) for v in data)
         else:
             self.requirements_not_found.append(name)
 

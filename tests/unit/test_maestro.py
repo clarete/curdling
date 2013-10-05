@@ -29,7 +29,7 @@ def test_maestro_pending_packages_no_deps():
 
     # Then I see it's still waiting for the dependency checking
     maestro.pending('built').should.equal([])
-    maestro.built.should.equal({'curdling'})
+    maestro.built.should.equal(set(['curdling']))
 
 
 def test_mark_failed():
@@ -45,7 +45,7 @@ def test_mark_failed():
 
     # Then I see it's still waiting for the dependency checking
     maestro.pending('built').should.equal([])
-    maestro.failed.should.equal({'curdling'})
+    maestro.failed.should.equal(set(['curdling']))
 
 
 def test_get_parents():
@@ -77,7 +77,7 @@ def test_marking_parent_packages_as_failed_when_a_dependency_fails():
     maestro.mark('failed', 'urllib3', Exception('P0wned!!!'))
 
     # Then I see the `curdling` package was also marked as failed
-    maestro.failed.should.equal({'curdling', 'urllib3'})
+    maestro.failed.should.equal(set(['curdling', 'urllib3']))
 
     # And then I see that we don't have any packages pending
     maestro.pending('built').should.be.empty
@@ -137,7 +137,7 @@ def test_mark_installed():
     maestro.mark('installed', 'sure', data=None)
 
     # Then I see that the package was marked as installed
-    maestro.installed.should.equal({'sure'})
+    maestro.installed.should.equal(set(['sure']))
 
 
 def test_should_queue():
