@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from ..exceptions import ReportableError
+from ..exceptions import ReportableError, UnknownProtocol
 from ..signal import Signal
 from .. import util
 from .base import Service
@@ -270,7 +270,10 @@ class Downloader(Service):
         try:
             handler = filter(lambda i: i.findall(url), protocol_mapping.keys())[0]
         except IndexError:
-            raise Exception('Unknown protocol in the URL {0}'.format(url))
+            raise UnknownProtocol('\n'.join([
+                url,
+                util.spaces(3, 'Make sure it starts with the right `vcs+` prefix.'),
+            ]))
 
         # Remove the protocol prefix from the url before passing to the handler
         # which is not prepared to handle urls starting with `vcs+`.

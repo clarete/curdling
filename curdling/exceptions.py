@@ -17,6 +17,10 @@ class ReportableError(CurdlingError):
     """
 
 
+class UnknownProtocol(ReportableError):
+    """Raised when the user feeds in the installer with an unknown protocol"""
+
+
 class UnpackingError(ReportableError):
     """Raised when a package can't be unpacked"""
 
