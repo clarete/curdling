@@ -126,7 +126,11 @@ class Curdler(Service):
         # us the path for the setup.py script and building the wheel file with
         # the `bdist_wheel` command.
         try:
-            setup_py = unpack(package=source, destination=destination)
+            if os.path.isdir(source):
+                setup_py = Script(os.path.join(source, 'setup.py'))
+            else:
+                setup_py = unpack(package=source, destination=destination)
+
             wheel_file = setup_py('bdist_wheel')
             return {'path': self.index.from_file(wheel_file)}
         except BaseException as exc:
@@ -134,3 +138,8 @@ class Curdler(Service):
                 requirement, spaces(3, str(exc))))
         finally:
             shutil.rmtree(destination)
+
+            # This folder was created by the downloader and it's a temporary
+            # resource that we don't need anymore.
+            if os.path.isdir(source):
+                shutil.rmtree(source)
