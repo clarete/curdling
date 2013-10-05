@@ -135,7 +135,7 @@ class Index(object):
             '>':  lambda v: x >  parse_version(v),
         }[op](v) for op, v in requirement.constraints or [])
 
-        compat_versions = filter(filter_cmp, parsed_versions.keys())
+        compat_versions = [c for c in parsed_versions.keys() if filter_cmp(c)]
         if not compat_versions:
             raise PackageNotFound(spec, format_)
 
@@ -146,9 +146,9 @@ class Index(object):
         # we'll bring the wheels preferably, if they're available
         latest_version = versions[parsed_versions[max(compat_versions)]]
         if format_:
-            files = filter(lambda n: match_format(format_, n), latest_version)
+            files = [n for n in latest_version if match_format(format_, n)]
         else:
-            wheels = filter(lambda n: match_format('whl', n), latest_version)
+            wheels = [n for n in latest_version if match_format('whl', n)]
             files = wheels or latest_version
 
         # Unlucky, we really don't have those files

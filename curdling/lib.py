@@ -79,5 +79,6 @@ def combine_requirements(requirements):
     # with. They must be compatible among each other and compatible with the
     # other requested versions.
     combined_version = strict_versions and strict_version_number or \
-        ', '.join(constraints.difference(strict_versions))
+        ', '.join(sorted(constraints.difference(strict_versions),
+            reverse=True))
     return full_name(combined_version)

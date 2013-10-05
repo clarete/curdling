@@ -81,7 +81,7 @@ def test_filehash():
     "filehash() should return the hash file objects"
 
     # Given that I have a file instance
-    fp = io.StringIO('My Content')
+    fp = io.BytesIO(b'My Content')
 
     # When I call the filehash function
     hashed = filehash(fp, 'md5')
@@ -433,7 +433,7 @@ def test_service():
 
     # And that in the `path` parameter we receive an exception (Unfortunately
     # we can't compare NotImplementedError() instances :(
-    callback.call_args_list[0][1]['path'].message.should.equal(
+    str(callback.call_args_list[0][1]['path']).should.equal(
         'The service subclass should override this method'
     )
 

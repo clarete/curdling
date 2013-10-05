@@ -3,13 +3,10 @@ from ..exceptions import ReportableError, UnknownProtocol
 from ..signal import Signal
 from .. import util
 from .base import Service
-
 from distlib import database, metadata, compat, locators
-from urlparse import urljoin, urlunparse
 
 import re
 import json
-import httplib
 import urllib3
 import tempfile
 import distlib.version
@@ -56,7 +53,8 @@ def update_url_credentials(base_url, other_url):
     # Since I can't change the `ParseResult` object returned by `urlparse`,
     # I'll have to do that manually and that stinks.
     scheme, netloc, path, params, query, fragment = list(other)
-    return urlunparse((scheme, base.netloc, path, params, query, fragment))
+    return compat.urlunparse(
+        (scheme, base.netloc, path, params, query, fragment))
 
 
 class Pool(urllib3.PoolManager):
@@ -101,7 +99,8 @@ class PyPiLocator(locators.SimpleScrapingLocator):
 
         # Iterate over all the possible names a package can have.
         for package_name in options:
-            url = urljoin(self.base_url, '%s/' % compat.quote(package_name))
+            url = compat.urljoin(self.base_url, '{0}/'.format(
+                compat.quote(package_name)))
             found = self._fetch(url, package_name)
             if found:
                 return found
@@ -116,7 +115,7 @@ class PyPiLocator(locators.SimpleScrapingLocator):
         versions = {}
         if info:
             self._update_version_data(versions, info)
-            return versions.items()[0]
+            return list(versions.items())[0]
         return None, None
 
     def _fetch(self, url, project_name, subvisit=False):
@@ -143,7 +142,7 @@ class PyPiLocator(locators.SimpleScrapingLocator):
         # http://peak.telecommunity.com/DevCenter/EasyInstall#package-index-api
         scheme, netloc, path, _, _, _ = compat.urlparse(url)
         if scheme == 'file' and os.path.isdir(url2pathname(path)):
-            url = urljoin(ensure_slash(url), 'index.html')
+            url = compat.urljoin(ensure_slash(url), 'index.html')
 
         # The `retrieve()` method follows any eventual redirects, so the
         # initial url might be different from the final one
@@ -182,11 +181,11 @@ class CurdlingLocator(locators.Locator):
     def get_distribution_names(self):
         return json.loads(
             self.opener.retrieve(
-                urljoin(self.url, 'api'))[0].data)
+                compat.urljoin(self.url, 'api'))[0].data)
 
     def _get_project(self, name):
         # Retrieve the info
-        url = urljoin(self.url, 'api/' + name)
+        url = compat.urljoin(self.url, 'api/' + name)
         try:
             response, _ = self.opener.retrieve(url)
         except urllib3.exceptions.MaxRetryError:
@@ -287,7 +286,7 @@ class Downloader(Service):
                 'Failed to download url `{0}\': {1} ({2})'.format(
                     url,
                     response.status,
-                    httplib.responses[response.status],
+                    compat.httplib.responses[response.status],
                 ))
 
         # Now that we're sure that our request was successful

@@ -1,11 +1,11 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from .base import Service
 from ..util import get_auth_info_from_url
+from distlib import compat
 
 import io
 import os
 import urllib3
-import urlparse
 
 
 class Uploader(Service):
@@ -19,7 +19,7 @@ class Uploader(Service):
         path = sender_data.pop('path')
         server = sender_data.pop('server')
         package_name = os.path.basename(path)
-        url = urlparse.urljoin(server, 'p/{0}'.format(package_name))
+        url = compat.urljoin(server, 'p/{0}'.format(package_name))
 
         # Sending the file to the server. Both `method` and `url` parameters
         # for calling `request_encode_body()` must be `str()` instances, not

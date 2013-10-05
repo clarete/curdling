@@ -2,7 +2,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 from ..exceptions import ReportableError
 from ..signal import Signal, SignalEmitter
 from ..util import logger
-from Queue import Queue
+from distlib.compat import queue
 
 import threading
 import time
@@ -23,7 +23,7 @@ class Service(SignalEmitter):
         self.logger = logger(__name__)
 
         # Components to implement the thread pool
-        self._queue = Queue()
+        self._queue = queue.Queue()
         self.pool = []
 
         # Declaring signals
