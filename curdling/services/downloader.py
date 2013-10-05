@@ -297,13 +297,24 @@ class Downloader(Service):
             response.read(cache_content=True, decode_content=False))
 
     def _download_git(self, url):
-        git = lambda *args: subprocess.check_call(('git',) + args)
         destination = tempfile.mkdtemp()
-        git('clone', url, destination)
+        execute_command('git', 'clone', url, destination)
         return destination
 
     def _download_hg(self, url):
-        raise NotImplementedError()
+        destination = tempfile.mkdtemp()
+        execute_command('hg', 'clone', url, destination)
+        return destination
 
     def _download_svn(self, url):
-        raise NotImplementedError()
+        destination = tempfile.mkdtemp()
+        execute_command('svn', 'co', url, destination)
+        return destination
+
+
+def execute_command(name, *args):
+    command = subprocess.Popen((name,) + args,
+        stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    _, errors = command.communicate()
+    if command.returncode != 0:
+        raise Exception(errors)
