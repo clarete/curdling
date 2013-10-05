@@ -12,7 +12,6 @@ import json
 import httplib
 import urllib3
 import tempfile
-import subprocess
 import distlib.version
 
 
@@ -298,23 +297,15 @@ class Downloader(Service):
 
     def _download_git(self, url):
         destination = tempfile.mkdtemp()
-        execute_command('git', 'clone', url, destination)
+        util.execute_command('git', 'clone', url, destination)
         return destination
 
     def _download_hg(self, url):
         destination = tempfile.mkdtemp()
-        execute_command('hg', 'clone', url, destination)
+        util.execute_command('hg', 'clone', url, destination)
         return destination
 
     def _download_svn(self, url):
         destination = tempfile.mkdtemp()
-        execute_command('svn', 'co', url, destination)
+        util.execute_command('svn', 'co', url, destination)
         return destination
-
-
-def execute_command(name, *args):
-    command = subprocess.Popen((name,) + args,
-        stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    _, errors = command.communicate()
-    if command.returncode != 0:
-        raise Exception(errors)

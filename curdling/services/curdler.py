@@ -1,6 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from ..exceptions import UnpackingError, BuildError, NoSetupScriptFound
-from ..util import spaces
+from ..util import spaces, execute_command
 from .base import Service
 
 import os
@@ -67,8 +67,7 @@ class Script(object):
         # weird we're doing here was copied from `pip` and it basically forces
         # the usage of setuptools instead of distutils or any other weird
         # library people might be using.
-        args = [PYTHON_EXECUTABLE]
-        args.append('-c')
+        args = ['-c']
         args.append(
             r"import setuptools;__file__=%r;"
             r"exec(compile(open(__file__).read().replace('\r\n', '\n'), __file__, 'exec'))" % script)
@@ -76,11 +75,7 @@ class Script(object):
         args.extend(custom_args)
 
         # Boom! Executing the command.
-        builder = subprocess.Popen(args, cwd=cwd,
-            stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-        _, errs = builder.communicate()
-        if builder.returncode != 0:
-            raise Exception(errs)
+        execute_command(PYTHON_EXECUTABLE, *args, cwd=cwd)
 
         # Directory where the wheel will be saved after building it, returning
         # the path pointing to the generated file

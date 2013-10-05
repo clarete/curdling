@@ -6,6 +6,7 @@ import os
 import re
 import hashlib
 import logging
+import subprocess
 import urllib3
 
 
@@ -98,6 +99,15 @@ def get_auth_info_from_url(url):
         auth = '{0}:{1}'.format(parsed.username, parsed.password)
         return urllib3.util.make_headers(basic_auth=auth)
     return {}
+
+
+def execute_command(name, *args, **kwargs):
+    command = subprocess.Popen((name,) + args,
+        stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+        **kwargs)
+    _, errors = command.communicate()
+    if command.returncode != 0:
+        raise Exception(errors)
 
 
 def logger(name):
