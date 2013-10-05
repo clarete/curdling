@@ -80,7 +80,9 @@ class AggregatingLocator(locators.AggregatingLocator):
         pkg = util.parse_requirement(requirement)
         for locator in self.locators:
             versions = locator.get_project(pkg.name)
-            return find_packages(locator, pkg, versions) or None
+            packages = find_packages(locator, pkg, versions)
+            if packages:
+                return packages
 
 
 class PyPiLocator(locators.SimpleScrapingLocator):
