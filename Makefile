@@ -60,7 +60,6 @@ run_test:
 			printf "|\033[0;32m Running $(suite) test suite \033[0m|\n";    \
 			printf "=======================================\n";             \
 			nosetests                                                       \
-	                  --rednose                                                     \
                           --stop                                                        \
                           --with-coverage                                               \
 			  --cover-package=$(PACKAGE)                                    \
