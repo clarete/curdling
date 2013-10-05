@@ -247,23 +247,36 @@ class Downloader(Service):
             return database.Distribution(mdata)
 
     def download(self, distribution):
-        # This is the URL retrieved by the locator that found the given
-        # distribution.
         final_url = url = distribution.download_url
 
         # We're dealing with a requirement, not a link
         if distribution.locator:
-            # This is the locator's `base_url` that possibly contains
-            # authentication credentials that we have to add to the URL we want to
-            # download right now.
+            # The locator's might contain authentication credentials, while the
+            # package url might not (cause they got stripped at some point)
             base_url = distribution.locator.base_url
-
-            # Updated version of the full URL
             final_url = update_url_credentials(base_url, url)
 
+        # Find out the right handler for the given protocol present in the
+        # download url.
+        protocol_mapping = {
+            re.compile('^https?'): self._download_http,
+            re.compile('^git'): self._download_git,
+            re.compile('^hg'): self._download_hg,
+            re.compile('^svn'): self._download_svn,
+        }
+
+        try:
+            handler = filter(lambda i: i.findall(url), protocol_mapping.keys())[0]
+        except IndexError:
+            raise Exception('Unknown protocol in the URL {0}'.format(url))
+
+        file_name, data = protocol_mapping[handler](url)
+        return self.index.from_data(file_name, data)
+
+    def _download_http(self, url):
         # Let's proceed with the request, but now with the right auth
         # credentials.
-        response, _ = self.opener.retrieve(final_url)
+        response, _ = self.opener.retrieve(url)
         if response.status != 200:
             raise ReportableError(
                 'Failed to download url `{0}\': {1} ({2})'.format(
@@ -275,6 +288,14 @@ class Downloader(Service):
         # Now that we're sure that our request was successful
         header = response.headers.get('content-disposition', '')
         file_name = re.findall(r'filename=([^;]+)', header)
-        return self.index.from_data(
-            file_name and file_name[0] or url, response.read(
-                cache_content=True, decode_content=False))
+        return file_name and file_name[0] or url, response.read(
+            cache_content=True, decode_content=False)
+
+    def _download_git(self, url):
+        raise NotImplementedError()
+
+    def _download_hg(self, url):
+        raise NotImplementedError()
+
+    def _download_svn(self, url):
+        raise NotImplementedError()
