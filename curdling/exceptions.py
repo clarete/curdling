@@ -4,6 +4,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 class CurdlingError(Exception):
     """Base exception for errors happening inside of curdling"""
 
+    def __init__(self, message):
+        super(CurdlingError, self).__init__(message)
+        self.message = message
+
 
 class ReportableError(CurdlingError):
     """Inform errors that happens inside of services

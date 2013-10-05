@@ -79,36 +79,50 @@ class Maestro(object):
         version = versions[constraints(requirement)]
         return version['dependency_of']
 
-    def best_version(self, package_name):
-        versions = self.mapping[package_name].items()
+    def best_version(self, package_name, debug=False):
+        versions = list(self.mapping[package_name].items())
+
+        # ['forbiddenfruit', '0.1.1', 'cp27', 'none', 'macosx_10_8_x86_64.whl']
+        #                       ^
+        #   this is the guy we get in that crazy split!
+        package_version = lambda filename: filename.split('-')[1] \
+            if not isinstance(filename, BaseException) \
+            else filename
+
+        # Return the first version inside of a list of `available_versions`
+        first = lambda versions: (
+            versions[0][1].pop('name'),
+            versions[0][1],
+        )
 
         # We're looking for the version directly requested by the user. We
         # find it looking for versions that contain `None` in their field
         # `dependency_of`.
         for version, data in versions:
-            if not filter(None, data['dependency_of']):
+            if not list(filter(None, data['dependency_of'])):
                 return version, data
 
         # The user didn't inform any specific version in the main requirements
         # (the ones received from the command line arguments, handled
         # above). This will be improved by fixing the issue #13.
-        requirement_names = []
-        available_versions = set()
+        available_versions = {}
         for requirement_name, data in versions:
-            # We don't really know how to deal with this kind of thing here
-            if isinstance(data['data'], BaseException):
-                continue
+            version = {'name': requirement_name}
+            version.update(data)
+            available_versions[package_version(data['data'])] = version
 
-            # ['forbiddenfruit', '0.1.1', 'cp27', 'none', 'macosx_10_8_x86_64.whl']
-            #                       ^
-            #   this is the guy we get in that crazy split!
-            available_versions.add(data['data'].split('-')[1])
-            requirement_names.append(requirement_name)
+        # The dictionary of versions collected above will become a tuple and
+        # will be sorted (and reversed) by the version number. So, the newest
+        # versions will be the first.
+        available_versions = sorted(
+            available_versions.items(),
+            key=lambda v: package_version(v[1]['data']), reverse=True)
 
         # If it's not a top-requirement, we still have to deal with
         # requirements without version info. If there's no version info at all,
         # we just say that we want the only version we have.
-        requirement_names = filter(None, requirement_names)
+        requirement_names = list(filter(None,
+            map(lambda v: v[1]['name'], available_versions)))
 
         # The list `requirement_names` will not be empty unless we're dealing
         # with a second-level-requirement (meaning that it's a dependency of
@@ -117,21 +131,31 @@ class Maestro(object):
         #
         # >>> request_install('package')  # no version like in 'package (2.0)'
         if not requirement_names:
-            return versions[0]
+            return first(available_versions)
+
+        # May contain `BrokenDependency` instances. So, we'll have this check
+        # below.
+        version_numbers = [i[0] for i in available_versions]
+        broken_dependencies = [v for v in version_numbers
+            if isinstance(v, BrokenDependency)]
+        if broken_dependencies:
+            raise broken_dependencies[0]
 
         # Spec `version` might contain hyphens, like this guy: mrjob (==
         # 0.4-RC1) and we'll look for 0.4_RC1.
         spec = '{0} ({1})'.format(package_name, ', '.join(requirement_names))
         spec = spec.replace('-', '_')
 
+        # When the same package is requested more than once, we need to match
+        # all the downloaded versions and ensure that at least one of the
+        # downloaded versions matches _all_ requirements.
         matcher = LegacyMatcher(spec)
-        compatible_versions = [v for v in available_versions if matcher.match(v)]
-        if not compatible_versions:
+        if not [v for v in version_numbers if matcher.match(v)]:
             raise VersionConflict(
                 'Requirement: {0}, Available versions: {1}'.format(
-                    spec, ', '.join(available_versions)))
+                    spec, ', '.join(sorted(version_numbers, reverse=True))))
 
-        return versions[0]
+        return first(available_versions)
 
     def should_queue(self, requirement):
         requirement = util.parse_requirement(requirement)

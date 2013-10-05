@@ -187,15 +187,15 @@ def test_best_version():
         'forbiddenfruit': {
             '>= 0.3.9': {
                 'dependency_of': ['luxury'],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.3.9.whl',
             },
             '> 0.0.3': {
                 'dependency_of': [],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.0.3.whl',
             },
             '>= 0.0.9': {
                 'dependency_of': ['sure (== 0.2)'],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.0.9.whl',
             },
         }
     }
@@ -208,7 +208,7 @@ def test_best_version():
     version.should.equal('> 0.0.3')
     data.should.equal({
         'dependency_of': [],
-        'data': '/curds/forbiddenfruit.whl',
+        'data': '/curds/forbiddenfruit-0.0.3.whl',
     })
 
 
@@ -222,15 +222,15 @@ def test_best_version_filter_out_none_values_before_determining_top_requirements
         'forbiddenfruit': {
             '>= 0.3.9': {
                 'dependency_of': ['luxury'],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.3.9-cp27.whl',
             },
             '> 0.0.3': {
                 'dependency_of': [None, None],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.0.3-cp27.whl',
             },
             '>= 0.0.9': {
                 'dependency_of': ['sure (== 0.2)'],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': '/curds/forbiddenfruit-0.0.9-cp27.whl',
             },
         }
     }
@@ -243,7 +243,7 @@ def test_best_version_filter_out_none_values_before_determining_top_requirements
     version.should.equal('> 0.0.3')
     data.should.equal({
         'dependency_of': [None, None],
-        'data': '/curds/forbiddenfruit.whl',
+        'data': '/curds/forbiddenfruit-0.0.3-cp27.whl',
     })
 
 
@@ -253,14 +253,8 @@ def test_best_version_no_strict_requirements_but_strict_version():
     # Given that I have a maestro with a package that contains more than one
     # version, but none directly requested by the user
     maestro = Maestro()
-    maestro.mapping = {
-        'forbiddenfruit': {
-            None: {
-                'dependency_of': ['sure (== 0.2.1)'],
-                'data': '/curds/forbiddenfruit-0.1.0.whl',
-            },
-        }
-    }
+    maestro.file_requirement('forbiddenfruit', dependency_of='sure (== 0.2.1)')
+    maestro.set_data('forbiddenfruit', '/curds/forbiddenfruit-0.1.0-cp27.whl')
 
     # When I retrieve the best match
     version, data = maestro.best_version('forbiddenfruit')
@@ -268,7 +262,7 @@ def test_best_version_no_strict_requirements_but_strict_version():
     version.should.be.none
     data.should.equal({
         'dependency_of': ['sure (== 0.2.1)'],
-        'data': '/curds/forbiddenfruit-0.1.0.whl',
+        'data': '/curds/forbiddenfruit-0.1.0-cp27.whl',
     })
 
 
@@ -278,55 +272,21 @@ def test_best_version_no_direct_req():
     # Given that I have a maestro with a package that contains more than one
     # version, but none directly requested by the user
     maestro = Maestro()
-    maestro.mapping = {
-        'forbiddenfruit': {
-            '> 0.1.0': {
-                'dependency_of': ['luxury (== 0.1.0)'],
-                'data': '/curds/forbiddenfruit-0.1.0.whl',
-            },
-            '>= 0.0.9': {
-                'dependency_of': ['sure (== 0.2)'],
-                'data': '/curds/forbiddenfruit-0.1.0.whl',
-            },
-        }
-    }
+    maestro.file_requirement('forbiddenfruit (> 0.1.0)', dependency_of='luxury (== 0.1.1)')
+    maestro.set_data('forbiddenfruit (> 0.1.0)', '/curds/forbiddenfruit-0.1.1-cp27.whl')
+    maestro.file_requirement('forbiddenfruit (>= 0.0.9)', dependency_of='sure (== 0.2)')
+    maestro.set_data('forbiddenfruit (>= 0.0.9)', '/curds/forbiddenfruit-0.0.9-cp27.whl')
 
     # When I retrieve the best match
-    version, data = maestro.best_version('forbiddenfruit')
+    version, data = maestro.best_version('forbiddenfruit', debug=True)
 
     # Then I see I found the entry that was not directly requested by the user
     # (IOW: The `dependency_of` field is not `None`).
     version.should.equal('> 0.1.0')
     data.should.equal({
-        'dependency_of': ['luxury (== 0.1.0)'],
-        'data': '/curds/forbiddenfruit-0.1.0.whl',
+        'dependency_of': ['luxury (== 0.1.1)'],
+        'data': '/curds/forbiddenfruit-0.1.1-cp27.whl',
     })
-
-
-def test_best_version_no_direct_req_with_null():
-    "best_version() with no direct requirements"
-
-    # Given that I have a maestro with a package that contains more than one
-    # version, but none directly requested by the user
-    maestro = Maestro()
-    maestro.mapping = {
-        'forbiddenfruit': {
-            '> 0.1.0': {
-                'dependency_of': ['luxury (== 0.1.0)'],
-                'data': '/curds/forbiddenfruit-0.1.2.whl',
-            },
-            '>= 0.0.9': {
-                'dependency_of': ['sure (== 0.2)'],
-                'data': '/curds/forbiddenfruit-0.1.2.whl',
-            },
-        }
-    }
-
-    # When I retrieve the best match
-    version, data = maestro.best_version('forbiddenfruit')
-
-    # Then I see I found the entry that was not directly requested by the user
-    version.should.equal('> 0.1.0')
 
 
 def test_best_version_should_prefer_newest_version():
@@ -354,8 +314,8 @@ def test_best_version_should_prefer_newest_version():
 
     maestro.best_version('forbiddenfruit').should.equal(
         ('<= 0.1.8', {
-        'dependency_of': ['luxury (== 0.1.0)'],
-        'data': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl',
+            'dependency_of': ['luxury (== 0.1.0)'],
+            'data': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl',
         })
     )
 
@@ -376,16 +336,12 @@ def test_best_version_should_blow_up_on_version_conflicts():
                 'dependency_of': ['luxury (== 0.0.9)'],
                 'data': '/curds/forbiddenfruit-0.1.0-cp27-none-macosx_10_8_x86_64.whl',
             },
-            '>= 0.0.9': {
-                'dependency_of': ['sure (== 0.2)'],
-                'data': '/curds/forbiddenfruit-0.1.0-cp27-none-macosx_10_8_x86_64.whl',
-            },
         }
     }
 
     maestro.best_version.when.called_with('forbiddenfruit').should.throw(
         exceptions.VersionConflict,
-        'Requirement: forbiddenfruit (>= 0.1.8, <= 0.1.0, >= 0.0.9), '
+        'Requirement: forbiddenfruit (>= 0.1.8, <= 0.1.0), '
         'Available versions: 0.1.8, 0.1.0'
     )
 
@@ -409,7 +365,7 @@ def test_best_version_skip_broken_dependencies():
     exception.should.be.a(exceptions.BrokenDependency)
     exception.message.should.equal("forbiddenfruit (0.1.0)")
 
-    version, data = maestro.best_version('forbiddenfruit')
-    version.should.equal('== 0.1.0')
-    data['dependency_of'].should.equal(['sure (0.1.2)'])
-    data['data'].message.should.equal("forbiddenfruit (0.1.0): We're doomed, setup.py failed!")
+    maestro.best_version.when.called_with('forbiddenfruit').should.throw(
+        exceptions.BrokenDependency,
+        'forbiddenfruit (0.1.0): We\'re doomed, setup.py failed!'
+    )
