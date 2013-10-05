@@ -11,7 +11,7 @@ class Dependencer(Service):
         self.dependency_found = Signal()
         self.built = Signal()
 
-    def handle(self, requester, package, sender_data):
+    def handle(self, requester, requirement, sender_data):
         # Find the wheel
         path = sender_data.pop('path')
         wheel = Wheel(path)
@@ -21,8 +21,8 @@ class Dependencer(Service):
             # Packages might declare their "extras" here, so let's split it
             dependency, extra = (';' in spec and spec or spec + ';').split(';')
             self.emit('dependency_found', self.name,
-                dependency, dependency_of=package)
+                dependency, dependency_of=requirement)
         else:
-            self.emit('built', self.name, package, path=path)
+            self.emit('built', self.name, requirement, path=path)
 
         return {'deps': run_time_dependencies}

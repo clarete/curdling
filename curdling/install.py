@@ -27,15 +27,15 @@ PACKAGE_BLACKLIST = (
 
 def only(func, pattern):
     @wraps(func)
-    def wrapper(requester, package, **data):
+    def wrapper(requester, requirement, **data):
         if re.match(pattern, data.get('path', '')):
-            return func(requester, package, **data)
+            return func(requester, requirement, **data)
     return wrapper
 
 
 def mark(maestro, set_name):
-    def marker(requester, package, **data):
-        return maestro.mark(set_name, package, data.get('path'))
+    def marker(requester, requirement, **data):
+        return maestro.mark(set_name, requirement, data.get('path'))
     return marker
 
 
@@ -84,8 +84,8 @@ class Install(object):
     def report(self):
         if self.maestro.failed:
             print('\nSome milk was spilled in the process:')
-        for package in self.maestro.failed:
-            _, version = self.maestro.best_version(package)
+        for package_name in self.maestro.failed:
+            _, version = self.maestro.best_version(package_name)
             data = version.get('data')
             print(" * {0}: {1}".format(data.__class__.__name__, data))
 
@@ -113,9 +113,9 @@ class Install(object):
         else:
             self.installer.start()
 
-        for package in self.maestro.mapping:
-            _, version = self.maestro.best_version(package)
-            self.installer.queue('main', package, path=version['data'])
+        for package_name in self.maestro.mapping:
+            _, version = self.maestro.best_version(package_name)
+            self.installer.queue('main', package_name, path=version['data'])
 
         ui = InstallProgress(self, 'installed')
         while ui:
@@ -138,40 +138,41 @@ class Install(object):
             return SUCCESS
 
         uploader = self.uploader.start()
-        for server, packages in failures.items():
-            for package in packages:
-                _, data = self.maestro.best_version(package)
-                uploader.queue('main', package,
+        for server, package_names in failures.items():
+            for package_name in package_names:
+                _, data = self.maestro.best_version(package_name)
+                uploader.queue('main', package_name,
                     path=data.get('data'), server=server)
         uploader.join()
         return SUCCESS
 
-    def request_install(self, requester, package, **data):
+    def request_install(self, requester, requirement, **data):
         # If it's a blacklisted requirement, we should cowardly refuse to
         # install
         for blacklisted in PACKAGE_BLACKLIST:
-            if package.startswith(blacklisted):
+            if requirement.startswith(blacklisted):
                 self.logger.info(
                     "Cowardly refusing to install blacklisted "
-                    "requirement `%s'", package)
+                    "requirement `%s'", requirement)
                 return False
 
-        # Well, the package is installed, let's just bail
-        if not self.conf.get('force') and self.database.check_installed(package):
+        # Well, the requirement is installed, let's just bail
+        if not self.conf.get('force') and self.database.check_installed(requirement):
             return True
 
-        # We shouldn't queue the same package twice
-        if not self.maestro.should_queue(package):
+        # We shouldn't queue the same requirement twice
+        if not self.maestro.should_queue(requirement):
             return False
 
         # Let's tell the maestro we have a new challenger
-        self.maestro.file_package(package, dependency_of=data.get('dependency_of'))
+        self.maestro.file_requirement(
+            requirement, dependency_of=data.get('dependency_of'))
 
         # Looking for built packages
         try:
-            path = self.index.get("{0};whl".format(package))
-            self.dependencer.queue(requester, package, path=path)
-            self.maestro.mark('retrieved', package, 'whl')
+            path = self.index.get("{0};whl".format(requirement))
+            self.dependencer.queue(requester, requirement, path=path)
+            self.maestro.mark('retrieved', requirement, 'whl')
             return False
         except PackageNotFound:
             pass
@@ -179,15 +180,15 @@ class Install(object):
         # Looking for downloaded packages. If there's packages of any of the
         # following distributions, we'll just build the wheel
         try:
-            path = self.index.get("{0};~whl".format(package))
-            self.curdler.queue(requester, package, path=path)
-            self.maestro.mark('retrieved', package, 'compressed')
+            path = self.index.get("{0};~whl".format(requirement))
+            self.curdler.queue(requester, requirement, path=path)
+            self.maestro.mark('retrieved', requirement, 'compressed')
             return False
         except PackageNotFound:
             pass
 
         # Nops, we really don't have the package
-        self.downloader.queue(requester, package, **data)
+        self.downloader.queue(requester, requirement, **data)
         return False
 
 

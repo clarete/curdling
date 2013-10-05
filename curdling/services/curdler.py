@@ -116,7 +116,7 @@ def unpack(package, destination):
 
 class Curdler(Service):
 
-    def handle(self, requester, package, sender_data):
+    def handle(self, requester, requirement, sender_data):
         source = sender_data.pop('path')
 
         # Place used to unpack the wheel
@@ -130,6 +130,7 @@ class Curdler(Service):
             wheel_file = setup_py('bdist_wheel')
             return {'path': self.index.from_file(wheel_file)}
         except BaseException as exc:
-            raise BuildError('{0}: {1}'.format(package, spaces(3, str(exc))))
+            raise BuildError('{0}: {1}'.format(
+                requirement, spaces(3, str(exc))))
         finally:
             shutil.rmtree(destination)

@@ -42,8 +42,10 @@ def test_find_packages(distlib):
 
     # Given a locator
     locator = Mock()
-    # And a package
-    package = Mock()
+
+    # And a requirement
+    requirement = Mock()
+
     # And a versions dictionary
     distribution = Mock()
     versions = {
@@ -51,13 +53,13 @@ def test_find_packages(distlib):
     }
 
     # When I invoke find_packages
-    result = find_packages(locator, package, versions)
+    result = find_packages(locator, requirement, versions)
     # Then the result should be the expected distribution
     result.should.equal(distribution)
     # And the method calls should be correct (sorry for this sad test,
     # I'm still getting to know the codebase)
     matcher.match.assert_called_once_with(version_class)
-    scheme.matcher.assert_called_once_with(package.requirement)
+    scheme.matcher.assert_called_once_with(requirement.requirement)
     distlib.version.get_scheme.assert_called_once_with(locator.scheme)
 
 

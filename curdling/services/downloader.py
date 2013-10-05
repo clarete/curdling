@@ -26,9 +26,9 @@ def get_locator(conf):
     return AggregatingLocator(*(curds + pypi), scheme='legacy')
 
 
-def find_packages(locator, package, versions):
+def find_packages(locator, requirement, versions):
     scheme = distlib.version.get_scheme(locator.scheme)
-    matcher = scheme.matcher(package.requirement)
+    matcher = scheme.matcher(requirement.requirement)
 
     result = {}
     if versions:
@@ -64,9 +64,7 @@ class AggregatingLocator(locators.AggregatingLocator):
         pkg = util.parse_requirement(requirement)
         for locator in self.locators:
             versions = locator.get_project(pkg.name)
-            package = find_packages(locator, pkg, versions)
-            if package:
-                return package
+            return find_packages(locator, pkg, versions) or None
 
 
 class PyPiLocator(locators.SimpleScrapingLocator):
@@ -150,7 +148,7 @@ class CurdlingLocator(locators.Locator):
         self.base_url = url
         self.url = url
         self.opener = Pool(maxsize=POOL_MAX_SIZE)
-        self.packages_not_found = []
+        self.requirements_not_found = []
 
     def get_distribution_names(self):
         return json.loads(
@@ -169,7 +167,7 @@ class CurdlingLocator(locators.Locator):
             data = json.loads(response.data)
             return {v['version']: self._get_distribution(v) for v in data}
         else:
-            self.packages_not_found.append(name)
+            self.requirements_not_found.append(name)
 
     def _get_distribution(self, version):
         # Source url for the package
@@ -194,28 +192,30 @@ class Downloader(Service):
         self.opener = Pool(maxsize=POOL_MAX_SIZE)
         self.locator = get_locator(self.conf)
 
-    def handle(self, requester, package, sender_data):
+    def handle(self, requester, requirement, sender_data):
         found = None
         prereleases = self.conf.get('prereleases', True)
 
-        # It sounds lame, but we're trying to match packages with more than one
-        # word separated with either `_` or `-`. Notice that we prefer hyphens
-        # cause theres currently way more packages using hyphens than
+        # It sounds lame, but we're trying to match requirements with more than
+        # one word separated with either `_` or `-`. Notice that we prefer
+        # hyphens cause theres currently way more packages using hyphens than
         # underscores in pypi.p.o. Let's wait for the best here.
-        for option in [package.replace('_', '-'), package.replace('-', '_')]:
+        options = requirement.replace('_', '-'), requirement.replace('-', '_')
+        for option in options:
             found = self.locator.locate(option, prereleases)
             if found:
                 break
 
         if not found:
-            raise ReportableError('Package `{0}\' not found'.format(package))
+            raise ReportableError('Requirement `{0}\' not found'.format(
+                requirement))
         return {"path": self.download(found)}
 
     def get_servers_to_update(self):
         failures = {}
         for locator in self.locator.locators:
-            if isinstance(locator, CurdlingLocator) and locator.packages_not_found:
-                failures[locator.base_url] = locator.packages_not_found
+            if isinstance(locator, CurdlingLocator) and locator.requirements_not_found:
+                failures[locator.base_url] = locator.requirements_not_found
         return failures
 
     # -- Private API of the Download service --

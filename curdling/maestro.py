@@ -37,26 +37,26 @@ class Maestro(object):
 
         self.lock = threading.RLock()
 
-    def file_package(self, package, dependency_of=None):
-        requirement = util.parse_requirement(package)
+    def file_requirement(self, requirement, dependency_of=None):
+        requirement = util.parse_requirement(requirement)
         version = constraints(requirement)
 
         with self.lock:
             entry = self.mapping[util.safe_name(requirement.name)][version]
             entry['dependency_of'].append(dependency_of)
 
-    def get_data(self, package):
-        requirement = util.parse_requirement(package)
+    def get_data(self, requirement):
+        requirement = util.parse_requirement(requirement)
         version = constraints(requirement)
         return self.mapping[util.safe_name(requirement.name)][version]['data']
 
-    def set_data(self, package, data):
-        pkg = util.parse_requirement(package)
-        version = constraints(pkg)
-        self.mapping[util.safe_name(pkg.name)][version]['data'] = data
+    def set_data(self, requirement, data):
+        requirement = util.parse_requirement(requirement)
+        version = constraints(requirement)
+        self.mapping[util.safe_name(requirement.name)][version]['data'] = data
 
-    def mark(self, attr, package, data):
-        pkg = util.parse_requirement(package)
+    def mark(self, attr, requirement, data):
+        pkg = util.parse_requirement(requirement)
         getattr(self, attr).add(util.safe_name(pkg.name))
 
         # The 'installed' label doesn't actually need to save any data, so we
@@ -65,13 +65,13 @@ class Maestro(object):
         # packages. Needed to find the right bucket inside of the
         # project_name+version sub-dictionary structure.
         if data is not None:
-            self.set_data(package, data)
+            self.set_data(requirement, data)
 
         # Since we couldn't install this package, we should also mark its
         # requesters as failed too.
         if attr == 'failed':
-            for parent in filter(None, self.get_parents(package)):
-                self.mark('failed', parent, BrokenDependency(package))
+            for parent in filter(None, self.get_parents(requirement)):
+                self.mark('failed', parent, BrokenDependency(requirement))
 
     def get_parents(self, spec):
         requirement = util.parse_requirement(spec)
@@ -134,8 +134,8 @@ class Maestro(object):
         return versions[0]
 
     def should_queue(self, requirement):
-        parsed_requirement = util.parse_requirement(requirement)
-        package_name = util.safe_name(parsed_requirement.name)
+        requirement = util.parse_requirement(requirement)
+        package_name = util.safe_name(requirement.name)
 
         # There might be people trying to write in our mapping and we always
         # need the updated values.

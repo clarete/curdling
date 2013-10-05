@@ -115,7 +115,7 @@ def test_downloader_with_no_packages():
     # When I try to retrieve a package from it
     downloader.handle.when.called_with(
         'main', 'donotexist==0.1.0', {}).should.throw(ReportableError,
-            'Package `donotexist==0.1.0\' not found')
+            'Requirement `donotexist==0.1.0\' not found')
 
 
 def test_curd_package():

@@ -10,7 +10,7 @@ def test_maestro_pending_packages():
     maestro = Maestro()
 
     # When I file a package under it
-    maestro.file_package('curdling', dependency_of=None)
+    maestro.file_requirement('curdling', dependency_of=None)
 
     # Then I see it's still waiting for the dependency checking
     maestro.pending('built').should.equal(['curdling'])
@@ -21,7 +21,7 @@ def test_maestro_pending_packages_no_deps():
 
     # Given that I have a maestro with a package filed under it
     maestro = Maestro()
-    maestro.file_package('curdling', dependency_of=None)
+    maestro.file_requirement('curdling', dependency_of=None)
 
     # When and I mark the package as `checked`,
     # meaning that all the dependencies were checked
@@ -37,7 +37,7 @@ def test_mark_failed():
 
     # Given that I have a maestro with a package filed under it
     maestro = Maestro()
-    maestro.file_package('curdling', dependency_of=None)
+    maestro.file_requirement('curdling', dependency_of=None)
 
     # When and I mark the package as `failed`, meaning that all the
     # dependencies were checked
@@ -53,10 +53,10 @@ def test_get_parents():
 
     # Given that I have a maestro with two packages depending on the same library
     maestro = Maestro()
-    maestro.file_package('curdling', dependency_of=None)
-    maestro.file_package('requests', dependency_of=None)
-    maestro.file_package('urllib3', dependency_of='curdling')
-    maestro.file_package('urllib3', dependency_of='requests')
+    maestro.file_requirement('curdling', dependency_of=None)
+    maestro.file_requirement('requests', dependency_of=None)
+    maestro.file_requirement('urllib3', dependency_of='curdling')
+    maestro.file_requirement('urllib3', dependency_of='requests')
 
     # When I get the parents of the `urllib3` package
     parents = maestro.get_parents('urllib3')
@@ -70,8 +70,8 @@ def test_marking_parent_packages_as_failed_when_a_dependency_fails():
 
     # Given that I have a maestro with a package and a dependency filed
     maestro = Maestro()
-    maestro.file_package('curdling', dependency_of=None)
-    maestro.file_package('urllib3', dependency_of='curdling')
+    maestro.file_requirement('curdling', dependency_of=None)
+    maestro.file_requirement('urllib3', dependency_of='curdling')
 
     # When I mark the package `urllib3` as failed
     maestro.mark('failed', 'urllib3', Exception('P0wned!!!'))
@@ -87,10 +87,10 @@ def test_mark_built_update_mapping():
 
     # Given that I have a maestro with a couple packages filed under it
     maestro = Maestro()
-    maestro.file_package('curdling', dependency_of=None)
-    maestro.file_package('sure (== 0.1.2)', dependency_of='curdling')
-    maestro.file_package('forbiddenfruit (> 0.1.0)', dependency_of='curdling')
-    maestro.file_package('forbiddenfruit (>= 0.1.2)', dependency_of='sure (== 0.1.2)')
+    maestro.file_requirement('curdling', dependency_of=None)
+    maestro.file_requirement('sure (== 0.1.2)', dependency_of='curdling')
+    maestro.file_requirement('forbiddenfruit (> 0.1.0)', dependency_of='curdling')
+    maestro.file_requirement('forbiddenfruit (>= 0.1.2)', dependency_of='sure (== 0.1.2)')
 
     # Wehn I mark the files as built
     maestro.mark('built', 'curdling', '/curds/curdling-0.3.5.whl')
@@ -130,8 +130,8 @@ def test_mark_installed():
 
     # Given a maestro with a few packages
     maestro = Maestro()
-    maestro.file_package('curdling')
-    maestro.file_package('sure')
+    maestro.file_requirement('curdling')
+    maestro.file_requirement('sure')
 
     # When I mark `curdling` as installed
     maestro.mark('installed', 'sure', data=None)
@@ -152,7 +152,7 @@ def test_should_queue():
 
     # After filing this package to the maestro, should_queue will change its
     # results, as you can see here.
-    maestro.file_package('curdling')
+    maestro.file_requirement('curdling')
     maestro.should_queue('curdling').should.be.false
 
 
@@ -396,8 +396,8 @@ def test_best_version_skip_broken_dependencies():
     # Given that I have a maestro with a package that references a broken
     # package in the dependency list
     maestro = Maestro()
-    maestro.file_package('sure (0.1.2)')
-    maestro.file_package('forbiddenfruit (0.1.0)', dependency_of='sure (0.1.2)')
+    maestro.file_requirement('sure (0.1.2)')
+    maestro.file_requirement('forbiddenfruit (0.1.0)', dependency_of='sure (0.1.2)')
     maestro.mark('failed', 'forbiddenfruit (0.1.0)', exceptions.BrokenDependency(
         'forbiddenfruit (0.1.0): We\'re doomed, setup.py failed!'))
 

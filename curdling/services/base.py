@@ -31,10 +31,11 @@ class Service(SignalEmitter):
         self.finished = Signal()
         self.failed = Signal()
 
-    def queue(self, requester, package, **data):
-        self._queue.put((requester, package, data))
-        self.logger.info(' * queue(from=%s, to=%s, package=%s, data=%s)',
-            requester, self.name, package, data)
+    def queue(self, requester, requirement, **data):
+        self._queue.put((requester, requirement, data))
+        self.logger.info(
+            'queue(from="%s", to="%s", requirement="%s", data="%s")',
+            requester, self.name, requirement, data)
         return self
 
     def start(self):
@@ -59,7 +60,7 @@ class Service(SignalEmitter):
             worker.join()
         self.workers = []
 
-    def handle(self, requester, package, sender_data):
+    def handle(self, requester, requirement, sender_data):
         raise NotImplementedError(
             "The service subclass should override this method")
 
@@ -68,26 +69,26 @@ class Service(SignalEmitter):
     def _worker(self):
         # If the service consumer invokes `.queue(None, None)` it causes the
         # worker to die elegantly by matching the following sentinel:
-        for requester, package, sender_data in iter(self._queue.get, SENTINEL):
-            self.logger.debug(' * %s[%s].run(package=%s, sender_data=%s)',
+        for requester, requirement, sender_data in iter(self._queue.get, SENTINEL):
+            self.logger.debug('%s[%s].run(requirement="%s", sender_data="%s")',
                 self.name, threading.current_thread().name,
-                package, sender_data)
+                requirement, sender_data)
             try:
-                self.emit('started', self.name, package, **sender_data)
-                data = self.handle(requester, package, sender_data)
+                self.emit('started', self.name, requirement, **sender_data)
+                data = self.handle(requester, requirement, sender_data)
                 self._queue.task_done()
             except ReportableError as exc:
-                self.emit('failed', self.name, package, path=exc)
-                self.logger.info(" # %s.error(): %s", self.name, exc)
+                self.emit('failed', self.name, requirement, path=exc)
+                self.logger.info("%s.error(): %s", self.name, exc)
                 self.logger.exception(
-                    'failed to run %s (requested by:%s) for package %s:',
-                    self.name, requester, package)
+                    'failed to run %s (requested by:%s) for requirement %s:',
+                    self.name, requester, requirement)
             except BaseException as exc:
-                self.emit('failed', self.name, package, path=exc)
+                self.emit('failed', self.name, requirement, path=exc)
                 self.logger.exception(
-                    'failed to run %s (requested by:%s) for package %s:',
-                    self.name, requester, package)
+                    'failed to run %s (requested by:%s) for requirement %s:',
+                    self.name, requester, requirement)
             else:
-                self.emit('finished', self.name, package, **(data or {}))
-                self.logger.info(' * %s.result(package=%s): %s ... OK',
-                    self.name, package, data)
+                self.emit('finished', self.name, requirement, **(data or {}))
+                self.logger.info('%s.result(requirement="%s"): %s ... OK',
+                    self.name, requirement, data)

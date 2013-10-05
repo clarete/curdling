@@ -29,23 +29,23 @@ def add_parser_install(subparsers):
         help='Curdling compatible index url. Repeat as many times as you need')
     parser.add_argument(
         '-u', '--upload', action='store_true', default=False,
-        help='Upload your packages back to the curdling index')
+        help='Upload packages back to the curdling index')
     parser.add_argument(
         '-f', '--force', action='store_true', default=False,
-        help='Skip checking if the package requested is already installed')
+        help='Skip checking if the requirement requested is already installed')
     parser.add_argument(
-        'packages', metavar='PKG', nargs='*',
-        help='list of files to install')
+        'packages', metavar='REQUIREMENT', nargs='*',
+        help='list of requirements to install')
     parser.set_defaults(command='install')
     return parser
 
 
 def add_parser_uninstall(subparsers):
     parser = subparsers.add_parser(
-        'uninstall', help='Locate and uninstall packages')
+        'uninstall', help='Uninstall packages')
     parser.add_argument(
         '-r', '--requirements',
-        help='A requirements file listing packages to be uninstalled')
+        help='A file listing requirements to be uninstalled')
     parser.add_argument(
         'packages', metavar='PKG', nargs='*',
         help='list of files to uninstall')
