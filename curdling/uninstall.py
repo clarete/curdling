@@ -2,7 +2,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 from . import exceptions
 from .database import Database
-from .util import safe_name, logger, parse_requirement
+from .util import logger, parse_requirement
 
 
 class Uninstall(object):
@@ -15,8 +15,8 @@ class Uninstall(object):
     def report(self):
         pass
 
-    def request_uninstall(self, package):
-        self.packages.append(safe_name(parse_requirement(package).name))
+    def request_uninstall(self, requirement):
+        self.packages.append(parse_requirement(requirement).name)
 
     def run(self):
         for package in self.packages:

@@ -18,6 +18,7 @@ ROOT_LOGGER = logging.getLogger('curdling')
 
 def parse_requirement(spec):
     requirement = util.parse_requirement(spec)
+    requirement.name = safe_name(requirement.name)
     return requirement
 
 

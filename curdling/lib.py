@@ -1,6 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from distlib.version import LegacyVersion, LegacyMatcher
-from .util import safe_name, parse_requirement
+from .util import parse_requirement
 
 
 def combine_requirements(requirements):
@@ -12,7 +12,6 @@ def combine_requirements(requirements):
 
     for spec in requirements:
         requirement = parse_requirement(spec)
-        package_name = safe_name(requirement.name)
         found_constraints = requirement.constraints or []
 
         # Iterate over all the constraints present in each strict
@@ -51,7 +50,8 @@ def combine_requirements(requirements):
     # We need to separate the version number from the package name to apply the
     # logic that determines if we're good or not. This helper is just an easy
     # way to build the package name again.
-    full_name = lambda constraint: '{0} ({1})'.format(package_name, constraint)
+    full_name = lambda constraint: '{0} ({1})'.format(
+        requirement.name, constraint)
 
     # This code won't run unless we're dealing with both strict and range
     # versions. It will basically make sure that the strict version will be the

@@ -42,22 +42,22 @@ class Maestro(object):
         version = constraints(requirement)
 
         with self.lock:
-            entry = self.mapping[util.safe_name(requirement.name)][version]
+            entry = self.mapping[requirement.name][version]
             entry['dependency_of'].append(dependency_of)
 
     def get_data(self, requirement):
         requirement = util.parse_requirement(requirement)
         version = constraints(requirement)
-        return self.mapping[util.safe_name(requirement.name)][version]['data']
+        return self.mapping[requirement.name][version]['data']
 
     def set_data(self, requirement, data):
         requirement = util.parse_requirement(requirement)
         version = constraints(requirement)
-        self.mapping[util.safe_name(requirement.name)][version]['data'] = data
+        self.mapping[requirement.name][version]['data'] = data
 
     def mark(self, attr, requirement, data):
-        pkg = util.parse_requirement(requirement)
-        getattr(self, attr).add(util.safe_name(pkg.name))
+        parsed = util.parse_requirement(requirement)
+        getattr(self, attr).add(parsed.name)
 
         # The 'installed' label doesn't actually need to save any data, so we
         # just skip it. Going a little deeper, it's not possible cause we don't
@@ -75,12 +75,12 @@ class Maestro(object):
 
     def get_parents(self, spec):
         requirement = util.parse_requirement(spec)
-        versions = self.mapping[util.safe_name(requirement.name)]
+        versions = self.mapping[requirement.name]
         version = versions[constraints(requirement)]
         return version['dependency_of']
 
     def best_version(self, package_name):
-        versions = self.mapping[util.safe_name(package_name)].items()
+        versions = self.mapping[package_name].items()
 
         # We're looking for the version directly requested by the user. We
         # find it looking for versions that contain `None` in their field
@@ -135,12 +135,11 @@ class Maestro(object):
 
     def should_queue(self, requirement):
         requirement = util.parse_requirement(requirement)
-        package_name = util.safe_name(requirement.name)
 
         # There might be people trying to write in our mapping and we always
         # need the updated values.
         with self.lock:
-            currently_present = self.mapping.get(package_name)
+            currently_present = self.mapping.get(requirement.name)
 
         # If the package is not currently present in the maestro, we know that
         # it's safe to add it

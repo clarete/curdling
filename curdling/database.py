@@ -11,14 +11,14 @@ class Database(object):
     @classmethod
     def check_installed(cls, requirement):
         path = DistributionPath(include_egg=True)
-        package_name = util.safe_name(util.parse_requirement(requirement).name)
+        package_name = util.parse_requirement(requirement).name
         return path.get_distribution(package_name) is not None
 
     @classmethod
     def uninstall(self, requirement):
         # Currently we assume the distribution path contains only the last
         # version installed
-        package_name = util.safe_name(util.parse_requirement(requirement).name)
+        package_name = util.parse_requirement(requirement).name
         distribution = DistributionPath(include_egg=True).get_distribution(
             package_name)
 
