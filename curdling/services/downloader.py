@@ -202,7 +202,17 @@ class Downloader(Service):
         # underscores in pypi.p.o. Let's wait for the best here.
         options = requirement.replace('_', '-'), requirement.replace('-', '_')
         for option in options:
-            found = self.locator.locate(option, prereleases)
+            found = False
+
+            if not util.parse_requirement(requirement).is_link:
+                # We're dealing with the regular requirements: "name (x.y.z)"
+                found = self.locator.locate(option, prereleases)
+            else:
+                # We're dealing with a link
+                mdata = metadata.Metadata(scheme=self.locator.scheme)
+                mdata.source_url = mdata.download_url = requirement
+                found = database.Distribution(mdata)
+
             if found:
                 break
 
@@ -237,15 +247,17 @@ class Downloader(Service):
     def download(self, distribution):
         # This is the URL retrieved by the locator that found the given
         # distribution.
-        url = distribution.download_url
+        final_url = url = distribution.download_url
 
-        # This is the locator's `base_url` that possibly contains
-        # authentication credentials that we have to add to the URL we want to
-        # download right now.
-        base_url = distribution.locator.base_url
+        # We're dealing with a requirement, not a link
+        if distribution.locator:
+            # This is the locator's `base_url` that possibly contains
+            # authentication credentials that we have to add to the URL we want to
+            # download right now.
+            base_url = distribution.locator.base_url
 
-        # Updated version of the full URL
-        final_url = self.update_url_credentials(base_url, url)
+            # Updated version of the full URL
+            final_url = self.update_url_credentials(base_url, url)
 
         # Let's proceed with the request, but now with the right auth
         # credentials.

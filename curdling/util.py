@@ -16,9 +16,25 @@ LINK_PATTERN = re.compile(r'^([^\:]+):\/\/.+')
 ROOT_LOGGER = logging.getLogger('curdling')
 
 
+def is_url(requirement):
+    return ':' in requirement
+
+
+class Requirement(object):
+    name = None
+
+
 def parse_requirement(spec):
-    requirement = util.parse_requirement(spec)
-    requirement.name = safe_name(requirement.name)
+    if not is_url(spec):
+        requirement = util.parse_requirement(spec)
+        requirement.name = safe_name(requirement.name)
+        requirement.is_link = False
+    else:
+        requirement = Requirement()
+        requirement.name = spec
+        requirement.requirement = spec
+        requirement.constraints = ()
+        requirement.is_link = True
     return requirement
 
 
