@@ -91,9 +91,20 @@ class PyPiLocator(locators.SimpleScrapingLocator):
         self.opener = Pool(maxsize=POOL_MAX_SIZE)
 
     def _get_project(self, name):
-        return self._fetch(
-            urljoin(self.base_url, '%s/' % compat.quote(name)),
-            name)
+        # It sounds lame, but we're trying to match requirements with more than
+        # one word separated with either `_` or `-`. Notice that we prefer
+        # hyphens cause there is currently way more packages using hyphens than
+        # underscores in pypi.p.o. Let's wait for the best here.
+        options = [name]
+        if '-' in name or '_' in name:
+            options = (name.replace('_', '-'), name.replace('-', '_'))
+
+        # Iterate over all the possible names a package can have.
+        for package_name in options:
+            url = urljoin(self.base_url, '%s/' % compat.quote(package_name))
+            found = self._fetch(url, package_name)
+            if found:
+                return found
 
     def _visit_link(self, project_name, link):
         self._seen.add(link)
@@ -211,22 +222,11 @@ class Downloader(Service):
         self.locator = get_locator(self.conf)
 
     def handle(self, requester, requirement, sender_data):
-        found = None
-
-        # It sounds lame, but we're trying to match requirements with more than
-        # one word separated with either `_` or `-`. Notice that we prefer
-        # hyphens cause theres currently way more packages using hyphens than
-        # underscores in pypi.p.o. Let's wait for the best here.
-        options = requirement.replace('_', '-'), requirement.replace('-', '_')
-        for option in options:
-            found = self.find(option)
-            if found:
-                break
-
-        if not found:
-            raise ReportableError('Requirement `{0}\' not found'.format(
-                requirement))
-        return {"path": self.download(found)}
+        found = self.find(requirement)
+        if found:
+            return {"path": self.download(found)}
+        raise ReportableError('Requirement `{0}\' not found'.format(
+            requirement))
 
     def get_servers_to_update(self):
         failures = {}
