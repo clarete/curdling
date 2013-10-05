@@ -262,16 +262,19 @@ class Downloader(Service):
         # download url.
         protocol_mapping = {
             re.compile('^https?'): self._download_http,
-            re.compile('^git'): self._download_git,
-            re.compile('^hg'): self._download_hg,
-            re.compile('^svn'): self._download_svn,
+            re.compile('^git\+'): self._download_git,
+            re.compile('^hg\+'): self._download_hg,
+            re.compile('^svn\+'): self._download_svn,
         }
 
         try:
             handler = filter(lambda i: i.findall(url), protocol_mapping.keys())[0]
         except IndexError:
             raise Exception('Unknown protocol in the URL {0}'.format(url))
-        return protocol_mapping[handler](url)
+
+        # Remove the protocol prefix from the url before passing to the handler
+        # which is not prepared to handle urls starting with `vcs+`.
+        return protocol_mapping[handler](re.sub('[^\+]+\+', '', url))
 
     def _download_http(self, url):
         response, _ = self.opener.retrieve(url)
