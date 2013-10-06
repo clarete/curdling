@@ -69,7 +69,7 @@ def expand_requirements(file_name):
             continue
 
         # Finally, we're sure that it's just a package description
-        requirements.append(req)
+        requirements.append(parse_requirement(req).requirement)
     return requirements
 
 

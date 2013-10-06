@@ -74,6 +74,7 @@ def test_expand_requirements_ignore_http_links(open_func):
     # Then I see that all the required files were retrieved
     requirements.should.equal([
         'sure (== 0.2.1)',
+        'http://python.org',
     ])
 
 
