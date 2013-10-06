@@ -8,10 +8,10 @@ import errno
 
 from curdling.install import Install
 from curdling.index import Index, PackageNotFound
-from curdling.util import expand_requirements, filehash
 from curdling.services.base import Service
 from curdling.signal import Signal, SignalEmitter
 from curdling.database import Database
+from curdling import util
 
 
 # -- curdling/util.py --
@@ -29,7 +29,7 @@ def test_expand_requirements(open_func):
     )
 
     # When I expand the requirements
-    requirements = expand_requirements('development.txt')
+    requirements = util.expand_requirements('development.txt')
 
     # Then I see that all the required files were retrieved
     requirements.should.equal([
@@ -50,7 +50,7 @@ def test_expand_commented_requirements(open_func):
     )
 
     # When I expand the requirements
-    requirements = expand_requirements('development.txt')
+    requirements = util.expand_requirements('development.txt')
 
     # Then I see that all the required files were retrieved
     requirements.should.equal([
@@ -69,7 +69,7 @@ def test_expand_requirements_ignore_http_links(open_func):
     )
 
     # When I expand the requirements
-    requirements = expand_requirements('development.txt')
+    requirements = util.expand_requirements('development.txt')
 
     # Then I see that all the required files were retrieved
     requirements.should.equal([
@@ -85,10 +85,54 @@ def test_filehash():
     fp = io.BytesIO(b'My Content')
 
     # When I call the filehash function
-    hashed = filehash(fp, 'md5')
+    hashed = util.filehash(fp, 'md5')
 
     # Then I see the hash was right
     hashed.should.equal('a86c5dea3ad44078a1f79f9cf2c6786d')
+
+
+def test_spaces():
+    "spaces() should add spaces to paragraphs"
+
+    # Given that I have a paragraph of text
+    text = '''phrase 1
+phrase 2
+phrase 3'''
+
+    # When I add spaces to the above text
+    spaced = util.spaces(4, text)
+
+    # Then I see each line starting with the right amount of spaces
+    spaced.should.equal('''    phrase 1
+    phrase 2
+    phrase 3''')
+
+
+def test_get_auth_info_from_url():
+    "get_auth_info_from_url() should be able to extract authentication data from a URL"
+
+    # Given that I have a URL that contains authentication info
+    url = "http://user:password@domain.org"
+
+    # When I try to get the authentication information
+    authentication_information = util.get_auth_info_from_url(url)
+
+    # Then I see both user and password are correct
+    authentication_information.should.equal({
+        'authorization': 'Basic dXNlcjpwYXNzd29yZA=='})
+
+
+@patch('curdling.util.subprocess')
+def test_execute_command_when_it_fails(subprocess):
+    "execute_command() will raise an exception if the command fails"
+
+    # Given that my process will definitely fail
+    subprocess.Popen.return_value.returncode = 1
+    subprocess.Popen.return_value.communicate.return_value = ["stdout", "stderr"]
+
+    # When I execute the command; Then I see it raises the right exception
+    # containing the stderr of the command we tried to run
+    util.execute_command.when.called_with('ls').should.throw(Exception, "stderr")
 
 
 # -- curdling/install.py --
