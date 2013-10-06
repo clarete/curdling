@@ -1,7 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from . import util, exceptions
-from collections import namedtuple
-from distlib.database import DistributionPath, EggInfoDistribution
+from distlib.database import DistributionPath
 
 import os
 

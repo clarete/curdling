@@ -1,9 +1,8 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from collections import defaultdict
-from distlib.version import LegacyVersion, LegacyMatcher
+from distlib.version import LegacyMatcher
 
 from . import util
-from .lib import combine_requirements
 from .exceptions import BrokenDependency, VersionConflict
 
 import threading
@@ -103,7 +102,7 @@ class Maestro(object):
         version = versions[constraints(requirement)]
         return version['dependency_of']
 
-    def best_version(self, package_name, debug=False):
+    def best_version(self, package_name):
         versions = list(self.mapping[package_name].items())
 
         # The user didn't inform any specific version in the main requirements

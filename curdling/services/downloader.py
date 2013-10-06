@@ -1,6 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from ..exceptions import ReportableError, UnknownProtocol
-from ..signal import Signal
 from .. import util
 from .base import Service
 from distlib import database, metadata, compat, locators

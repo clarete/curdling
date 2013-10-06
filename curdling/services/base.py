@@ -1,5 +1,4 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from ..exceptions import ReportableError
 from ..signal import Signal, SignalEmitter
 from ..util import logger
 from distlib.compat import queue
@@ -40,7 +39,7 @@ class Service(SignalEmitter):
 
     def start(self):
         self.logger.info(' * %s.start()', self.name)
-        for worker_num in range(self.conf.get('concurrency', 10)):
+        for _ in range(self.conf.get('concurrency', 10)):
             worker = threading.Thread(target=self._worker)
             worker.daemon = True
             worker.start()

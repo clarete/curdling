@@ -278,7 +278,7 @@ def test_best_version_no_direct_req():
     maestro.set_data('forbiddenfruit (>= 0.0.9)', {'path': '/curds/forbiddenfruit-0.0.9-cp27.whl'})
 
     # When I retrieve the best match
-    version, data = maestro.best_version('forbiddenfruit', debug=True)
+    version, data = maestro.best_version('forbiddenfruit')
 
     # Then I see I found the entry that was not directly requested by the user
     # (IOW: The `dependency_of` field is not `None`).
