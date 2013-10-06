@@ -4,7 +4,7 @@ from functools import wraps
 from .index import PackageNotFound
 from .maestro import Maestro
 from .database import Database
-from .util import logger
+from .util import logger, spaces
 
 from .services.downloader import Downloader
 from .services.curdler import Curdler
@@ -88,9 +88,9 @@ class Install(object):
             print(' * {0}: '.format(package_name))
             for version in self.maestro.best_version(package_name):
                 exception = version[1]['data']['exception']
-                print('   {0}: {1}'.format(
+                print('   {0}:\n{1}'.format(
                     exception.__class__.__name__,
-                    exception))
+                    spaces(5, str(exception))))
 
     def run(self):
         ui = RetrieveAndBuildProgress(self, 'built')
