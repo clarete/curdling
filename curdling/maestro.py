@@ -29,9 +29,6 @@ def package_version(data):
                           ^
     this is the guy we get in that crazy split!
     """
-    version = data.get('version')
-    if version:
-        return version
     path = data.get('path')
     return path and path.split('-')[1] or None
 
