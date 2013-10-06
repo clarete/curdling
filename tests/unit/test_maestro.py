@@ -25,7 +25,7 @@ def test_maestro_pending_packages_no_deps():
 
     # When and I mark the package as `checked`,
     # meaning that all the dependencies were checked
-    maestro.mark('built', 'curdling', '')
+    maestro.mark('built', 'curdling', {})
 
     # Then I see it's still waiting for the dependency checking
     maestro.pending('built').should.equal([])
@@ -41,7 +41,7 @@ def test_mark_failed():
 
     # When and I mark the package as `failed`, meaning that all the
     # dependencies were checked
-    maestro.mark('failed', 'curdling', '')
+    maestro.mark('failed', 'curdling', {})
 
     # Then I see it's still waiting for the dependency checking
     maestro.pending('built').should.equal([])
@@ -74,7 +74,7 @@ def test_marking_parent_packages_as_failed_when_a_dependency_fails():
     maestro.file_requirement('urllib3', dependency_of='curdling')
 
     # When I mark the package `urllib3` as failed
-    maestro.mark('failed', 'urllib3', Exception('P0wned!!!'))
+    maestro.mark('failed', 'urllib3', {'exception': Exception('P0wned!!!')})
 
     # Then I see the `curdling` package was also marked as failed
     maestro.failed.should.equal(set(['curdling', 'urllib3']))
@@ -93,33 +93,33 @@ def test_mark_built_update_mapping():
     maestro.file_requirement('forbiddenfruit (>= 0.1.2)', dependency_of='sure (== 0.1.2)')
 
     # Wehn I mark the files as built
-    maestro.mark('built', 'curdling', '/curds/curdling-0.3.5.whl')
-    maestro.mark('built', 'sure (== 0.1.2)', '/curds/sure-0.1.2.whl')
-    maestro.mark('built', 'forbiddenfruit (> 0.1.0)', '/curds/forbiddenfruit-0.1.2.whl')
-    maestro.mark('built', 'forbiddenfruit (>= 0.1.2)', '/curds/forbiddenfruit-0.1.2.whl')
+    maestro.mark('built', 'curdling', {'path': '/curds/curdling-0.3.5.whl'})
+    maestro.mark('built', 'sure (== 0.1.2)', {'path': '/curds/sure-0.1.2.whl'})
+    maestro.mark('built', 'forbiddenfruit (> 0.1.0)', {'path': '/curds/forbiddenfruit-0.1.2.whl'})
+    maestro.mark('built', 'forbiddenfruit (>= 0.1.2)', {'path': '/curds/forbiddenfruit-0.1.2.whl'})
 
     # Then I see I still have just one entry in the mapping
     dict(maestro.mapping).should.equal({
         'curdling': {
             None: {
                 'dependency_of': [None],
-                'data': '/curds/curdling-0.3.5.whl',
+                'data': {'path': '/curds/curdling-0.3.5.whl'},
             },
         },
         'sure': {
             '== 0.1.2': {
                 'dependency_of': ['curdling'],
-                'data': '/curds/sure-0.1.2.whl'
+                'data': {'path': '/curds/sure-0.1.2.whl'},
             },
         },
         'forbiddenfruit': {
             '> 0.1.0': {
                 'dependency_of': ['curdling'],
-                'data': '/curds/forbiddenfruit-0.1.2.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.1.2.whl'},
             },
             '>= 0.1.2': {
                 'dependency_of': ['sure (== 0.1.2)'],
-                'data': '/curds/forbiddenfruit-0.1.2.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.1.2.whl'},
             },
         },
     })
@@ -165,7 +165,7 @@ def test_get_data():
         'forbiddenfruit': {
             '> 0.1.0': {
                 'dependency_of': [],
-                'data': '/curds/forbiddenfruit.whl',
+                'data': {'path': '/curds/forbiddenfruit.whl'},
             },
         }
     }
@@ -174,7 +174,7 @@ def test_get_data():
     data = maestro.get_data('forbiddenfruit (> 0.1.0)')
 
     # Then I see the correct value retrieved
-    data.should.equal('/curds/forbiddenfruit.whl')
+    data.should.equal({'path': '/curds/forbiddenfruit.whl'})
 
 
 def test_best_version():
@@ -187,15 +187,15 @@ def test_best_version():
         'forbiddenfruit': {
             '>= 0.3.9': {
                 'dependency_of': ['luxury'],
-                'data': '/curds/forbiddenfruit-0.3.9.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.3.9.whl'},
             },
             '> 0.0.3': {
                 'dependency_of': [],
-                'data': '/curds/forbiddenfruit-0.0.3.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.0.3.whl'},
             },
             '>= 0.0.9': {
                 'dependency_of': ['sure (== 0.2)'],
-                'data': '/curds/forbiddenfruit-0.0.9.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.0.9.whl'},
             },
         }
     }
@@ -208,7 +208,7 @@ def test_best_version():
     version.should.equal('> 0.0.3')
     data.should.equal({
         'dependency_of': [],
-        'data': '/curds/forbiddenfruit-0.0.3.whl',
+        'data': {'path': '/curds/forbiddenfruit-0.0.3.whl'},
     })
 
 
@@ -222,15 +222,15 @@ def test_best_version_filter_out_none_values_before_determining_top_requirements
         'forbiddenfruit': {
             '>= 0.3.9': {
                 'dependency_of': ['luxury'],
-                'data': '/curds/forbiddenfruit-0.3.9-cp27.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.3.9-cp27.whl'},
             },
             '> 0.0.3': {
                 'dependency_of': [None, None],
-                'data': '/curds/forbiddenfruit-0.0.3-cp27.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.0.3-cp27.whl'},
             },
             '>= 0.0.9': {
                 'dependency_of': ['sure (== 0.2)'],
-                'data': '/curds/forbiddenfruit-0.0.9-cp27.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.0.9-cp27.whl'},
             },
         }
     }
@@ -243,7 +243,7 @@ def test_best_version_filter_out_none_values_before_determining_top_requirements
     version.should.equal('> 0.0.3')
     data.should.equal({
         'dependency_of': [None, None],
-        'data': '/curds/forbiddenfruit-0.0.3-cp27.whl',
+        'data': {'path': '/curds/forbiddenfruit-0.0.3-cp27.whl'},
     })
 
 
@@ -254,7 +254,7 @@ def test_best_version_no_strict_requirements_but_strict_version():
     # version, but none directly requested by the user
     maestro = Maestro()
     maestro.file_requirement('forbiddenfruit', dependency_of='sure (== 0.2.1)')
-    maestro.set_data('forbiddenfruit', '/curds/forbiddenfruit-0.1.0-cp27.whl')
+    maestro.set_data('forbiddenfruit', {'path': '/curds/forbiddenfruit-0.1.0-cp27.whl'})
 
     # When I retrieve the best match
     version, data = maestro.best_version('forbiddenfruit')
@@ -262,7 +262,7 @@ def test_best_version_no_strict_requirements_but_strict_version():
     version.should.be.none
     data.should.equal({
         'dependency_of': ['sure (== 0.2.1)'],
-        'data': '/curds/forbiddenfruit-0.1.0-cp27.whl',
+        'data': {'path': '/curds/forbiddenfruit-0.1.0-cp27.whl'},
     })
 
 
@@ -273,9 +273,9 @@ def test_best_version_no_direct_req():
     # version, but none directly requested by the user
     maestro = Maestro()
     maestro.file_requirement('forbiddenfruit (> 0.1.0)', dependency_of='luxury (== 0.1.1)')
-    maestro.set_data('forbiddenfruit (> 0.1.0)', '/curds/forbiddenfruit-0.1.1-cp27.whl')
+    maestro.set_data('forbiddenfruit (> 0.1.0)', {'path': '/curds/forbiddenfruit-0.1.1-cp27.whl'})
     maestro.file_requirement('forbiddenfruit (>= 0.0.9)', dependency_of='sure (== 0.2)')
-    maestro.set_data('forbiddenfruit (>= 0.0.9)', '/curds/forbiddenfruit-0.0.9-cp27.whl')
+    maestro.set_data('forbiddenfruit (>= 0.0.9)', {'path': '/curds/forbiddenfruit-0.0.9-cp27.whl'})
 
     # When I retrieve the best match
     version, data = maestro.best_version('forbiddenfruit', debug=True)
@@ -285,7 +285,7 @@ def test_best_version_no_direct_req():
     version.should.equal('> 0.1.0')
     data.should.equal({
         'dependency_of': ['luxury (== 0.1.1)'],
-        'data': '/curds/forbiddenfruit-0.1.1-cp27.whl',
+        'data': {'path': '/curds/forbiddenfruit-0.1.1-cp27.whl'},
     })
 
 
@@ -299,15 +299,15 @@ def test_best_version_should_prefer_newest_version():
         'forbiddenfruit': {
             '>= 0.0.9': {
                 'dependency_of': ['sure (== 0.2)'],
-                'data': '/curds/forbiddenfruit-0.1.0-cp27-none-macosx_10_8_x86_64.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.1.0-cp27-none-macosx_10_8_x86_64.whl'},
             },
             '<= 0.1.8': {
                 'dependency_of': ['luxury (== 0.1.0)'],
-                'data': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl'},
             },
             '>= 0.1.7': {
                 'dependency_of': ['luxury (== 0.1.0)'],
-                'data': '/curds/forbiddenfruit-0.1.7-cp27-none-macosx_10_8_x86_64.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.1.7-cp27-none-macosx_10_8_x86_64.whl'},
             },
         }
     }
@@ -315,7 +315,7 @@ def test_best_version_should_prefer_newest_version():
     maestro.best_version('forbiddenfruit').should.equal(
         ('<= 0.1.8', {
             'dependency_of': ['luxury (== 0.1.0)'],
-            'data': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl',
+            'data': {'path': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl'},
         })
     )
 
@@ -330,11 +330,11 @@ def test_best_version_should_blow_up_on_version_conflicts():
         'forbiddenfruit': {
             '>= 0.1.8': {
                 'dependency_of': ['luxury (== 0.1.0)'],
-                'data': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl'},
             },
             '<= 0.1.0': {
                 'dependency_of': ['luxury (== 0.0.9)'],
-                'data': '/curds/forbiddenfruit-0.1.0-cp27-none-macosx_10_8_x86_64.whl',
+                'data': {'path': '/curds/forbiddenfruit-0.1.0-cp27-none-macosx_10_8_x86_64.whl'},
             },
         }
     }
@@ -354,18 +354,36 @@ def test_best_version_skip_broken_dependencies():
     maestro = Maestro()
     maestro.file_requirement('sure (0.1.2)')
     maestro.file_requirement('forbiddenfruit (0.1.0)', dependency_of='sure (0.1.2)')
-    maestro.mark('failed', 'forbiddenfruit (0.1.0)', exceptions.BrokenDependency(
-        'forbiddenfruit (0.1.0): We\'re doomed, setup.py failed!'))
+    maestro.mark('failed', 'forbiddenfruit (0.1.0)', {
+        'exception': exceptions.BrokenDependency(
+            'forbiddenfruit (0.1.0): We\'re doomed, setup.py failed!'),
+    })
 
-    exception = maestro.get_data('forbiddenfruit (== 0.1.0)')
+    exception = maestro.get_data('forbiddenfruit (== 0.1.0)').get('exception')
     exception.should.be.a(exceptions.BrokenDependency)
     exception.message.should.equal("forbiddenfruit (0.1.0): We're doomed, setup.py failed!")
 
-    exception = maestro.get_data('sure (0.1.2)')
+    exception = maestro.get_data('sure (0.1.2)').get('exception')
     exception.should.be.a(exceptions.BrokenDependency)
     exception.message.should.equal("forbiddenfruit (0.1.0)")
 
-    maestro.best_version.when.called_with('forbiddenfruit').should.throw(
-        exceptions.BrokenDependency,
-        'forbiddenfruit (0.1.0): We\'re doomed, setup.py failed!'
-    )
+    # Sure has problems with this next line cause dependencies are not
+    # comparable between each other. It always returns `False`
+    #
+    # maestro.best_version('forbiddenfruit').should.equal([
+    #     (None, {
+    #         'name': '== 0.1.0',
+    #         'dependency_of': ['sure (0.1.2)'],
+    #         'data': {
+    #             'exception': exceptions.BrokenDependency(
+    #                 "forbiddenfruit (0.1.0): We're doomed, setup.py failed!"),
+    #         },
+    #     })
+    # ])
+
+    broken_packages = maestro.best_version('forbiddenfruit')
+    broken_packages[0][0].should.be.none
+    broken_packages[0][1]['name'].should.equal('== 0.1.0')
+    broken_packages[0][1]['dependency_of'].should.equal(['sure (0.1.2)'])
+    str(broken_packages[0][1]['data']['exception']).should.equal(
+        "forbiddenfruit (0.1.0): We're doomed, setup.py failed!")

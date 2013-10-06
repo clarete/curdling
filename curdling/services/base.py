@@ -75,20 +75,14 @@ class Service(SignalEmitter):
                 requirement, sender_data)
             try:
                 self.emit('started', self.name, requirement, **sender_data)
-                data = self.handle(requester, requirement, sender_data)
+                handler_data = self.handle(requester, requirement, sender_data) or {}
                 self._queue.task_done()
-            except ReportableError as exc:
-                self.emit('failed', self.name, requirement, path=exc)
-                self.logger.info("%s.error(): %s", self.name, exc)
-                self.logger.exception(
-                    'failed to run %s (requested by:%s) for requirement %s:',
-                    self.name, requester, requirement)
-            except BaseException as exc:
-                self.emit('failed', self.name, requirement, path=exc)
+            except BaseException as exception:
+                self.emit('failed', self.name, requirement, exception=exception)
                 self.logger.exception(
                     'failed to run %s (requested by:%s) for requirement %s:',
                     self.name, requester, requirement)
             else:
-                self.emit('finished', self.name, requirement, **(data or {}))
+                self.emit('finished', self.name, requirement, **handler_data)
                 self.logger.info('%s.result(requirement="%s"): %s ... OK',
-                    self.name, requirement, data)
+                    self.name, requirement, handler_data)

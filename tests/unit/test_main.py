@@ -430,11 +430,11 @@ def test_service():
 
     # Then I see that the package is indeed processed but the service dies
     # properly when it receives the sentinel.
-    callback.assert_called_once_with('myservice', 'package', path=ANY)
+    callback.assert_called_once_with('myservice', 'package', exception=ANY)
 
     # And that in the `path` parameter we receive an exception (Unfortunately
     # we can't compare NotImplementedError() instances :(
-    str(callback.call_args_list[0][1]['path']).should.equal(
+    str(callback.call_args_list[0][1]['exception']).should.equal(
         'The service subclass should override this method'
     )
 

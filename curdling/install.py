@@ -35,7 +35,7 @@ def only(func, pattern):
 
 def mark(maestro, set_name):
     def marker(requester, requirement, **data):
-        return maestro.mark(set_name, requirement, data.get('path'))
+        return maestro.mark(set_name, requirement, data)
     return marker
 
 
@@ -85,9 +85,12 @@ class Install(object):
         if self.maestro.failed:
             print('\nSome milk was spilled in the process:')
         for package_name in self.maestro.failed:
-            _, version = self.maestro.best_version(package_name)
-            data = version.get('data')
-            print(" * {0}: {1}".format(data.__class__.__name__, data))
+            print(' * {0}: '.format(package_name))
+            for version in self.maestro.best_version(package_name):
+                exception = version[1]['data']['exception']
+                print('   {0}: {1}'.format(
+                    exception.__class__.__name__,
+                    exception))
 
     def run(self):
         ui = RetrieveAndBuildProgress(self, 'built')
@@ -113,9 +116,11 @@ class Install(object):
         else:
             self.installer.start()
 
+        # If there's packages to install, let's queue them.
         for package_name in self.maestro.mapping:
             _, version = self.maestro.best_version(package_name)
-            self.installer.queue('main', package_name, path=version['data'])
+            self.installer.queue('main', package_name,
+                path=version['data']['path'])
 
         ui = InstallProgress(self, 'installed')
         while ui:
@@ -140,9 +145,9 @@ class Install(object):
         uploader = self.uploader.start()
         for server, package_names in failures.items():
             for package_name in package_names:
-                _, data = self.maestro.best_version(package_name)
+                _, version = self.maestro.best_version(package_name)
                 uploader.queue('main', package_name,
-                    path=data.get('data'), server=server)
+                    path=version['data'].get('path'), server=server)
         uploader.join()
         return SUCCESS
 

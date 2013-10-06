@@ -15,6 +15,28 @@ def constraints(requirement):
         or None)
 
 
+def first(versions):
+    """Return the first version inside of a list of `available_versions`"""
+    return versions[0][1].pop('name'), versions[0][1],
+
+
+def package_version(data):
+    """Retrieve the version inside of a package data slot
+
+    If there's no key `version` inside of the data dictionary, we'll
+    try to guess the version number from the file name:
+
+    ['forbiddenfruit', '0.1.1', 'cp27', 'none', 'macosx_10_8_x86_64.whl']
+                          ^
+    this is the guy we get in that crazy split!
+    """
+    version = data.get('version')
+    if version:
+        return version
+    path = data.get('path')
+    return path and path.split('-')[1] or None
+
+
 class Maestro(object):
 
     def __init__(self):
@@ -70,8 +92,10 @@ class Maestro(object):
         # Since we couldn't install this package, we should also mark its
         # requesters as failed too.
         if attr == 'failed':
-            for parent in filter(None, self.get_parents(requirement)):
-                self.mark('failed', parent, BrokenDependency(requirement))
+            for parent in list(filter(None, self.get_parents(requirement))):
+                self.mark('failed', parent, {
+                    'exception': BrokenDependency(requirement),
+                })
 
     def get_parents(self, spec):
         requirement = util.parse_requirement(spec)
@@ -81,26 +105,6 @@ class Maestro(object):
 
     def best_version(self, package_name, debug=False):
         versions = list(self.mapping[package_name].items())
-
-        # ['forbiddenfruit', '0.1.1', 'cp27', 'none', 'macosx_10_8_x86_64.whl']
-        #                       ^
-        #   this is the guy we get in that crazy split!
-        package_version = lambda filename: filename.split('-')[1] \
-            if not isinstance(filename, BaseException) \
-            else filename
-
-        # Return the first version inside of a list of `available_versions`
-        first = lambda versions: (
-            versions[0][1].pop('name'),
-            versions[0][1],
-        )
-
-        # We're looking for the version directly requested by the user. We
-        # find it looking for versions that contain `None` in their field
-        # `dependency_of`.
-        for version, data in versions:
-            if not list(filter(None, data['dependency_of'])):
-                return version, data
 
         # The user didn't inform any specific version in the main requirements
         # (the ones received from the command line arguments, handled
@@ -118,39 +122,44 @@ class Maestro(object):
             available_versions.items(),
             key=lambda v: package_version(v[1]['data']), reverse=True)
 
-        # If it's not a top-requirement, we still have to deal with
-        # requirements without version info. If there's no version info at all,
-        # we just say that we want the only version we have.
-        requirement_names = list(filter(None,
-            map(lambda v: v[1]['name'], available_versions)))
-
-        # The list `requirement_names` will not be empty unless we're dealing
-        # with a second-level-requirement (meaning that it's a dependency of
-        # another package) and there's no version info, that happens when we
-        # receive something like this:
-        #
-        # >>> request_install('package')  # no version like in 'package (2.0)'
-        if not requirement_names:
-            return first(available_versions)
-
-        # May contain `BrokenDependency` instances. So, we'll have this check
-        # below.
-        version_numbers = [i[0] for i in available_versions]
-        broken_dependencies = [v for v in version_numbers
-            if isinstance(v, BrokenDependency)]
-        if broken_dependencies:
-            raise broken_dependencies[0]
+        # All requirements for this package that contain version constraints.
+        requirements_with_constraints = list(filter(None,
+            [v[1]['name'] for v in available_versions]))
 
         # Spec `version` might contain hyphens, like this guy: mrjob (==
         # 0.4-RC1) and we'll look for 0.4_RC1.
-        spec = '{0} ({1})'.format(package_name, ', '.join(requirement_names))
-        spec = spec.replace('-', '_')
+        spec = '{0} ({1})'.format(
+            package_name, ', '.join(requirements_with_constraints)
+        ).replace('-', '_')
+
+        broken_dependencies = [i for i in available_versions if not i[0]]
+        version_numbers = [i[0] for i in available_versions if i[0]]
+        matcher = LegacyMatcher(spec)
+        matching_versions = [v for v in version_numbers if matcher.match(v)]
+
+        # May contain `BrokenDependency` instances. So, we'll have this check
+        # below.
+        if broken_dependencies:
+            return broken_dependencies
+
+        # We're looking for the version directly requested by the user. We
+        # find it looking for versions that contain `None` in their field
+        # `dependency_of`.
+        for version, data in versions:
+            if not list(filter(None, data['dependency_of'])):
+                return version, data
+
+        # Requirements with constraints look like "package (>= x.y.z)", while
+        # the ones with no constraints might look just like "package". We'll
+        # just return the first available version if none of the requirements
+        # had constraints.
+        if not requirements_with_constraints:
+            return first(available_versions)
 
         # When the same package is requested more than once, we need to match
         # all the downloaded versions and ensure that at least one of the
         # downloaded versions matches _all_ requirements.
-        matcher = LegacyMatcher(spec)
-        if not [v for v in version_numbers if matcher.match(v)]:
+        if not matching_versions:
             raise VersionConflict(
                 'Requirement: {0}, Available versions: {1}'.format(
                     spec, ', '.join(sorted(version_numbers, reverse=True))))

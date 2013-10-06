@@ -98,13 +98,15 @@ def unpack(package, destination):
     # Find the setup.py script among the other contents
     try:
         setup_scripts = [x for x in get_names() if x.endswith('setup.py')]
-        if setup_scripts:
+        if not setup_scripts:
+            raise ValueError
+        else:
             setup_py = sorted(setup_scripts, key=lambda e: len(e))[0]
             fp.extractall(destination)
-        else:
-            raise NoSetupScriptFound()
     except ValueError:
-        raise NoSetupScriptFound('No setup.py script was found here')
+        msg = 'No setup.py script was found in `{0}\''.format(
+            os.path.basename(package))
+        raise NoSetupScriptFound(msg)
     finally:
         fp.close()
     return Script(os.path.join(destination, setup_py))
@@ -113,7 +115,7 @@ def unpack(package, destination):
 class Curdler(Service):
 
     def handle(self, requester, requirement, sender_data):
-        source = sender_data.pop('path')
+        source = sender_data.get('path')
 
         # Place used to unpack the wheel
         destination = tempfile.mkdtemp()
@@ -129,8 +131,7 @@ class Curdler(Service):
             wheel_file = setup_py('bdist_wheel')
             return {'path': self.index.from_file(wheel_file)}
         except BaseException as exc:
-            raise BuildError('{0}: {1}'.format(
-                requirement, spaces(3, str(exc))))
+            raise BuildError(str(exc))
         finally:
             shutil.rmtree(destination)
 
