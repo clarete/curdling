@@ -10,6 +10,9 @@ import time
 # over there.
 SENTINEL = (None, None, {})
 
+# Number of threads that a service will spawn by default.
+DEFAULT_CONCURRENCY = 10
+
 
 class Service(SignalEmitter):
 
@@ -39,16 +42,12 @@ class Service(SignalEmitter):
 
     def start(self):
         self.logger.info(' * %s.start()', self.name)
-        for _ in range(self.conf.get('concurrency', 10)):
+        for _ in range(self.conf.get('concurrency', DEFAULT_CONCURRENCY)):
             worker = threading.Thread(target=self._worker)
             worker.daemon = True
             worker.start()
             self.pool.append(worker)
         return self
-
-    def wait(self):
-        while all(worker.is_alive() for worker in self.pool):
-            time.sleep(1)
 
     def join(self):
         # We need to separate loops cause we can't actually tell which thread

@@ -459,3 +459,26 @@ def test_service_success():
     # Then I see that the right signal was emitted
     callback.assert_called_once_with(
         'myservice', 'package', package='processed-package')
+
+
+def test_service_start_join():
+    "Service#join() should hang until the service is finished"
+
+    # Given the following service
+    class MyService(Service):
+        def handle(self, requester, package, sender_data):
+            return {'package': 'processed-package'}
+
+    # And a callback connected to the 'finished' signal
+    callback = Mock()
+    service = MyService()
+    service.connect('finished', callback)
+
+    # When I queue the package, start and join the service
+    service.queue('main', 'package')
+    service.start()
+    service.join()
+
+    # Then I see that the right signal was emitted
+    callback.assert_called_once_with(
+        'myservice', 'package', package='processed-package')
