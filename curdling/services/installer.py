@@ -1,7 +1,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
+from ..vendor.distlib.wheel import Wheel
 from ..util import parse_requirement
 from .base import Service
-from distlib.wheel import Wheel
 
 import sys
 import os.path

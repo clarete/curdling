@@ -1,7 +1,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
+from ..vendor.distlib.compat import queue
 from ..signal import Signal, SignalEmitter
 from ..util import logger
-from distlib.compat import queue
 
 import threading
 import time

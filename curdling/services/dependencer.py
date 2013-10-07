@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals, print_function
+from ..vendor.distlib.wheel import Wheel
 from ..signal import Signal
 from .base import Service
-from distlib.wheel import Wheel
 
 
 class Dependencer(Service):

@@ -1,6 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
+from .vendor.distlib.database import DistributionPath
 from . import util, exceptions
-from distlib.database import DistributionPath
 
 import os
 

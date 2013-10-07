@@ -28,13 +28,13 @@ class TestPool(Pool):
         return response
 
 
-@patch('curdling.services.downloader.distlib')
-def test_find_packages(distlib):
+@patch('curdling.services.downloader.distlib_version')
+def test_find_packages(distlib_version):
     ("find_packages should use the scheme from the "
      "locator to match the best result")
     # Background
     # The scheme is mocked
-    scheme = distlib.version.get_scheme.return_value
+    scheme = distlib_version.get_scheme.return_value
     # As well as the matcher
     matcher = scheme.matcher.return_value
     # And a version class
@@ -60,7 +60,7 @@ def test_find_packages(distlib):
     # I'm still getting to know the codebase)
     matcher.match.assert_called_once_with(version_class)
     scheme.matcher.assert_called_once_with(requirement.requirement)
-    distlib.version.get_scheme.assert_called_once_with(locator.scheme)
+    distlib_version.get_scheme.assert_called_once_with(locator.scheme)
 
 
 @patch('curdling.services.downloader.util')

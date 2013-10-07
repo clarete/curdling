@@ -1,14 +1,14 @@
 from __future__ import absolute_import, print_function, unicode_literals
+from ..vendor.distlib import database, metadata, compat, locators, version as distlib_version
+from ..vendor import urllib3
+
 from ..exceptions import ReportableError, UnknownProtocol
 from .. import util
 from .base import Service
-from distlib import database, metadata, compat, locators
 
 import re
 import json
-import urllib3
 import tempfile
-import distlib.version
 
 
 # Hardcoded vaue for the size of the http pool used a couple times in this
@@ -24,7 +24,7 @@ def get_locator(conf):
 
 
 def find_packages(locator, requirement, versions):
-    scheme = distlib.version.get_scheme(locator.scheme)
+    scheme = distlib_version.get_scheme(locator.scheme)
     matcher = scheme.matcher(requirement.requirement)
 
     result = {}

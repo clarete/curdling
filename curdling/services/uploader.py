@@ -1,11 +1,12 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from .base import Service
+from ..vendor.distlib import compat
+from ..vendor import urllib3
+
 from ..util import get_auth_info_from_url
-from distlib import compat
+from .base import Service
 
 import io
 import os
-import urllib3
 
 
 class Uploader(Service):

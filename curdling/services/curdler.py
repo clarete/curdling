@@ -2,7 +2,8 @@ from __future__ import absolute_import, print_function, unicode_literals
 from ..exceptions import UnpackingError, BuildError, NoSetupScriptFound
 from ..util import execute_command
 from .base import Service
-from wheel.egg2wheel import egg2wheel
+
+from ..vendor.wheel.egg2wheel import egg2wheel
 
 import io
 import os
@@ -140,8 +141,8 @@ class Curdler(Service):
             return {'path': self.index.from_file(
                 first_in_directory(wheel_directory))}
 
-        except BaseException as exc:
-            raise BuildError(str(exc))
+        # except BaseException as exc:
+        #     raise BuildError(str(exc))
 
         finally:
             shutil.rmtree(wheel_directory)

@@ -1,5 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from distlib import compat, util
+from .vendor.distlib import compat, util
+from .vendor import urllib3
 
 import io
 import os
@@ -7,7 +8,6 @@ import re
 import hashlib
 import logging
 import subprocess
-import urllib3
 
 
 INCLUDE_PATTERN = re.compile(r'-r\s*\b([^\b]+)')

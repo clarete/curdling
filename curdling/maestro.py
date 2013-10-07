@@ -1,9 +1,9 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from collections import defaultdict
-from distlib.version import LegacyMatcher
+from .vendor.distlib.version import LegacyMatcher
 
-from . import util
 from .exceptions import BrokenDependency, VersionConflict
+from . import util
 
 import threading
 
