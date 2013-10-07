@@ -2,6 +2,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 from ..exceptions import UnpackingError, BuildError, NoSetupScriptFound
 from ..util import execute_command
 from .base import Service
+from wheel.egg2wheel import egg2wheel
 
 import io
 import os
@@ -53,6 +54,10 @@ def guess_file_type(filename):
     raise UnpackingError('Unknown compress format for file %s' % filename)
 
 
+def first_in_directory(path):
+    return os.path.join(path, os.listdir(path)[0])
+
+
 class Script(object):
 
     def __init__(self, path):
@@ -80,7 +85,7 @@ class Script(object):
         # Directory where the wheel will be saved after building it, returning
         # the path pointing to the generated file
         output_dir = os.path.join(cwd, 'dist')
-        return os.path.join(output_dir, os.listdir(output_dir)[0])
+        return first_in_directory(output_dir)
 
 
 def unpack(package, destination):
@@ -115,24 +120,32 @@ class Curdler(Service):
 
     def handle(self, requester, requirement, sender_data):
         source = sender_data.get('path')
+        wheel_directory = tempfile.mkdtemp()
+        unpack_directory = tempfile.mkdtemp()
 
-        # Place used to unpack the wheel
-        destination = tempfile.mkdtemp()
-
-        # Unpackaging the file we just received. The unpack function will give
-        # us the path for the setup.py script and building the wheel file with
-        # the `bdist_wheel` command.
         try:
+            # The build process is separated in a few steps. Finding the
+            # setup.py script is the first one. It might come either from a
+            # folder or from a compressed file.
             if os.path.isdir(source):
                 setup_py = Script(os.path.join(source, 'setup.py'))
             else:
-                setup_py = unpack(package=source, destination=destination)
-            wheel_file = setup_py('bdist_wheel')
-            return {'path': self.index.from_file(wheel_file)}
+                setup_py = unpack(package=source, destination=unpack_directory)
+
+            # The second step is actually executing the setup.py script. The
+            # easiest way to generate the wheel would be using `bdist_wheel`.
+            # We're not doing that here cause our `wheel` package is vendorized
+            # so its entry points are not available.
+            egg2wheel(setup_py('bdist_egg'), wheel_directory)
+            return {'path': self.index.from_file(
+                first_in_directory(wheel_directory))}
+
         except BaseException as exc:
             raise BuildError(str(exc))
+
         finally:
-            shutil.rmtree(destination)
+            shutil.rmtree(wheel_directory)
+            shutil.rmtree(unpack_directory)
 
             # This folder was created by the downloader and it's a temporary
             # resource that we don't need anymore.
