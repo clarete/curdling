@@ -37,7 +37,7 @@ needs to be done. To illustrate how it works, let's say we want to install
 [forbidden fruit](http://clarete.github.io/forbiddenfruit). To do so, you can
 just issue the following command:
 
-    $ curdling forbiddenfruit
+    $ curd install forbiddenfruit
 
 BOOM! The requested package is now installed in your `sys.path`! But wait, what
 happened under the hood? Let's study each step:
@@ -52,7 +52,7 @@ Where does the package come from? By default, from [pypi](http://pypi.python.org
 But you can inform your own `pypi` repositories using the option `-i` as many
 times as you want, just like this:
 
-    $ curdling forbiddenfruit -i http://localhost:8080/simple -i http://friendscomp/simple
+    $ curd install forbiddenfruit -i http://localhost:8080/simple -i http://friendscomp/simple
 
 Just remember, if you use `-i` you'll replace the default repository. If you
 want to use the default and an extra one you have to type both manually.
@@ -74,4 +74,3 @@ informed with `-c`.
 
 
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/clarete/curdling/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
-
