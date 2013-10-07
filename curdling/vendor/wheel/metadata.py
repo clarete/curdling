@@ -10,7 +10,7 @@ import os
 import textwrap
 import pkg_resources
 import email.parser
-import wheel
+from . import __version__
 
 METADATA_VERSION = "2.0"
 
@@ -93,7 +93,7 @@ def pkginfo_to_dict(path, distribution=None):
     distribution: optional distutils Distribution()
     """
 
-    metadata = {"generator":"bdist_wheel (" + wheel.__version__ + ")"}
+    metadata = {"generator":"bdist_wheel (" + __version__ + ")"}
     try:
         unicode
         pkg_info = read_pkg_info(path)

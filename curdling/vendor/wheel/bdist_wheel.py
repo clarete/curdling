@@ -11,7 +11,6 @@ import subprocess
 import warnings
 import shutil
 import json
-import wheel
 
 try:
     import sysconfig
@@ -33,6 +32,7 @@ from distutils.sysconfig import get_python_version
 
 from distutils import log as logger
 
+from . import __version__
 from .pep425tags import get_abbr_impl, get_impl_ver
 from .util import native, open_for_csv
 from .archive import archive_wheelfile
@@ -244,7 +244,7 @@ class bdist_wheel(Command):
             else:
                 rmtree(self.bdist_dir)
 
-    def write_wheelfile(self, wheelfile_base, generator='bdist_wheel (' + wheel.__version__ + ')'):
+    def write_wheelfile(self, wheelfile_base, generator='bdist_wheel (' + __version__ + ')'):
         from email.message import Message
         msg = Message()
         msg['Wheel-Version'] = '1.0'  # of the spec
@@ -410,7 +410,7 @@ class bdist_wheel(Command):
         adios(egginfo_path)
 
     def write_record(self, bdist_dir, distinfo_dir):
-        from wheel.util import urlsafe_b64encode
+        from .util import urlsafe_b64encode
 
         record_path = os.path.join(distinfo_dir, 'RECORD')
         record_relpath = os.path.relpath(record_path, bdist_dir)

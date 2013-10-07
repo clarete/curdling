@@ -1,11 +1,13 @@
 #!/usr/bin/env python
+from __future__ import absolute_import
 import os.path
 import re
 import sys
 import tempfile
 import zipfile
-import wheel.bdist_wheel
 import distutils.dist
+
+from . import bdist_wheel
 from distutils.archive_util import make_archive
 from shutil import rmtree
 from argparse import ArgumentParser
@@ -32,7 +34,7 @@ def egg2wheel(egg_path, dest_dir):
                           abi,
                           arch
                           ))
-    bw = wheel.bdist_wheel.bdist_wheel(distutils.dist.Distribution())
+    bw = bdist_wheel.bdist_wheel(distutils.dist.Distribution())
     bw.root_is_purelib = egg_info['arch'] is None
     dist_info_dir = os.path.join(dir, '%s.dist-info' % dist_info)
     bw.egg2dist(os.path.join(dir, 'EGG-INFO'),
