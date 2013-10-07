@@ -13,7 +13,7 @@ class Dependencer(Service):
 
     def handle(self, requester, requirement, sender_data):
         # Find the wheel
-        path = sender_data.pop('path')
+        path = sender_data.get('path')
         wheel = Wheel(path)
         run_time_dependencies = wheel.metadata.requires_dist
 

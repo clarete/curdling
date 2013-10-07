@@ -16,8 +16,8 @@ class Uploader(Service):
 
     def handle(self, requester, requirement, sender_data):
         # Preparing the url to PUT the file
-        path = sender_data.pop('path')
-        server = sender_data.pop('server')
+        path = sender_data.get('path')
+        server = sender_data.get('server')
         package_name = os.path.basename(path)
         url = compat.urljoin(server, 'p/{0}'.format(package_name))
 
