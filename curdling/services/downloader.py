@@ -276,7 +276,7 @@ class Downloader(Service):
 
         # Remove the protocol prefix from the url before passing to the handler
         # which is not prepared to handle urls starting with `vcs+`.
-        return protocol_mapping[handler](re.sub('[^\+]+\+', '', url))
+        return protocol_mapping[handler](re.sub('[^\+]+\+', '', final_url))
 
     def _download_http(self, url):
         response, _ = self.opener.retrieve(url)
