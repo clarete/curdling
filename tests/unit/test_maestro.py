@@ -14,7 +14,7 @@ def test_file_requirement():
 
     # Then I see that the mapping attribute has all the data we need to process
     # a requirement
-    maestro.mapping.should.equal({
+    dict(maestro.mapping).should.equal({
         'curdling': {
             'status': Maestro.PENDING,
             'dependency_of': [None],
@@ -37,11 +37,8 @@ def test_file_requirement_with_constraints():
     # When I file a requirement
     maestro.file_requirement('curdling (>= 0.2.5, < 0.3.0)')
 
-    # Then I see that the requirement was filed under the default status
-    maestro.status('curdling').should.equal(Maestro.PENDING)
-
     # And then I see that the mapping attribute has the right values
-    maestro.mapping.should.equal({
+    dict(maestro.mapping).should.equal({
         'curdling (>= 0.2.5, < 0.3.0)': {
             'status': Maestro.PENDING,
             'dependency_of': [None],
@@ -66,7 +63,7 @@ def test_file_dependencies():
     maestro.file_requirement('forbiddenfruit (0.1.0)', dependency_of='sure (1.2.1)')
 
     # Then I see that the mapping looks right
-    maestro.mapping.should.equal({
+    dict(maestro.mapping).should.equal({
         'sure (1.2.1)': {
             'status': Maestro.PENDING,
             'dependency_of': [None],
@@ -96,13 +93,13 @@ def test_default_status():
 
     # Given that I have a _definitely_ empty maestro
     maestro = Maestro()
-    Maestro.PENDING.should.be.empty
+    maestro.status_sets[Maestro.PENDING].should.be.empty
 
     # When I file a new package
     maestro.file_requirement('forbiddenfruit (0.1.1)')
 
     # Then I see that the filed requirement was added to the PENDING set
-    Maestro.PENDING.should.equal(['forbiddenfruit (0.1.1)'])
+    maestro.status_sets[Maestro.PENDING].should.equal(set(['forbiddenfruit (0.1.1)']))
 
 
 def test_set_status():
@@ -119,8 +116,8 @@ def test_set_status():
     maestro.mapping['sure (1.2.1)']['status'].should.equal(Maestro.FAILED)
 
     # And I also see that the status sets contain the right value
-    Maestro.FAILED.should.equal(set(['sure (1.2.1)']))
-    Maestro.PENDING.should.be.empty
+    maestro.status_sets[Maestro.FAILED].should.equal(set(['sure (1.2.1)']))
+    maestro.status_sets[Maestro.PENDING].should.be.empty
 
 
 def test_get_status():
@@ -148,7 +145,7 @@ def test_set_data():
     maestro.set_data('forbiddenfruit (0.1.1)', 'directory', '/path/to/my/requirement/folder')
 
     # Then I see the data was saved in the right place
-    maestro.mapping['forbiddenfruit (0.1.1)']['sources']['directory'].should.equal(
+    maestro.mapping['forbiddenfruit (0.1.1)']['data']['directory'].should.equal(
         '/path/to/my/requirement/folder'
     )
 
@@ -199,8 +196,24 @@ def test_filter_by():
     # When I query by PENDING requirements; Then I see both requirements I just
     # filed with their constraints list
     maestro.filter_package_by(Maestro.PENDING).should.equal([
+        ('forbiddenfruit', ['>= 0.1.0, < 0.2', '0.1.1']),
         ('sure',  ['1.2.1']),
-        ('forbiddenfruit', ['0.1.1', '>= 0.1.0, < 0.2']),
+    ])
+
+
+def test_get_requirements_by_package_name():
+    "Maestro#get_requirements_by_package_name() Should return a list of requirements that match a given package name"
+
+    # Given that I have a maestro with some repeated requirements
+    maestro = Maestro()
+    maestro.file_requirement('sure (1.2.1)')
+    maestro.file_requirement('forbiddenfruit (0.1.1)')
+    maestro.file_requirement('forbiddenfruit (>= 0.0.5, < 0.0.7)')
+
+    # When I filter by the package name 'forbiddenfruit'
+    maestro.get_requirements_by_package_name('forbiddenfruit').should.equal([
+        'forbiddenfruit (0.1.1)',
+        'forbiddenfruit (>= 0.0.5, < 0.0.7)',
     ])
 
 
@@ -210,19 +223,19 @@ def test_available_versions():
     # Given that I have a maestro with the same requirement filed with different versions
     maestro = Maestro()
     maestro.file_requirement('forbiddenfruit (0.1.1)')
-    maestro.set_source('forbiddenfruit (0.1.1)', 'wheel',
+    maestro.set_data('forbiddenfruit (0.1.1)', 'wheel',
         '/path/to/wheelhouse/forbiddenfruit-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
 
     maestro.file_requirement('forbiddenfruit (>= 0.0.5, < 0.0.7)')
-    maestro.set_source('forbiddenfruit (>= 0.0.5, < 0.0.7)', 'wheel',
+    maestro.set_data('forbiddenfruit (>= 0.0.5, < 0.0.7)', 'wheel',
         '/path/to/wheelhouse/forbiddenfruit-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
 
     maestro.file_requirement('forbiddenfruit (>= 0.1.0, < 2.0)')
-    maestro.set_source('forbiddenfruit (>= 0.1.0, < 2.0)', 'wheel',
+    maestro.set_data('forbiddenfruit (>= 0.1.0, < 2.0)', 'wheel',
         '/path/to/wheelhouse/forbiddenfruit-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1; repeated
 
     maestro.file_requirement('forbiddenfruit (<= 0.0.9)')
-    maestro.set_source('forbiddenfruit (>= 0.1.0, < 2.0)', 'wheel',
+    maestro.set_data('forbiddenfruit (<= 0.0.9)', 'wheel',
         '/path/to/wheelhouse/forbiddenfruit-0.0.9-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.9
 
     # When I list all the available versions of forbidden fruit; Then I see it
@@ -236,24 +249,24 @@ def test_matching_versions():
     # Given that I have a maestro with the same requirement filed with different versions
     maestro = Maestro()
     maestro.file_requirement('pkg (0.1.1)')
-    maestro.set_source('pkg (0.1.1)', 'wheel',
+    maestro.set_data('pkg (0.1.1)', 'wheel',
         '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
 
     maestro.file_requirement('pkg (>= 0.0.5, < 0.0.7)')
-    maestro.set_source('pkg (>= 0.0.5, < 0.0.7)', 'wheel',
+    maestro.set_data('pkg (>= 0.0.5, < 0.0.7)', 'wheel',
         '/path/pkg-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
 
     maestro.file_requirement('pkg (>= 0.1.0, < 2.0)')
-    maestro.set_source('pkg (>= 0.1.0, < 2.0)', 'wheel',
+    maestro.set_data('pkg (>= 0.1.0, < 2.0)', 'wheel',
         '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1; repeated
 
     maestro.file_requirement('pkg (<= 0.0.9)')
-    maestro.set_source('pkg (>= 0.1.0, < 2.0)', 'wheel',
+    maestro.set_data('pkg (<= 0.0.9)', 'wheel',
         '/path/pkg-0.0.9-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.9
 
     # When I query which versions should be listed based on a requirement
     maestro.matching_versions('pkg (>= 0.0.6, <= 0.1.0)').should.equal([
-        '0.0.6', '0.0.9'
+         '0.0.9', '0.0.6',
     ])
 
 
@@ -279,22 +292,21 @@ def test_is_primary_requirement():
 
 # ---------------------- Here ----------------------
 
+# def test_get_parents():
+#     "Maestro#get_parents() should return a list of requesters of a given package"
 
-def test_get_parents():
-    "Maestro#get_parents() should return a list of requesters of a given package"
+#     # Given that I have a maestro with two packages depending on the same library
+#     maestro = Maestro()
+#     maestro.file_requirement('curdling', dependency_of=None)
+#     maestro.file_requirement('requests', dependency_of=None)
+#     maestro.file_requirement('urllib3', dependency_of='curdling')
+#     maestro.file_requirement('urllib3', dependency_of='requests')
 
-    # Given that I have a maestro with two packages depending on the same library
-    maestro = Maestro()
-    maestro.file_requirement('curdling', dependency_of=None)
-    maestro.file_requirement('requests', dependency_of=None)
-    maestro.file_requirement('urllib3', dependency_of='curdling')
-    maestro.file_requirement('urllib3', dependency_of='requests')
+#     # When I get the parents of the `urllib3` package
+#     parents = maestro.get_parents('urllib3')
 
-    # When I get the parents of the `urllib3` package
-    parents = maestro.get_parents('urllib3')
-
-    # Then I see both packages that depend on `urllib3` were returned
-    parents.should.equal(['curdling', 'requests'])
+#     # Then I see both packages that depend on `urllib3` were returned
+#     parents.should.equal(['curdling', 'requests'])
 
 
 def test_best_version():
