@@ -157,7 +157,10 @@ def test_set_data():
 
 
 def test_set_data_only_works_once():
-    "Maestro#set_data() should not work more than once to the same requirement's key"
+    """Maestro#set_data() should not work more than once to the same requirement's data key
+
+    Meaning that if you set `directory` once through `set_data()` a `ValueError`
+    will be raised if you try to set the same field again."""
 
     # Given that I have a maestro with a requirement that has the `directory`
     # data key fulfilled.
@@ -228,6 +231,53 @@ def test_available_versions():
     # When I list all the available versions of forbidden fruit; Then I see it
     # found all the wheels related to that package. Newest first!
     maestro.available_versions('forbiddenfruit').should.equal(['0.1.1', '0.0.9', '0.0.6'])
+
+
+def test_matching_versions():
+    "Maestro#matching_versions() should list versions requirements compatible with a given version"
+
+    # Given that I have a maestro with the same requirement filed with different versions
+    maestro = Maestro()
+    maestro.file_requirement('pkg (0.1.1)')
+    maestro.set_source('pkg (0.1.1)', 'wheel',
+        '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
+
+    maestro.file_requirement('pkg (>= 0.0.5, < 0.0.7)')
+    maestro.set_source('pkg (>= 0.0.5, < 0.0.7)', 'wheel',
+        '/path/pkg-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
+
+    maestro.file_requirement('pkg (>= 0.1.0, < 2.0)')
+    maestro.set_source('pkg (>= 0.1.0, < 2.0)', 'wheel',
+        '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1; repeated
+
+    maestro.file_requirement('pkg (<= 0.0.9)')
+    maestro.set_source('pkg (>= 0.1.0, < 2.0)', 'wheel',
+        '/path/pkg-0.0.9-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.9
+
+    # When I query which versions should be listed based on a requirement
+    maestro.matching_versions('pkg (>= 0.0.6, <= 0.1.0)').should.equal([
+        '0.0.6', '0.0.9'
+    ])
+
+
+def test_is_primary_requirement():
+    """Maestro#is_primary_requirement() True for requirements directly requested by the user
+
+    Either from the command line or from the requirements file informed through
+    the `-r` parameter;
+
+    The `secondary` requirements are all the requirements we install without
+    asking the user, IOW, dependencies of the primary requirements.
+    """
+
+    # Given that I have a maestro with two requirements filed
+    maestro = Maestro()
+    maestro.file_requirement('sure (1.2.1)')
+    maestro.file_requirement('forbiddenfruit (0.1.1)', dependency_of='sure (1.2.1)')
+
+    # When I test if the above requirements are primary
+    maestro.is_primary_requirement('sure (1.2.1)').should.be.true
+    maestro.is_primary_requirement('forbiddenfruit (0.1.1)').should.be.false
 
 
 # ---------------------- Here ----------------------
