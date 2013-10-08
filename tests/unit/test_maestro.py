@@ -3,17 +3,234 @@ from curdling.maestro import Maestro
 from curdling import exceptions
 
 
-def test_maestro_pending_packages():
-    "Maestro will keep the reference of a package if its not done or failed"
+def test_file_requirement():
+    "Maestro#file_requirement() should add a new requirement to the maestro"
 
     # Given that I have a maestro
     maestro = Maestro()
 
-    # When I file a package under it
-    maestro.file_requirement('curdling', dependency_of=None)
+    # When I file a requirement
+    maestro.file_requirement('curdling')
 
-    # Then I see it's still waiting for the dependency checking
-    maestro.pending('built').should.equal(['curdling'])
+    # Then I see that the requirement was filed under the default status
+    maestro.status('curdling').should.equal(Maestro.PENDING)
+
+    # And then I see that the mapping attribute has all the data we need to
+    # process a package
+    maestro.mapping.should.equal({
+        'curdling': {
+            'status': Maestro.IDLE,
+            'dependency_of': [None],
+            'data': {
+                'directory': None,
+                'tarball': None,
+                'wheel': None,
+                'exception': None,
+            }
+        }
+    })
+
+
+def test_file_requirement_with_constraints():
+    "Maestro#file_requirement() should add a new requirement with constraints to the maestro"
+
+    # Given that I have a maestro
+    maestro = Maestro()
+
+    # When I file a requirement
+    maestro.file_requirement('curdling (>= 0.2.5, < 0.3.0)')
+
+    # Then I see that the requirement was filed under the default status
+    maestro.status('curdling').should.equal(Maestro.PENDING)
+
+    # And then I see that the mapping attribute has the right values
+    maestro.mapping.should.equal({
+        'curdling (>= 0.2.5, < 0.3.0)': {
+            'status': Maestro.PENDING,
+            'dependency_of': [None],
+            'data': {
+                'directory': None,
+                'tarball': None,
+                'wheel': None,
+                'exception': None,
+            }
+        }
+    })
+
+
+def test_file_dependencies():
+    "Maestro#file_requirement() should be able to remember which requirement requested a given dependency"
+
+    # Given that I have a maestro with a file on it
+    maestro = Maestro()
+    maestro.file_requirement('sure (1.2.1)')
+
+    # When I file another requirement using the `dependency_of` parameter
+    maestro.file_requirement('forbiddenfruit (0.1.0)', dependency_of='sure (1.2.1)')
+
+    # Then I see that the mapping looks right
+    maestro.mapping.should.equal({
+        'sure (1.2.1)': {
+            'status': Maestro.PENDING,
+            'dependency_of': [None],
+            'data': {
+                'directory': None,
+                'tarball': None,
+                'wheel': None,
+                'exception': None,
+            }
+        },
+
+        'forbiddenfruit (0.1.0)': {
+            'status': Maestro.PENDING,
+            'dependency_of': ['sure (1.2.1)'],
+            'data': {
+                'directory': None,
+                'tarball': None,
+                'wheel': None,
+                'exception': None,
+            }
+        }
+    })
+
+
+def test_default_status():
+    "Maestro#file_requirement should add requirements to the default status set"
+
+    # Given that I have a _definitely_ empty maestro
+    maestro = Maestro()
+    Maestro.PENDING.should.be.empty
+
+    # When I file a new package
+    maestro.file_requirement('forbiddenfruit (0.1.1)')
+
+    # Then I see that the filed requirement was added to the PENDING set
+    Maestro.PENDING.should.equal(['forbiddenfruit (0.1.1)'])
+
+
+def test_set_status():
+    "Maestro#set_status() should change the status of a requirement, adding it to the right internal set"
+
+    # Given that I have a maestro with a requirement
+    maestro = Maestro()
+    maestro.file_requirement('sure (1.2.1)')
+
+    # When I change the status of a requirement
+    maestro.set_status('sure (1.2.1)', Maestro.FAILED)
+
+    # Than I see that the status was changed
+    maestro.mapping['sure (1.2.1)']['status'].should.equal(Maestro.FAILED)
+
+    # And I also see that the status sets contain the right value
+    Maestro.FAILED.should.equal(set(['sure (1.2.1)']))
+    Maestro.PENDING.should.be.empty
+
+
+def test_get_status():
+    "Maestro#set_status() should retrieve the status of a requirement"
+
+    # Given that I have a maestro with a requirement
+    maestro = Maestro()
+    maestro.file_requirement('sure (1.2.1)')
+
+    # When I change the requirement status
+    maestro.set_status('sure (1.2.1)', Maestro.FAILED)
+
+    # Then I see that the retrieved status is correct
+    maestro.get_status('sure (1.2.1)').should.equal(Maestro.FAILED)
+
+
+def test_set_data():
+    "Maestro#set_data() should set keys (directory, tarball, wheel or exception) to the `data` field in the requirement"
+
+    # Given that I have a maestro with a requirement
+    maestro = Maestro()
+    maestro.file_requirement('forbiddenfruit (0.1.1)')
+
+    # When I set the source of the previously added requirement
+    maestro.set_data('forbiddenfruit (0.1.1)', 'directory', '/path/to/my/requirement/folder')
+
+    # Then I see the data was saved in the right place
+    maestro.mapping['forbiddenfruit (0.1.1)']['sources']['directory'].should.equal(
+        '/path/to/my/requirement/folder'
+    )
+
+
+def test_set_data_only_works_once():
+    "Maestro#set_data() should not work more than once to the same requirement's key"
+
+    # Given that I have a maestro with a requirement that has the `directory`
+    # data key fulfilled.
+    maestro = Maestro()
+    maestro.file_requirement('forbiddenfruit (0.1.1)')
+    maestro.set_data('forbiddenfruit (0.1.1)', 'directory', '/path/to/my/requirement/folder')
+
+    # When I try to call this same function again; Then I see that it's going
+    # to throw an exception
+    maestro.set_data.when.called_with('forbiddenfruit (0.1.1)', 'directory', 'whatever').should.throw(
+        ValueError, 'Data field `directory` is not empty',
+    )
+
+
+def test_get_data():
+    "Maestro#get_data() should get the content of a given key under the requirements' source info"
+
+    # Given that I have a maestro with a requirement that contains a source
+    maestro = Maestro()
+    maestro.file_requirement('forbiddenfruit (0.1.1)')
+    maestro.set_data('forbiddenfruit (0.1.1)', 'tarball', '/path/to/my/tarball-0.0.1.tar.gz')
+
+    # When I get_data() the requirement above
+    tarball = maestro.get_data('forbiddenfruit (0.1.1)', 'tarball')
+
+    # Then I see the source was retrieved properly
+    tarball.should.equal('/path/to/my/tarball-0.0.1.tar.gz')
+
+
+def test_filter_by():
+    "Maestro#filter_by() should give us a list of package names by status"
+
+    # Given that I have a maestro with two requirements filed
+    maestro = Maestro()
+    maestro.file_requirement('sure (1.2.1)')
+    maestro.file_requirement('forbiddenfruit (0.1.1)', dependency_of='sure (1.2.1)')
+    maestro.file_requirement('forbiddenfruit (>= 0.1.0, < 0.2)')
+
+    # When I query by PENDING requirements; Then I see both requirements I just
+    # filed with their constraints list
+    maestro.filter_package_by(Maestro.PENDING).should.equal([
+        ('sure',  ['1.2.1']),
+        ('forbiddenfruit', ['0.1.1', '>= 0.1.0, < 0.2']),
+    ])
+
+
+def test_available_versions():
+    "Maestro#available_versions() should list versions of all wheels for a certain package"
+
+    # Given that I have a maestro with the same requirement filed with different versions
+    maestro = Maestro()
+    maestro.file_requirement('forbiddenfruit (0.1.1)')
+    maestro.set_source('forbiddenfruit (0.1.1)', 'wheel',
+        '/path/to/wheelhouse/forbiddenfruit-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
+
+    maestro.file_requirement('forbiddenfruit (>= 0.0.5, < 0.0.7)')
+    maestro.set_source('forbiddenfruit (>= 0.0.5, < 0.0.7)', 'wheel',
+        '/path/to/wheelhouse/forbiddenfruit-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
+
+    maestro.file_requirement('forbiddenfruit (>= 0.1.0, < 2.0)')
+    maestro.set_source('forbiddenfruit (>= 0.1.0, < 2.0)', 'wheel',
+        '/path/to/wheelhouse/forbiddenfruit-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1; repeated
+
+    maestro.file_requirement('forbiddenfruit (<= 0.0.9)')
+    maestro.set_source('forbiddenfruit (>= 0.1.0, < 2.0)', 'wheel',
+        '/path/to/wheelhouse/forbiddenfruit-0.0.9-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.9
+
+    # When I list all the available versions of forbidden fruit; Then I see it
+    # found all the wheels related to that package. Newest first!
+    maestro.available_versions('forbiddenfruit').should.equal(['0.1.1', '0.0.9', '0.0.6'])
+
+
+# ---------------------- Here ----------------------
 
 
 def test_maestro_pending_packages_no_deps():
