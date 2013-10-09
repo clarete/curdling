@@ -272,6 +272,26 @@ def test_matching_versions():
     ])
 
 
+def test_broken_versions():
+    "Maestro#broken_versions() Should return all versions of a requirement without a usable version"
+
+    # Given that I have a maestro with a broken and a good requirement
+    maestro = Maestro()
+    maestro.file_requirement('pkg (0.1.1)')
+    maestro.set_data('pkg (0.1.1)', 'wheel',
+        '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
+    maestro.set_data('pkg (0.1.1)', 'exception', Exception('P0wned!!'))  # Oh, openarena!
+
+    maestro.file_requirement('other_pkg (0.1.1)')
+    maestro.set_data('other_pkg (0.1.1)', 'wheel',
+        '/path/other_pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
+
+    # When I list the broken dependencies; Then I see that the package
+    # containing an exception will be returned
+    maestro.broken_versions('pkg (0.1.1)').should.equal(['0.1.1'])
+    maestro.broken_versions('other_pkg (0.1.1)').should.be.empty
+
+
 def test_is_primary_requirement():
     """Maestro#is_primary_requirement() True for requirements directly requested by the user
 
