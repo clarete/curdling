@@ -14,7 +14,7 @@ def list_constraints(requirement):
         or None)
 
 
-def full_requirement(requirement):
+def format_requirement(requirement):
     return util.parse_requirement(requirement).requirement.replace('== ', '')
 
 
@@ -66,7 +66,7 @@ class Maestro(object):
         self.lock = threading.RLock()
 
     def file_requirement(self, requirement, dependency_of=None):
-        requirement = full_requirement(requirement)
+        requirement = format_requirement(requirement)
 
         with self.lock:
             entry = self.mapping[requirement]
@@ -83,13 +83,13 @@ class Maestro(object):
         return self.mapping[requirement]['status']
 
     def set_data(self, requirement, field, value):
-        requirement = full_requirement(requirement)
+        requirement = format_requirement(requirement)
         if self.mapping[requirement]['data'][field] is not None:
             raise ValueError('Data field `{0}` is not empty'.format(field))
         self.mapping[requirement]['data'][field] = value
 
     def get_data(self, requirement, field):
-        requirement = full_requirement(requirement)
+        requirement = format_requirement(requirement)
         return self.mapping[requirement]['data'][field]
 
     def filter_package_by(self, status):
