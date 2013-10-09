@@ -89,7 +89,7 @@ def test_file_dependencies():
 
 
 def test_default_status():
-    "Maestro#file_requirement should add requirements to the default status set"
+    "Maestro#file_requirement() should add requirements to the default status set"
 
     # Given that I have a _definitely_ empty maestro
     maestro = Maestro()
@@ -121,7 +121,7 @@ def test_set_status():
 
 
 def test_get_status():
-    "Maestro#set_status() should retrieve the status of a requirement"
+    "Maestro#get_status() should retrieve the status of a requirement"
 
     # Given that I have a maestro with a requirement
     maestro = Maestro()
@@ -170,7 +170,7 @@ def test_set_data_only_works_once():
 
 
 def test_get_data():
-    "Maestro#get_data() should get the content of a given key under the requirements' source info"
+    "Maestro#get_data() should get the content of a given key under the requirements' data key"
 
     # Given that I have a maestro with a requirement that contains a source
     maestro = Maestro()
@@ -264,7 +264,9 @@ def test_matching_versions():
     maestro.set_data('pkg (<= 0.0.9)', 'wheel',
         '/path/pkg-0.0.9-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.9
 
-    # When I query which versions should be listed based on a requirement
+    # When I query which versions should be listed based on a requirement; Then
+    # I see that only the versions that match with the informed requirement
+    # were returned (and again, newest first)
     maestro.matching_versions('pkg (>= 0.0.6, <= 0.1.0)').should.equal([
          '0.0.9', '0.0.6',
     ])
