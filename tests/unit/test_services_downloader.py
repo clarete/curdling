@@ -2,21 +2,18 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from mock import Mock, patch
-from curdling.services.downloader import (
-    Pool,
-    AggregatingLocator,
-    PyPiLocator,
-    find_packages,
-)
+from distlib import database
+
+from curdling.services import downloader
 
 
-class TestPyPiLocator(PyPiLocator):
+class TestPyPiLocator(downloader.PyPiLocator):
     def __init__(self, *args, **kw):
         super(TestPyPiLocator, self).__init__(*args, **kw)
         self.opener = Mock()
 
 
-class TestPool(Pool):
+class TestPool(downloader.Pool):
     def __init__(self, response):
         self.response = response
 
@@ -53,7 +50,7 @@ def test_find_packages(distlib):
     }
 
     # When I invoke find_packages
-    result = find_packages(locator, requirement, versions)
+    result = downloader.find_packages(locator, requirement, versions)
     # Then the result should be the expected distribution
     result.should.equal(distribution)
     # And the method calls should be correct (sorry for this sad test,
@@ -61,6 +58,40 @@ def test_find_packages(distlib):
     matcher.match.assert_called_once_with(version_class)
     scheme.matcher.assert_called_once_with(requirement.requirement)
     distlib.version.get_scheme.assert_called_once_with(locator.scheme)
+
+
+def test_update_url_credentials():
+    "update_url_credentials() should update URL2 using auth info from URL1"
+
+    # Given that I have a URL with authentication info
+    url1 = 'http://user:almost-safe-password@domain.com/path/to/resource.html'
+
+    # And another URL without auth info
+    url2 = 'http://domain.com/another/path/to/a/cooler/resource.html'
+
+    # When I update the second one based on the first one
+    final_url = downloader.update_url_credentials(url1, url2)
+
+    # Then I see that the final URL version is just the second URL with the auth
+    # info from the first one
+    final_url.should.equal(
+        'http://user:almost-safe-password@domain.com/another/path/to/a/cooler/resource.html')
+
+
+def test_update_url_credentials_not_from_the_same_server():
+    "update_url_credentials() Should just use the second URL if the URLS are pointing to different services"
+
+    # Given that I have a URL with authentication info from domain1.com
+    url1 = 'http://user:passwd@domain1.com/resource1.html'
+
+    # And another URL without auth info from domain2.com
+    url2 = 'http://domain2.com/resource2.html'
+
+    # When I update the second one based on the first one
+    final_url = downloader.update_url_credentials(url1, url2)
+
+    # Then I see that the final URL is just a copy of the second URL
+    final_url.should.equal(url2)
 
 
 @patch('curdling.services.downloader.util')
@@ -137,7 +168,7 @@ def test_aggregating_locator_locate(find_packages, util):
     locator = Mock()
 
     # And that the AggregatingLocator has a list containing that one locator
-    class TestLocator(AggregatingLocator):
+    class TestLocator(downloader.AggregatingLocator):
         def __init__(self):
             self.locators = [locator]
 
@@ -273,3 +304,32 @@ def test_pypilocator_fetch_when_not_seen():
     response.should.equal({
         '0.0.1': 'distribution'
     })
+
+
+def test_downloader_find_deal_with_links():
+    "Downloader#find() should know if a requirement is a link and create a downloadable distro for it"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader()
+
+    # When I try to find a link
+    distribution = service.find('http://host/path/package-0.1.zip')
+
+    # Then I see that the distribution was built with the right meta data
+    distribution.metadata.source_url.should.equal(
+        'http://host/path/package-0.1.zip')
+
+
+def test_downloader_find_deal_with_packages():
+    "Downloader#find() should know if a requirement points to a package and, if so, try to find it with a locator"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader()
+    service.locator = Mock()
+    service.locator.locate.return_value = '<The-Package>'
+
+    # When I try to find a package
+    distribution = service.find('package (0.1)')
+
+    # Then I see that #find() called the locate method of the locator
+    distribution.should.equal('<The-Package>')
