@@ -124,7 +124,8 @@ class Maestro(object):
         package_name = util.parse_requirement(requirement).name
         versions = self.available_versions(package_name)
         return [version for version in versions
-            if self.mapping[requirement]['data']['exception'] is not None]
+            if self.get_data(requirement, 'exception')
+                is not None]
 
     def is_primary_requirement(self, requirement):
         return not bool(filter(None, self.mapping[requirement]['dependency_of']))
