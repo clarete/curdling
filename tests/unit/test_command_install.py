@@ -1,20 +1,9 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from mock import call, patch, Mock
 from nose.tools import nottest
-from curdling.database import Database
+
 from curdling.index import Index, PackageNotFound
 from curdling.install import Install
-
-
-@patch('curdling.database.DistributionPath')
-def test_check_installed(DistributionPath):
-    "It should be possible to check if a certain package is currently installed"
-
-    DistributionPath.return_value.get_distribution.return_value = Mock()
-    Database.check_installed('gherkin==0.1.0').should.be.true
-
-    DistributionPath.return_value.get_distribution.return_value = None
-    Database.check_installed('gherkin==0.1.0').should.be.false
 
 
 def test_request_install_no_cache():
@@ -123,4 +112,3 @@ def test_request_install_cached_wheels():
 
     # And that the download queue was not touched
     env.services['download'].queue.called.should.be.false
-
