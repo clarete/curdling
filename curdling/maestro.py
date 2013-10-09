@@ -33,8 +33,12 @@ def wheel_version(path):
 
 class Maestro(object):
 
-    PENDING = 1 << 0
-    FAILED  = 1 << 1
+    class Status:
+        PENDING   = 0
+        RETRIEVED = 1 << 0
+        BUILT     = 1 << 1
+        INSTALLED = 1 << 2
+        FAILED    = 1 << 3
 
     def __init__(self):
         # This is the structure that saves all the meta-data about all the
@@ -53,7 +57,7 @@ class Maestro(object):
         }
 
         requirement_structure = lambda: {
-            'status': Maestro.PENDING,
+            'status': Maestro.Status.PENDING,
             'dependency_of': [],
             'data': defaultdict(self.data_structure),
         }
@@ -72,12 +76,13 @@ class Maestro(object):
             entry = self.mapping[requirement]
             entry['data'] = self.data_structure()
             entry['dependency_of'].append(dependency_of)
-            self.set_status(requirement, Maestro.PENDING)
+            self.set_status(requirement, Maestro.Status.PENDING)
 
     def set_status(self, requirement, status):
-        [s.discard(requirement) for s in tuple(self.status_sets.values())]
-        self.status_sets[status].add(requirement)
         self.mapping[requirement]['status'] = status
+
+    def add_status(self, requirement, status):
+        self.set_status(requirement, self.get_status(requirement) | status)
 
     def get_status(self, requirement):
         return self.mapping[requirement]['status']
@@ -92,18 +97,9 @@ class Maestro(object):
         requirement = format_requirement(requirement)
         return self.mapping[requirement]['data'][field]
 
-    def filter_package_by(self, status):
-        result = defaultdict(list)
-
-        def process(requirement):
-            parsed = util.parse_requirement(requirement)
-            return parsed.name, list_constraints(parsed)
-
-        for requirement in self.status_sets[status]:
-            name, constraints = process(requirement)
-            result[name].append(constraints)
-
-        return list(result.items())
+    def filter_by(self, status):
+        return [key for key in self.mapping.keys()
+            if self.get_status(key) & status]
 
     def get_requirements_by_package_name(self, package_name):
         return [x for x in self.mapping.keys()

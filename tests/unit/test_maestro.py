@@ -16,7 +16,7 @@ def test_file_requirement():
     # a requirement
     dict(maestro.mapping).should.equal({
         'curdling': {
-            'status': Maestro.PENDING,
+            'status': Maestro.Status.PENDING,
             'dependency_of': [None],
             'data': {
                 'directory': None,
@@ -40,7 +40,7 @@ def test_file_requirement_with_constraints():
     # And then I see that the mapping attribute has the right values
     dict(maestro.mapping).should.equal({
         'curdling (>= 0.2.5, < 0.3.0)': {
-            'status': Maestro.PENDING,
+            'status': Maestro.Status.PENDING,
             'dependency_of': [None],
             'data': {
                 'directory': None,
@@ -65,7 +65,7 @@ def test_file_dependencies():
     # Then I see that the mapping looks right
     dict(maestro.mapping).should.equal({
         'sure (1.2.1)': {
-            'status': Maestro.PENDING,
+            'status': Maestro.Status.PENDING,
             'dependency_of': [None],
             'data': {
                 'directory': None,
@@ -76,7 +76,7 @@ def test_file_dependencies():
         },
 
         'forbiddenfruit (0.1.0)': {
-            'status': Maestro.PENDING,
+            'status': Maestro.Status.PENDING,
             'dependency_of': ['sure (1.2.1)'],
             'data': {
                 'directory': None,
@@ -93,13 +93,12 @@ def test_default_status():
 
     # Given that I have a _definitely_ empty maestro
     maestro = Maestro()
-    maestro.status_sets[Maestro.PENDING].should.be.empty
 
     # When I file a new package
     maestro.file_requirement('forbiddenfruit (0.1.1)')
 
     # Then I see that the filed requirement was added to the PENDING set
-    maestro.status_sets[Maestro.PENDING].should.equal(set(['forbiddenfruit (0.1.1)']))
+    maestro.mapping['forbiddenfruit (0.1.1)']['status'].should.equal(Maestro.Status.PENDING)
 
 
 def test_set_status():
@@ -110,14 +109,37 @@ def test_set_status():
     maestro.file_requirement('sure (1.2.1)')
 
     # When I change the status of a requirement
-    maestro.set_status('sure (1.2.1)', Maestro.FAILED)
+    maestro.set_status('sure (1.2.1)', Maestro.Status.FAILED)
 
     # Than I see that the status was changed
-    maestro.mapping['sure (1.2.1)']['status'].should.equal(Maestro.FAILED)
+    maestro.mapping['sure (1.2.1)']['status'].should.equal(Maestro.Status.FAILED)
 
-    # And I also see that the status sets contain the right value
-    maestro.status_sets[Maestro.FAILED].should.equal(set(['sure (1.2.1)']))
-    maestro.status_sets[Maestro.PENDING].should.be.empty
+
+def test_add_status():
+    """Maestro#add_status() should add another status to the same requirement
+
+    We need that cause we want to mark requirements as RETRIEVED and BUILT for
+    example.
+    """
+
+    # Given that I have a maestro with a requirement
+    maestro = Maestro()
+    maestro.file_requirement('sure (1.2.1)')
+
+    # When I change the status of a requirement
+    maestro.add_status('sure (1.2.1)', Maestro.Status.RETRIEVED)
+
+    # Than I see that the new status was added to the previous one
+    (maestro.mapping['sure (1.2.1)']['status'] & Maestro.Status.RETRIEVED).should.be.true
+
+    # And When I add another status
+    maestro.add_status('sure (1.2.1)', Maestro.Status.BUILT)
+
+    # And Than I see that the build status was added to the previous one
+    (maestro.mapping['sure (1.2.1)']['status'] & Maestro.Status.BUILT).should.be.true
+
+    # And Then I still see the RETRIEVED status in this package
+    (maestro.mapping['sure (1.2.1)']['status'] & Maestro.Status.RETRIEVED).should.be.true
 
 
 def test_get_status():
@@ -128,10 +150,10 @@ def test_get_status():
     maestro.file_requirement('sure (1.2.1)')
 
     # When I change the requirement status
-    maestro.set_status('sure (1.2.1)', Maestro.FAILED)
+    maestro.set_status('sure (1.2.1)', Maestro.Status.FAILED)
 
     # Then I see that the retrieved status is correct
-    maestro.get_status('sure (1.2.1)').should.equal(Maestro.FAILED)
+    maestro.get_status('sure (1.2.1)').should.equal(Maestro.Status.FAILED)
 
 
 def test_set_data():
@@ -193,11 +215,12 @@ def test_filter_by():
     maestro.file_requirement('forbiddenfruit (0.1.1)', dependency_of='sure (1.2.1)')
     maestro.file_requirement('forbiddenfruit (>= 0.1.0, < 0.2)')
 
-    # When I query by PENDING requirements; Then I see both requirements I just
-    # filed with their constraints list
-    maestro.filter_package_by(Maestro.PENDING).should.equal([
-        ('forbiddenfruit', ['>= 0.1.0, < 0.2', '0.1.1']),
-        ('sure',  ['1.2.1']),
+    # When I mark a given package as RETRIEVED
+    maestro.add_status('forbiddenfruit (0.1.1)', Maestro.Status.RETRIEVED)
+
+    # Than I see it will appear in the filter_by
+    maestro.filter_by(Maestro.Status.RETRIEVED).should.equal([
+        'forbiddenfruit (0.1.1)',
     ])
 
 
