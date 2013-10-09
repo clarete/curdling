@@ -312,7 +312,239 @@ def test_is_primary_requirement():
     maestro.is_primary_requirement('forbiddenfruit (0.1.1)').should.be.false
 
 
+def test_best_version():
+    """Maestro#best_version() Should choose the newest compatible version of a requirement to be installed
+
+    By compatible, I mean that this version will match all the other
+    requirements present in the maestro.
+
+    """
+
+    # Given that I have a maestro with a package that contains more than one
+    # version
+    maestro = Maestro()
+    maestro.file_requirement('pkg (<= 0.1.1)')
+    maestro.set_data('pkg (<= 0.1.1)', 'wheel',
+        '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
+
+    maestro.file_requirement('pkg (>= 0.0.5)')
+    maestro.set_data('pkg (>= 0.0.5)', 'wheel',
+        '/path/pkg-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
+
+    # When I retrieve the best match
+    version = maestro.best_version('pkg')
+
+    # Then I see that the newest dependency was chosen
+    version.should.equal('0.1.1')
+
+
+def test_best_version_with_conflicts():
+    "Maestro#best_version() Should raise blow up if no version matches all the filed requirements"
+
+    # Given that I have a maestro with a package that contains more than one
+    # version
+    maestro = Maestro()
+    maestro.file_requirement('pkg (>= 0.1.1)')
+    maestro.set_data('pkg (>= 0.1.1)', 'wheel',
+        '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
+
+    # And the second version is older
+    maestro.file_requirement('pkg (>= 0.0.5, < 0.0.7)')
+    maestro.set_data('pkg (>= 0.0.5, < 0.0.7)', 'wheel',
+        '/path/pkg-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
+
+    # When I retrieve the best match
+    maestro.best_version.when.called_with('pkg', debug=True).should.throw(
+        exceptions.VersionConflict,
+        'Requirement: pkg (>= 0.1.1, >= 0.0.5, < 0.0.7), '
+        'Available versions: 0.1.1, 0.0.6'
+    )
+
+
+def test_best_version_with_explicit_requirement():
+    """Maestro#best_version() Should always prioritize versions directly specified by the user
+
+    The other versions might have been added by dependencies. So, to manually
+    fix craziness between dependencies of dependencies, the user can just force
+    a specific version for a package from the command line or from a
+    requirements file informed with the `-r` parameter.
+    """
+
+    # Given that I have a maestro with a package that contains more than one
+    # version
+    maestro = Maestro()
+    maestro.file_requirement('pkg (< 0.1.1)', dependency_of='other_pkg (0.1)')
+    maestro.set_data('pkg (< 0.1.1)', 'wheel',
+        '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
+
+    # And the second version is older, but has no dependencies
+    maestro.file_requirement('pkg (>= 0.0.5, < 0.0.7)')
+    maestro.set_data('pkg (>= 0.0.5, < 0.0.7)', 'wheel',
+        '/path/pkg-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
+
+    # When I retrieve the best match
+    version = maestro.best_version('pkg')
+
+    # Then I see that we retrieved the oldest version, just because the package
+    # is not a dependency.
+    version.should.equal('0.0.6')
+
+
 # ---------------------- Here ----------------------
+
+#     # Then I see I found the entry that was directly requested by the user
+#     # (IOW: The `dependency_of` field is `None`).
+#     version.should.equal('> 0.0.3')
+#     data.should.equal({
+#         'dependency_of': [],
+#         'data': {'path': '/curds/forbiddenfruit-0.0.3.whl'},
+#     })
+
+
+# def test_best_version_filter_out_none_values_before_determining_top_requirements():
+#     "Maestro#best_version should filter out None values from dependency list before determining top requirements"
+
+#     # Given that I have a maestro with a package that contains more than one
+#     # version
+#     maestro = Maestro()
+#     maestro.mapping = {
+#         'forbiddenfruit': {
+#             '>= 0.3.9': {
+#                 'dependency_of': ['luxury'],
+#                 'data': {'path': '/curds/forbiddenfruit-0.3.9-cp27.whl'},
+#             },
+#             '> 0.0.3': {
+#                 'dependency_of': [None, None],
+#                 'data': {'path': '/curds/forbiddenfruit-0.0.3-cp27.whl'},
+#             },
+#             '>= 0.0.9': {
+#                 'dependency_of': ['sure (== 0.2)'],
+#                 'data': {'path': '/curds/forbiddenfruit-0.0.9-cp27.whl'},
+#             },
+#         }
+#     }
+
+#     # When I retrieve the best match
+#     version, data = maestro.best_version('forbiddenfruit')
+
+#     # Then I see I found the entry that was directly requested by the user
+#     # (IOW: The `dependency_of` field is `None`).
+#     version.should.equal('> 0.0.3')
+#     data.should.equal({
+#         'dependency_of': [None, None],
+#         'data': {'path': '/curds/forbiddenfruit-0.0.3-cp27.whl'},
+#     })
+
+
+# def test_best_version_no_strict_requirements_but_strict_version():
+#     "Maestro#best_version should still work when the caller doesn't inform any strict version for a given dependency"
+
+#     # Given that I have a maestro with a package that contains more than one
+#     # version, but none directly requested by the user
+#     maestro = Maestro()
+#     maestro.file_requirement('forbiddenfruit', dependency_of='sure (== 0.2.1)')
+#     maestro.set_data('forbiddenfruit', {'path': '/curds/forbiddenfruit-0.1.0-cp27.whl'})
+
+#     # When I retrieve the best match
+#     version, data = maestro.best_version('forbiddenfruit')
+
+#     version.should.be.none
+#     data.should.equal({
+#         'dependency_of': ['sure (== 0.2.1)'],
+#         'data': {'path': '/curds/forbiddenfruit-0.1.0-cp27.whl'},
+#     })
+
+
+# def test_best_version_dependency():
+#     "Maestro#best_version() should work for dependencies as well"
+
+#     # Given that I have a maestro with a package that contains more than one
+#     # version, but none directly requested by the user
+#     maestro = Maestro()
+#     maestro.file_requirement('forbiddenfruit (> 0.1.0)', dependency_of='luxury (== 0.1.1)')
+#     maestro.set_data('forbiddenfruit (> 0.1.0)', {'path': '/curds/forbiddenfruit-0.1.1-cp27.whl'})
+#     maestro.file_requirement('forbiddenfruit (>= 0.0.9)', dependency_of='sure (== 0.2)')
+#     maestro.set_data('forbiddenfruit (>= 0.0.9)', {'path': '/curds/forbiddenfruit-0.0.9-cp27.whl'})
+
+#     # When I retrieve the best match
+#     version, data = maestro.best_version('forbiddenfruit')
+
+#     # Then I see I found the entry that was not directly requested by the user
+#     # (IOW: The `dependency_of` field is not `None`).
+#     version.should.equal('> 0.1.0')
+#     data.should.equal({
+#         'dependency_of': ['luxury (== 0.1.1)'],
+#         'data': {'path': '/curds/forbiddenfruit-0.1.1-cp27.whl'},
+#     })
+
+
+# def test_best_version_should_blow_up_on_version_conflicts():
+#     "Maestro#best_version should blow up if the versions downloaded can't fulfill all the dependencies"
+
+#     # Given that I have a couple versions of the same package but all of them
+#     # were requested by some other package
+#     maestro = Maestro()
+#     maestro.mapping = {
+#         'forbiddenfruit': {
+#             '>= 0.1.8': {
+#                 'dependency_of': ['luxury (== 0.1.0)'],
+#                 'data': {'path': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl'},
+#             },
+#             '<= 0.1.0': {
+#                 'dependency_of': ['luxury (== 0.0.9)'],
+#                 'data': {'path': '/curds/forbiddenfruit-0.1.0-cp27-none-macosx_10_8_x86_64.whl'},
+#             },
+#         }
+#     }
+
+#     maestro.best_version.when.called_with('forbiddenfruit').should.throw(
+#         exceptions.VersionConflict,
+#         'Requirement: forbiddenfruit (>= 0.1.8, <= 0.1.0), '
+#         'Available versions: 0.1.8, 0.1.0'
+#     )
+
+
+# def test_best_version_skip_broken_dependencies():
+#     "best_version() should be smart enough to handle package marked as broken"
+
+#     # Given that I have a maestro with a package that references a broken
+#     # package in the dependency list
+#     maestro = Maestro()
+#     maestro.file_requirement('sure (0.1.2)')
+#     maestro.file_requirement('forbiddenfruit (0.1.0)', dependency_of='sure (0.1.2)')
+#     maestro.mark('failed', 'forbiddenfruit (0.1.0)', {
+#         'exception': exceptions.BrokenDependency(
+#             'forbiddenfruit (0.1.0): We\'re doomed, setup.py failed!'),
+#     })
+
+#     exception = maestro.get_data('forbiddenfruit (== 0.1.0)').get('exception')
+#     exception.should.be.a(exceptions.BrokenDependency)
+#     exception.message.should.equal("forbiddenfruit (0.1.0): We're doomed, setup.py failed!")
+
+#     exception = maestro.get_data('sure (0.1.2)').get('exception')
+#     exception.should.be.a(exceptions.BrokenDependency)
+#     exception.message.should.equal("forbiddenfruit (0.1.0)")
+
+#     # Sure has problems with this next line cause dependencies are not
+#     # comparable between each other. It always returns `False`
+#     #
+#     # maestro.best_version('forbiddenfruit').should.equal([
+#     #     (None, {
+#     #         'name': '== 0.1.0',
+#     #         'dependency_of': ['sure (0.1.2)'],
+#     #         'data': {
+#     #             'exception': exceptions.BrokenDependency(
+#     #                 "forbiddenfruit (0.1.0): We're doomed, setup.py failed!"),
+#     #         },
+#     #     })
+#     # ])
+
+#     broken_packages = maestro.best_version('forbiddenfruit')
+#     broken_packages[0][0].should.be.none
+#     broken_packages[0][1]['name'].should.equal('== 0.1.0')
+#     broken_packages[0][1]['dependency_of'].should.equal(['sure (0.1.2)'])
+#     str(broken_packages[0][1]['data']['exception']).should.equal(
+#         "forbiddenfruit (0.1.0): We're doomed, setup.py failed!")
 
 # def test_get_parents():
 #     "Maestro#get_parents() should return a list of requesters of a given package"
@@ -329,184 +561,3 @@ def test_is_primary_requirement():
 
 #     # Then I see both packages that depend on `urllib3` were returned
 #     parents.should.equal(['curdling', 'requests'])
-
-
-def test_best_version():
-    "Maestro should be able to choose the right version of a package to be installed"
-
-    # Given that I have a maestro with a package that contains more than one
-    # version
-    maestro = Maestro()
-    maestro.mapping = {
-        'forbiddenfruit': {
-            '>= 0.3.9': {
-                'dependency_of': ['luxury'],
-                'data': {'path': '/curds/forbiddenfruit-0.3.9.whl'},
-            },
-            '> 0.0.3': {
-                'dependency_of': [],
-                'data': {'path': '/curds/forbiddenfruit-0.0.3.whl'},
-            },
-            '>= 0.0.9': {
-                'dependency_of': ['sure (== 0.2)'],
-                'data': {'path': '/curds/forbiddenfruit-0.0.9.whl'},
-            },
-        }
-    }
-
-    # When I retrieve the best match
-    version, data = maestro.best_version('forbiddenfruit')
-
-    # Then I see I found the entry that was directly requested by the user
-    # (IOW: The `dependency_of` field is `None`).
-    version.should.equal('> 0.0.3')
-    data.should.equal({
-        'dependency_of': [],
-        'data': {'path': '/curds/forbiddenfruit-0.0.3.whl'},
-    })
-
-
-def test_best_version_filter_out_none_values_before_determining_top_requirements():
-    "Maestro#best_version should filter out None values from dependency list before determining top requirements"
-
-    # Given that I have a maestro with a package that contains more than one
-    # version
-    maestro = Maestro()
-    maestro.mapping = {
-        'forbiddenfruit': {
-            '>= 0.3.9': {
-                'dependency_of': ['luxury'],
-                'data': {'path': '/curds/forbiddenfruit-0.3.9-cp27.whl'},
-            },
-            '> 0.0.3': {
-                'dependency_of': [None, None],
-                'data': {'path': '/curds/forbiddenfruit-0.0.3-cp27.whl'},
-            },
-            '>= 0.0.9': {
-                'dependency_of': ['sure (== 0.2)'],
-                'data': {'path': '/curds/forbiddenfruit-0.0.9-cp27.whl'},
-            },
-        }
-    }
-
-    # When I retrieve the best match
-    version, data = maestro.best_version('forbiddenfruit')
-
-    # Then I see I found the entry that was directly requested by the user
-    # (IOW: The `dependency_of` field is `None`).
-    version.should.equal('> 0.0.3')
-    data.should.equal({
-        'dependency_of': [None, None],
-        'data': {'path': '/curds/forbiddenfruit-0.0.3-cp27.whl'},
-    })
-
-
-def test_best_version_no_strict_requirements_but_strict_version():
-    "Maestro#best_version should still work when the caller doesn't inform any strict version for a given dependency"
-
-    # Given that I have a maestro with a package that contains more than one
-    # version, but none directly requested by the user
-    maestro = Maestro()
-    maestro.file_requirement('forbiddenfruit', dependency_of='sure (== 0.2.1)')
-    maestro.set_data('forbiddenfruit', {'path': '/curds/forbiddenfruit-0.1.0-cp27.whl'})
-
-    # When I retrieve the best match
-    version, data = maestro.best_version('forbiddenfruit')
-
-    version.should.be.none
-    data.should.equal({
-        'dependency_of': ['sure (== 0.2.1)'],
-        'data': {'path': '/curds/forbiddenfruit-0.1.0-cp27.whl'},
-    })
-
-
-def test_best_version_dependency():
-    "Maestro#best_version() should work for dependencies as well"
-
-    # Given that I have a maestro with a package that contains more than one
-    # version, but none directly requested by the user
-    maestro = Maestro()
-    maestro.file_requirement('forbiddenfruit (> 0.1.0)', dependency_of='luxury (== 0.1.1)')
-    maestro.set_data('forbiddenfruit (> 0.1.0)', {'path': '/curds/forbiddenfruit-0.1.1-cp27.whl'})
-    maestro.file_requirement('forbiddenfruit (>= 0.0.9)', dependency_of='sure (== 0.2)')
-    maestro.set_data('forbiddenfruit (>= 0.0.9)', {'path': '/curds/forbiddenfruit-0.0.9-cp27.whl'})
-
-    # When I retrieve the best match
-    version, data = maestro.best_version('forbiddenfruit')
-
-    # Then I see I found the entry that was not directly requested by the user
-    # (IOW: The `dependency_of` field is not `None`).
-    version.should.equal('> 0.1.0')
-    data.should.equal({
-        'dependency_of': ['luxury (== 0.1.1)'],
-        'data': {'path': '/curds/forbiddenfruit-0.1.1-cp27.whl'},
-    })
-
-
-def test_best_version_should_blow_up_on_version_conflicts():
-    "Maestro#best_version should blow up if the versions downloaded can't fulfill all the dependencies"
-
-    # Given that I have a couple versions of the same package but all of them
-    # were requested by some other package
-    maestro = Maestro()
-    maestro.mapping = {
-        'forbiddenfruit': {
-            '>= 0.1.8': {
-                'dependency_of': ['luxury (== 0.1.0)'],
-                'data': {'path': '/curds/forbiddenfruit-0.1.8-cp27-none-macosx_10_8_x86_64.whl'},
-            },
-            '<= 0.1.0': {
-                'dependency_of': ['luxury (== 0.0.9)'],
-                'data': {'path': '/curds/forbiddenfruit-0.1.0-cp27-none-macosx_10_8_x86_64.whl'},
-            },
-        }
-    }
-
-    maestro.best_version.when.called_with('forbiddenfruit').should.throw(
-        exceptions.VersionConflict,
-        'Requirement: forbiddenfruit (>= 0.1.8, <= 0.1.0), '
-        'Available versions: 0.1.8, 0.1.0'
-    )
-
-
-def test_best_version_skip_broken_dependencies():
-    "best_version() should be smart enough to handle package marked as broken"
-
-    # Given that I have a maestro with a package that references a broken
-    # package in the dependency list
-    maestro = Maestro()
-    maestro.file_requirement('sure (0.1.2)')
-    maestro.file_requirement('forbiddenfruit (0.1.0)', dependency_of='sure (0.1.2)')
-    maestro.mark('failed', 'forbiddenfruit (0.1.0)', {
-        'exception': exceptions.BrokenDependency(
-            'forbiddenfruit (0.1.0): We\'re doomed, setup.py failed!'),
-    })
-
-    exception = maestro.get_data('forbiddenfruit (== 0.1.0)').get('exception')
-    exception.should.be.a(exceptions.BrokenDependency)
-    exception.message.should.equal("forbiddenfruit (0.1.0): We're doomed, setup.py failed!")
-
-    exception = maestro.get_data('sure (0.1.2)').get('exception')
-    exception.should.be.a(exceptions.BrokenDependency)
-    exception.message.should.equal("forbiddenfruit (0.1.0)")
-
-    # Sure has problems with this next line cause dependencies are not
-    # comparable between each other. It always returns `False`
-    #
-    # maestro.best_version('forbiddenfruit').should.equal([
-    #     (None, {
-    #         'name': '== 0.1.0',
-    #         'dependency_of': ['sure (0.1.2)'],
-    #         'data': {
-    #             'exception': exceptions.BrokenDependency(
-    #                 "forbiddenfruit (0.1.0): We're doomed, setup.py failed!"),
-    #         },
-    #     })
-    # ])
-
-    broken_packages = maestro.best_version('forbiddenfruit')
-    broken_packages[0][0].should.be.none
-    broken_packages[0][1]['name'].should.equal('== 0.1.0')
-    broken_packages[0][1]['dependency_of'].should.equal(['sure (0.1.2)'])
-    str(broken_packages[0][1]['data']['exception']).should.equal(
-        "forbiddenfruit (0.1.0): We're doomed, setup.py failed!")

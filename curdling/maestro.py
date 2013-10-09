@@ -130,6 +130,40 @@ class Maestro(object):
     def is_primary_requirement(self, requirement):
         return not bool(filter(None, self.mapping[requirement]['dependency_of']))
 
+    def best_version(self, requirement_or_package_name, debug=False):
+        package_name = util.parse_requirement(requirement_or_package_name).name
+        requirements = self.get_requirements_by_package_name(package_name)
+
+        # Gather all the versions for all the requirements we have.
+        all_constraints = []
+        compatible_versions = []
+        for requirement in requirements:
+            compatible_versions.extend(self.matching_versions(requirement))
+            all_constraints.append(list_constraints(util.parse_requirement(requirement)))
+
+        # Find all the versions that appear in all the requirements
+        compatible_versions = [v for v in compatible_versions
+            if compatible_versions.count(v) == len(requirements)]
+
+        if not compatible_versions:
+            raise VersionConflict(
+                'Requirement: {0} ({1}), Available versions: {2}'.format(
+                    package_name,
+                    ', '.join(all_constraints),
+                    ', '.join(self.available_versions(package_name)),
+                ))
+
+        return sorted(compatible_versions, reverse=True)[0]
+
+        # requirements = self.get_requirements_by_package_name(package_name)
+        # filter_versions = lambda func: [
+        #     wheel_version(self.get_data(requirement, 'wheel'))
+        #         for requirement in requirements
+        #             if func(requirement)]
+
+        # if debug: import pdb; pdb.set_trace()
+        # primary_requirements = filter_versions(self.is_primary_requirement)
+        # return primary_requirements[0]
 
     # def mark(self, attr, requirement, data):
     #     parsed = util.parse_requirement(requirement)
@@ -236,4 +270,3 @@ class Maestro(object):
     #     return list(set(self.mapping.keys())
     #         .difference(getattr(self, set_name))
     #         .difference(self.failed))
-
