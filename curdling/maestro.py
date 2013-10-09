@@ -134,16 +134,29 @@ class Maestro(object):
         package_name = util.parse_requirement(requirement_or_package_name).name
         requirements = self.get_requirements_by_package_name(package_name)
 
-        # Gather all the versions for all the requirements we have.
+        # A helper that sorts the versions putting the newest ones first
+        newest = lambda versions: sorted(versions, reverse=True)[0]
+
+        # Gather all version info available inside of all requirements
+        all_versions = []
         all_constraints = []
-        compatible_versions = []
+        primary_versions = []
         for requirement in requirements:
-            compatible_versions.extend(self.matching_versions(requirement))
+            if self.is_primary_requirement(requirement):
+                version = wheel_version(self.get_data(requirement, 'wheel'))
+                primary_versions.append(version)
+
+            all_versions.extend(self.matching_versions(requirement))
             all_constraints.append(list_constraints(util.parse_requirement(requirement)))
 
+        # List that will gather all the primary versions. This catches
+        # duplicated first level requirements with different versions.
+        if primary_versions:
+            return newest(primary_versions)
+
         # Find all the versions that appear in all the requirements
-        compatible_versions = [v for v in compatible_versions
-            if compatible_versions.count(v) == len(requirements)]
+        compatible_versions = [v for v in all_versions
+            if all_versions.count(v) == len(requirements)]
 
         if not compatible_versions:
             raise VersionConflict(
@@ -153,13 +166,12 @@ class Maestro(object):
                     ', '.join(self.available_versions(package_name)),
                 ))
 
-        return sorted(compatible_versions, reverse=True)[0]
+        return newest(compatible_versions)
 
         # requirements = self.get_requirements_by_package_name(package_name)
-        # filter_versions = lambda func: [
-        #     wheel_version(self.get_data(requirement, 'wheel'))
+        #     [wheel_version(self.get_data(requirement, 'wheel'))
         #         for requirement in requirements
-        #             if func(requirement)]
+        #             if self.is_primary_requirement(requirement)]
 
         # if debug: import pdb; pdb.set_trace()
         # primary_requirements = filter_versions(self.is_primary_requirement)

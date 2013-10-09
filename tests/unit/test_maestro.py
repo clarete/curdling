@@ -344,17 +344,17 @@ def test_best_version_with_conflicts():
     # Given that I have a maestro with a package that contains more than one
     # version
     maestro = Maestro()
-    maestro.file_requirement('pkg (>= 0.1.1)')
+    maestro.file_requirement('pkg (>= 0.1.1)', dependency_of='blah')
     maestro.set_data('pkg (>= 0.1.1)', 'wheel',
         '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
 
     # And the second version is older
-    maestro.file_requirement('pkg (>= 0.0.5, < 0.0.7)')
+    maestro.file_requirement('pkg (>= 0.0.5, < 0.0.7)', dependency_of='bleh')
     maestro.set_data('pkg (>= 0.0.5, < 0.0.7)', 'wheel',
         '/path/pkg-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
 
     # When I retrieve the best match
-    maestro.best_version.when.called_with('pkg', debug=True).should.throw(
+    maestro.best_version.when.called_with('pkg').should.throw(
         exceptions.VersionConflict,
         'Requirement: pkg (>= 0.1.1, >= 0.0.5, < 0.0.7), '
         'Available versions: 0.1.1, 0.0.6'
@@ -373,8 +373,8 @@ def test_best_version_with_explicit_requirement():
     # Given that I have a maestro with a package that contains more than one
     # version
     maestro = Maestro()
-    maestro.file_requirement('pkg (< 0.1.1)', dependency_of='other_pkg (0.1)')
-    maestro.set_data('pkg (< 0.1.1)', 'wheel',
+    maestro.file_requirement('pkg (>= 0.1.1)', dependency_of='other_pkg (0.1)')
+    maestro.set_data('pkg (>= 0.1.1)', 'wheel',
         '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
 
     # And the second version is older, but has no dependencies
@@ -383,7 +383,7 @@ def test_best_version_with_explicit_requirement():
         '/path/pkg-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
 
     # When I retrieve the best match
-    version = maestro.best_version('pkg')
+    version = maestro.best_version('pkg', debug=True)
 
     # Then I see that we retrieved the oldest version, just because the package
     # is not a dependency.
