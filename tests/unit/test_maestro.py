@@ -1,6 +1,13 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from curdling.maestro import Maestro
+from curdling.maestro import Maestro, format_requirement
 from curdling import exceptions
+
+
+def test_format_requirement():
+    format_requirement('flask').should.equal('flask')
+    format_requirement('flask (== 0.10.1)').should.equal('flask (0.10.1)')
+    format_requirement('Jinja (>= 2.4)').should.equal('Jinja (>= 2.4)')
+    format_requirement('Babel (>= 0.8, < 1.0)').should.equal('Babel (>= 0.8, < 1.0)')
 
 
 def test_file_requirement():
