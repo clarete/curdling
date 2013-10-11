@@ -114,7 +114,8 @@ def unpack(package, destination):
 class Curdler(Service):
 
     def handle(self, requester, requirement, sender_data):
-        source = sender_data.get('path')
+        tarball = sender_data.get('tarball')
+        directory = sender_data.get('directory')
 
         # Place used to unpack the wheel
         destination = tempfile.mkdtemp()
@@ -123,12 +124,12 @@ class Curdler(Service):
         # us the path for the setup.py script and building the wheel file with
         # the `bdist_wheel` command.
         try:
-            if os.path.isdir(source):
-                setup_py = Script(os.path.join(source, 'setup.py'))
+            if directory:
+                setup_py = Script(os.path.join(directory, 'setup.py'))
             else:
-                setup_py = unpack(package=source, destination=destination)
+                setup_py = unpack(package=tarball, destination=destination)
             wheel_file = setup_py('bdist_wheel')
-            return {'path': self.index.from_file(wheel_file)}
+            return {'wheel': self.index.from_file(wheel_file)}
         except BaseException as exc:
             raise BuildError(str(exc))
         finally:
@@ -136,5 +137,5 @@ class Curdler(Service):
 
             # This folder was created by the downloader and it's a temporary
             # resource that we don't need anymore.
-            if os.path.isdir(source):
-                shutil.rmtree(source)
+            if directory:
+                shutil.rmtree(directory)

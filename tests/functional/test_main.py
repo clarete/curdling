@@ -130,10 +130,10 @@ def test_curd_package():
 
     # When I request a curd to be created
     package = curdling.handle('main', 'gherkin==0.1.0', {
-        'path': index.get('gherkin==0.1.0;~whl')})
+        'tarball': index.get('gherkin==0.1.0;~whl')})
 
     # Then I see it's a wheel package.
-    package['path'].should.match(
+    package['wheel'].should.match(
         FIXTURE('storage1/gherkin-0.1.0-py\d{2}-none-any.whl'))
 
     # And that it's present in the index
