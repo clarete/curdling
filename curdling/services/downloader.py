@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from ..exceptions import ReportableError, UnknownProtocol
+from ..exceptions import ReportableError, UnknownURL
 from .. import util
 from .base import Service
 from distlib import database, metadata, compat, locators
@@ -204,7 +204,7 @@ class CurdlingLocator(locators.Locator):
         mdata = metadata.Metadata(scheme=self.scheme)
         mdata.name = version['name']
         mdata.version = version['version']
-        mdata.source_url = mdata.download_url = source_url['url']
+        mdata.download_url = source_url['url']
 
         # Building the dist and associating the download url
         distribution = database.Distribution(mdata)
@@ -222,7 +222,7 @@ class Downloader(Service):
     def handle(self, requester, requirement, sender_data):
         found = self.find(requirement)
         if found:
-            return {"path": self.download(found)}
+            return {"tarball": self.download(found)}
         raise ReportableError('Requirement `{0}\' not found'.format(
             requirement))
 
@@ -252,8 +252,9 @@ class Downloader(Service):
 
         # We're dealing with a requirement, not a link
         if distribution.locator:
-            # The locator's might contain authentication credentials, while the
-            # package url might not (cause they got stripped at some point)
+            # The locator's URL might contain authentication credentials, while
+            # the package URL might not (the scraper doesn't return with that
+            # information)
             base_url = distribution.locator.base_url
             final_url = update_url_credentials(base_url, url)
 
@@ -269,10 +270,17 @@ class Downloader(Service):
         try:
             handler = [i for i in protocol_mapping.keys() if i.findall(url)][0]
         except IndexError:
-            raise UnknownProtocol('\n'.join([
-                url,
-                util.spaces(3, 'Make sure it starts with the right `vcs+` prefix.'),
-            ]))
+            raise UnknownURL(
+                util.spaces(3, '\n'.join([
+                    '"{}"'.format(url),
+                    '',
+                    'Your URL looks wrong. Make sure it\'s a valid HTTP',
+                    'link or a valid VCS link prefixed with the name of',
+                    'the VCS of your choice. Eg.:',
+                    '',
+                    ' $ curd install https://pypi.python.org/simple/curdling/curdling-0.1.2.tar.gz\n'
+                    ' $ curd install git+ssh://github.com/clarete/curdling.git\n'
+                ])))
 
         # Remove the protocol prefix from the url before passing to the handler
         # which is not prepared to handle urls starting with `vcs+`.

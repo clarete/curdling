@@ -1,10 +1,13 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-from mock import Mock, patch
+from __future__ import absolute_import, print_function, unicode_literals
+from mock import Mock, patch, call
 from distlib import database
 
+from curdling.exceptions import UnknownURL, ReportableError
 from curdling.services import downloader
+
+# Helper to build a distribution that contains a URL
+distribution = lambda url, locator=None: Mock(download_url=url, locator=locator)
 
 
 class TestPyPiLocator(downloader.PyPiLocator):
@@ -306,6 +309,33 @@ def test_pypilocator_fetch_when_not_seen():
     })
 
 
+def test_downloader_handle():
+    "Downloader#handle() should return the `tarball' path"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader(index=Mock())
+    service._download_http = Mock(return_value='package-0.1.zip')
+
+    # When I call the service handler with a URL requirement
+    tarball = service.handle('tests', 'http://host/path/package-0.1.zip', {})
+
+    # Then I see that the right tarball name was returned
+    tarball.should.equal({'tarball': 'package-0.1.zip'})
+
+
+def test_downloader_handle_not_found():
+    "Downloader#handle() should raise ReportableError when it doesn't find the requirement"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader(index=Mock())
+    service.locator = Mock(locate=Mock(return_value=None))
+
+    # When I call the service handler with a URL requirement
+    service.handle.when.called_with('tests', 'package', {}).should.throw(
+        ReportableError, 'Requirement `package\' not found'
+    )
+
+
 def test_downloader_find_deal_with_links():
     "Downloader#find() should know if a requirement is a link and create a downloadable distro for it"
 
@@ -316,7 +346,7 @@ def test_downloader_find_deal_with_links():
     distribution = service.find('http://host/path/package-0.1.zip')
 
     # Then I see that the distribution was built with the right meta data
-    distribution.metadata.source_url.should.equal(
+    distribution.metadata.download_url.should.equal(
         'http://host/path/package-0.1.zip')
 
 
@@ -333,3 +363,151 @@ def test_downloader_find_deal_with_packages():
 
     # Then I see that #find() called the locate method of the locator
     distribution.should.equal('<The-Package>')
+
+
+def test_downloader_download():
+    "Downloader#download() Should call the right handler given the protocol of the link being processed"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader()
+
+    # And I mock all the actual protocol handlers (`_download_*()`)
+    service._download_http = Mock()
+    service._download_git = Mock()
+    service._download_hg = Mock()
+    service._download_svn = Mock()
+
+    # When I try to download certain URLs
+    service.download(distribution('http://source.com/blah'))
+    service.download(distribution('git+ssh://github.com/clarete/curdling.git'))
+    service.download(distribution('hg+http://hg.python.org.com/cpython'))
+    service.download(distribution('svn+http://svn.oldschool.com/repo'))
+
+    # Then I see that the right handlers were called. Notice that the vcs
+    # prefixes will be stripped out
+    service._download_http.assert_called_once_with('http://source.com/blah')
+    service._download_git.assert_called_once_with('ssh://github.com/clarete/curdling.git')
+    service._download_hg.assert_called_once_with('http://hg.python.org.com/cpython')
+    service._download_svn.assert_called_once_with('http://svn.oldschool.com/repo')
+
+
+def test_downloader_download_with_locator():
+    "Downloader#download() should reuse the authentication information present in the locator's URL"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader()
+
+    # And I mock all the actual HTTP handler
+    service._download_http = Mock()
+
+    # When I download an HTTP link with a locator
+    locator = Mock(base_url='http://user:passwd@source.com')
+    service.download(distribution('http://source.com/blah', locator))
+
+    # Then I see URL forwarded to the handler still have the authentication info
+    service._download_http.assert_called_once_with('http://user:passwd@source.com/blah')
+
+
+def test_downloader_download_bad_url():
+    "Downloader#download() Should raise an exception if we can't handle the link"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader()
+
+    # When I try to download a weird link
+    service.download.when.called_with(distribution('weird link')).should.throw(
+        UnknownURL,
+        '''\
+   "weird link"
+   
+   Your URL looks wrong. Make sure it's a valid HTTP
+   link or a valid VCS link prefixed with the name of
+   the VCS of your choice. Eg.:
+   
+    $ curd install https://pypi.python.org/simple/curdling/curdling-0.1.2.tar.gz
+    $ curd install git+ssh://github.com/clarete/curdling.git''')
+
+
+def test_downloader_download_http_handler():
+    "Downloader#_download_http() should download HTTP links"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader(index=Mock())
+
+    # And I patch the opener so we'll just pretend the HTTP IO is happening
+    response = Mock(status=200)
+    response.headers.get.return_value = ''
+    service.opener.retrieve = Mock(return_value=(response, None))
+
+    # When I download an HTTP link
+    service._download_http('http://blah/package.tar.gz')
+
+    # Then I see that the URL was properly forward to the indexer
+    service.index.from_data.assert_called_once_with(
+        'http://blah/package.tar.gz',
+        response.read.return_value)
+
+    # And Then I see that the response was read raw to avoid problems with
+    # gzipped packages; The curdler component will do that!
+    response.read.assert_called_once_with(
+        cache_content=True, decode_content=False)
+
+
+def test_downloader_download_http_handler_blow_up_on_error():
+    "Downloader#_download_http() should handle HTTP status != 200"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader()
+
+    # And I patch the opener so we'll just pretend the HTTP IO is happening
+    response = Mock(status=500)
+    response.headers.get.return_value = ''
+    service.opener.retrieve = Mock(return_value=(response, None))
+
+    # When I download an HTTP link
+    service._download_http.when.called_with('http://blah/package.tar.gz').should.throw(
+        ReportableError,
+        'Failed to download url `http://blah/package.tar.gz\': 500 (Internal Server Error)'
+    )
+
+
+def test_downloader_download_http_handler_use_content_disposition():
+    "Downloader#_download_http() should know how to use the header Content-Disposition to name the new file"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader(index=Mock())
+
+    # And I patch the opener so we'll just pretend the HTTP IO is happening
+    response = Mock(status=200)
+    response.headers.get.return_value = 'attachment; filename=sure-0.1.1.tar.gz'
+    service.opener.retrieve = Mock(return_value=(response, None))
+
+    # When I download an HTTP link
+    service._download_http('http://blah/package.tar.gz')
+
+    # Then I see the file name forward to the index was the one found in the header
+    service.index.from_data.assert_called_once_with(
+        'sure-0.1.1.tar.gz', response.read.return_value)
+
+
+@patch('curdling.services.downloader.tempfile')
+@patch('curdling.services.downloader.util')
+def test_downloader_download_vcs_handlers(util, tempfile):
+    "Downloader#_download_{git,hg,svn}() should call their respective shell commands to retrieve a VCS URL"
+
+    tempfile.mkdtemp.return_value = 'tmp'
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader()
+
+    # When I call the VCS handlers
+    service._download_git('git-url')
+    service._download_hg('hg-url')
+    service._download_svn('svn-url')
+
+    # Then I see that all the calls for the shell commands were done properly
+    list(util.execute_command.call_args_list).should.equal([
+        call('git', 'clone', 'git-url', 'tmp'),
+        call('hg', 'clone', 'hg-url', 'tmp'),
+        call('svn', 'co', 'svn-url', 'tmp'),
+    ])

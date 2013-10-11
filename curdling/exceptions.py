@@ -21,8 +21,8 @@ class ReportableError(CurdlingError):
     """
 
 
-class UnknownProtocol(ReportableError):
-    """Raised when the user feeds in the installer with an unknown protocol"""
+class UnknownURL(ReportableError):
+    """Raised when the user feeds in the installer with an unknown URL"""
 
 
 class UnpackingError(ReportableError):
