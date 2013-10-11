@@ -100,8 +100,9 @@ class Maestro(object):
         return self.mapping[requirement]['data'][field]
 
     def filter_by(self, status):
+        is_pending = lambda k: self.get_status(key) == 0 and status == 0
         return [key for key in self.mapping.keys()
-            if self.get_status(key) & status]
+            if is_pending(key) or self.get_status(key) & status]
 
     def get_requirements_by_package_name(self, package_name):
         return [x for x in self.mapping.keys()

@@ -224,6 +224,23 @@ def test_filter_by():
     ])
 
 
+def test_filter_by_pending():
+    "Maestro#filter_by() should retrieve requirements in the PENDING status even though it evaluates to 0"
+
+    # Given that I have a maestro with a requirement
+    maestro = Maestro()
+    maestro.file_requirement('sure (1.2.1)')
+
+    # When I change the requirement status
+    maestro.set_status('sure (1.2.1)', Maestro.Status.PENDING)
+
+    # Then I see that the retrieved status is correct
+    maestro.filter_by(Maestro.Status.PENDING).should.equal(['sure (1.2.1)'])
+
+    maestro.set_status('sure (1.2.1)', Maestro.Status.BUILT)
+    maestro.filter_by(Maestro.Status.PENDING).should.be.empty
+
+
 def test_get_requirements_by_package_name():
     "Maestro#get_requirements_by_package_name() Should return a list of requirements that match a given package name"
 
