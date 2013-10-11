@@ -56,36 +56,38 @@ class Maestro(object):
             'exception': None,
         }
 
-        requirement_structure = lambda: {
+        self.requirement_structure = lambda: {
             'status': Maestro.Status.PENDING,
             'dependency_of': [],
             'data': defaultdict(self.data_structure),
         }
 
-        self.mapping = defaultdict(requirement_structure)
+        # Main container for all the package meta-data we extract. Read notice
+        # above.
+        self.mapping = {}
 
         # The possible states of a package
         self.status_sets = defaultdict(set)
 
+        # Ensure more than one thread can write in the mapping
         self.lock = threading.RLock()
 
     def file_requirement(self, requirement, dependency_of=None):
         requirement = format_requirement(requirement)
 
         with self.lock:
-            entry = self.mapping[requirement]
+            entry = self.mapping[requirement] = self.requirement_structure()
             entry['data'] = self.data_structure()
             entry['dependency_of'].append(dependency_of)
-            self.set_status(requirement, Maestro.Status.PENDING)
 
     def set_status(self, requirement, status):
-        self.mapping[requirement]['status'] = status
+        self.mapping[format_requirement(requirement)]['status'] = status
 
     def add_status(self, requirement, status):
         self.set_status(requirement, self.get_status(requirement) | status)
 
     def get_status(self, requirement):
-        return self.mapping[requirement]['status']
+        return self.mapping[format_requirement(requirement)]['status']
 
     def set_data(self, requirement, field, value):
         requirement = format_requirement(requirement)
