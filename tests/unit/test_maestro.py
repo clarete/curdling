@@ -248,6 +248,26 @@ def test_filter_by_pending():
     maestro.filter_by(Maestro.Status.PENDING).should.be.empty
 
 
+def test_filed_packages():
+    """Maestro#filed_packages() should return all packages requested based on all requirements we have.
+
+    It will retrieve a unique list of packages, even when the requirement is
+    filed more than once.
+    """
+    # Given that I have a maestro with a few repeated and unique requirements
+    maestro = Maestro()
+    maestro.file_requirement('sure (1.2.1)')
+    maestro.file_requirement('forbiddenfruit (0.1.1)')
+    maestro.file_requirement('forbiddenfruit (>= 0.0.5, < 0.0.7)')
+
+    # When I list the filed packages
+    packages = maestro.filed_packages()
+
+    # I see that a list with the all package names was returned without
+    # duplications
+    packages.should.equal(['forbiddenfruit', 'sure'])
+
+
 def test_get_requirements_by_package_name():
     "Maestro#get_requirements_by_package_name() Should return a list of requirements that match a given package name"
 
@@ -379,10 +399,11 @@ def test_best_version():
         '/path/pkg-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
 
     # When I retrieve the best match
-    version = maestro.best_version('pkg')
+    version, requirement = maestro.best_version('pkg')
 
     # Then I see that the newest dependency was chosen
     version.should.equal('0.1.1')
+    requirement.should.equal('pkg (<= 0.1.1)')
 
 
 def test_best_version_with_conflicts():
@@ -430,11 +451,11 @@ def test_best_version_with_explicit_requirement():
         '/path/pkg-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
 
     # When I retrieve the best match
-    version = maestro.best_version('pkg', debug=True)
+    version = maestro.best_version('pkg')
 
     # Then I see that we retrieved the oldest version, just because the package
     # is not a dependency.
-    version.should.equal('0.0.6')
+    version.should.equal(('0.0.6', 'pkg (>= 0.0.5, < 0.0.7)'))
 
 
 def test_best_version_no_strict_requirements_but_strict_version():
@@ -450,4 +471,4 @@ def test_best_version_no_strict_requirements_but_strict_version():
 
     # Then I see that I still got the version number even though my requirement
     # didn't have version info
-    version.should.equal('0.1.0')
+    version.should.equal(('0.1.0', 'forbiddenfruit'))

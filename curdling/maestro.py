@@ -99,6 +99,9 @@ class Maestro(object):
         requirement = format_requirement(requirement)
         return self.mapping[requirement]['data'][field]
 
+    def filed_packages(self):
+        return list(set(util.parse_requirement(r).name for r in self.mapping.keys()))
+
     def filter_by(self, status):
         is_pending = lambda k: self.get_status(key) == 0 and status == 0
         return [key for key in self.mapping.keys()
@@ -133,6 +136,10 @@ class Maestro(object):
         package_name = util.parse_requirement(requirement_or_package_name).name
         requirements = self.get_requirements_by_package_name(package_name)
 
+        # Used to remember in which requirement we found each version
+        requirements_by_version = {}
+        get_requirement = lambda v: (v, requirements_by_version[v])
+
         # A helper that sorts the versions putting the newest ones first
         newest = lambda versions: sorted(versions, reverse=True)[0]
 
@@ -145,13 +152,15 @@ class Maestro(object):
                 version = wheel_version(self.get_data(requirement, 'wheel'))
                 primary_versions.append(version)
 
-            all_versions.extend(self.matching_versions(requirement))
+            versions = self.matching_versions(requirement)
+            requirements_by_version.update((v, requirement) for v in versions)
+            all_versions.extend(versions)
             all_constraints.append(list_constraints(util.parse_requirement(requirement)))
 
         # List that will gather all the primary versions. This catches
         # duplicated first level requirements with different versions.
         if primary_versions:
-            return newest(primary_versions)
+            return get_requirement(newest(primary_versions))
 
         # Find all the versions that appear in all the requirements
         compatible_versions = [v for v in all_versions
@@ -165,4 +174,4 @@ class Maestro(object):
                     ', '.join(self.available_versions(package_name)),
                 ))
 
-        return newest(compatible_versions)
+        return get_requirement(newest(compatible_versions))
