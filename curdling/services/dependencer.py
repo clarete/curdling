@@ -23,6 +23,6 @@ class Dependencer(Service):
             self.emit('dependency_found', self.name,
                 dependency, dependency_of=requirement)
         else:
-            self.emit('built', self.name, requirement, wheel=wheel_path)
+            self.emit('built', self.name, requirement)
 
         return {'deps': run_time_dependencies}

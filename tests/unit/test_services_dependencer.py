@@ -16,7 +16,7 @@ def test_dependencer(Wheel):
     Wheel.return_value = Mock(metadata=Mock(requires_dist=['forbiddenfruit (0.1.1)']))
 
     # When I queue a package and a sentinel and then call the worker
-    dependencer.queue('tests', 'sure', path='path-to-the-wheel')
+    dependencer.queue('tests', 'sure')
     dependencer.queue(None, None)
     dependencer._worker()
 
@@ -46,4 +46,4 @@ def test_dependencer_package_with_no_deps(Wheel):
 
     # Than I see that the signal was called for the dependency with the right
     # parameters
-    callback.assert_called_once_with('dependencer', 'sure', wheel='path-to-the-wheel')
+    callback.assert_called_once_with('dependencer', 'sure')
