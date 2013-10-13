@@ -4,6 +4,41 @@ from nose.tools import nottest
 
 from curdling.index import Index, PackageNotFound
 from curdling.install import Install
+from curdling import install
+from curdling.maestro import Maestro
+
+
+def test_decorator_only():
+    "install@only() should not call the decorated function if `field` is set"
+
+    callback = Mock(__name__=b'callback')
+    decorated = install.only(callback, 'tarball')
+
+    decorated('tests', 'requirement', tarball='tarball.tar.gz')
+    callback.assert_called_once_with(
+        'tests', 'requirement', tarball='tarball.tar.gz')
+
+    callback2 = Mock(__name__=b'callback')
+    decorated = install.only(callback, 'tarball')
+
+    decorated('tests', 'requirement', directory='/path/to/a/package')
+    callback2.called.should.be.false
+
+
+def test_decorator_mark():
+    "install@mark() should use the maestro API to update the requirement status and data"
+
+    maestro = Maestro()
+    maestro.file_requirement('curd')
+
+    install.mark(maestro, Maestro.Status.RETRIEVED)('tests', 'curd', tarball='curd.tar.gz')
+    (maestro.get_status('curd') & Maestro.Status.RETRIEVED).should.be.true
+    maestro.get_data('curd', 'tarball').should.equal('curd.tar.gz')
+
+    install.mark(maestro, Maestro.Status.BUILT)('tests', 'curd', wheel='curd.whl')
+    (maestro.get_status('curd') & Maestro.Status.RETRIEVED).should.be.true
+    (maestro.get_status('curd') & Maestro.Status.BUILT).should.be.true
+    maestro.get_data('curd', 'wheel').should.equal('curd.whl')
 
 
 def test_request_install_no_cache():
@@ -78,7 +113,7 @@ def test_request_install_cached_package():
 
     # And I see that the install queue was populated
     env.curdler.queue.assert_called_once_with(
-        'main', 'gherkin==0.1.0', path='storage1/gherkin-0.1.0.tar.gz')
+        'main', 'gherkin==0.1.0', tarball='storage1/gherkin-0.1.0.tar.gz')
 
     # And that the download queue was not touched
     env.downloader.queue.called.should.be.false

@@ -1,13 +1,14 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from ..index import Index
-from ..util import expand_requirements, safe_name
+from ..util import expand_requirements, safe_name, spaces
 
 from ..install import Install
 from ..uninstall import Uninstall
 
-import logging
 import argparse
+import logging
 import os
+import sys
 
 
 DEFAULT_PYPI_INDEX_LIST = [
@@ -63,6 +64,36 @@ def get_packages_from_args(args):
             packages.append(pkg)
     return packages
 
+def progress_bar(prefix, percent):
+    percent_count = percent / 10
+    progress_bar = ('#' * percent_count) + (' ' * (10 - percent_count))
+    return "\r\033[K{0}: [{1}] {2:>2}% ".format(prefix, progress_bar, percent)
+
+
+def install_progress(total, retrieved, built, failed):
+    processed = built + failed
+    percent = int((processed) / float(total) * 100.0)
+    msg = [progress_bar('Retrieving', percent)]
+    if failed:
+        info = "({0} requested, {1} retrieved, {2} built, {3} failed)"
+        msg.append(info.format(total, retrieved, built, failed))
+    else:
+        msg.append("({0} requested, {1} retrieved, {2} processed)".format(
+            total, retrieved, built))
+    sys.stdout.write(''.join(msg))
+    sys.stdout.flush()
+
+
+def show_report(maestro, failed=None):
+    if failed:
+        sys.stdout.write('\nSome milk was spilled in the process:')
+    for requirement in failed or []:
+        exception = maestro.get_data(requirement, 'exception')
+        sys.stdout.write(' * {0} ({1})\n{2}'.format(
+            requirement, exception.__class__.__name__,
+            spaces(5, str(exception))))
+    sys.stdout.write('\n')
+
 
 def get_install_command(args):
     index = Index(os.path.expanduser('~/.curds'))
@@ -77,11 +108,17 @@ def get_install_command(args):
         'index': index,
     })
 
+    # Callbacks that show feedback for the user
+    if not args.quiet:
+        cmd.connect('update', install_progress)
+        cmd.connect('finished', show_report)
+
     # Let's start the required services and request the installation of the
     # received packages before returning the command instance
     cmd.start_services()
     for pkg in get_packages_from_args(args):
         cmd.request_install('main', pkg)
+
     return cmd
 
 
@@ -112,6 +149,10 @@ def main():
             'Name of the logger you want to set the level with '
             '`-l` (for the nerdests)'
         ))
+
+    parser.add_argument(
+        '-q', '--quiet', action='store_true', default=False,
+        help='No output unless combined with `-l\'')
 
     subparsers = parser.add_subparsers()
     add_parser_install(subparsers)

@@ -1,10 +1,11 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from functools import wraps
 
+from .database import Database
 from .index import PackageNotFound
 from .maestro import Maestro
-from .database import Database
-from .util import logger, spaces
+from .signal import SignalEmitter, Signal
+from .util import logger
 
 from .services.downloader import Downloader
 from .services.curdler import Curdler
@@ -12,7 +13,6 @@ from .services.dependencer import Dependencer
 from .services.installer import Installer
 from .services.uploader import Uploader
 
-import re
 import sys
 import time
 
@@ -25,27 +25,44 @@ PACKAGE_BLACKLIST = (
 )
 
 
-def only(func, pattern):
+def only(func, field):
     @wraps(func)
     def wrapper(requester, requirement, **data):
-        if re.match(pattern, data.get('path', '')):
+        if data.get(field, False):
             return func(requester, requirement, **data)
     return wrapper
 
 
-def mark(maestro, set_name):
+def mark(maestro, status):
+    marklogger = logger('{0}.mark'.format(__name__))
+    status_name = {
+        Maestro.Status.PENDING: 'PENDING',
+        Maestro.Status.RETRIEVED: 'RETRIEVED',
+        Maestro.Status.BUILT: 'BUILT',
+        Maestro.Status.INSTALLED: 'INSTALLED',
+        Maestro.Status.FAILED: 'FAILED',
+    }[status]
+
     def marker(requester, requirement, **data):
-        return maestro.mark(set_name, requirement, data)
+        marklogger.debug("%s, %s, %s", requirement, status_name, data)
+        maestro.add_status(requirement, status)
+        for field, value in tuple(data.items()):
+            maestro.set_data(requirement, field, value)
     return marker
 
 
-class Install(object):
+class Install(SignalEmitter):
 
     def __init__(self, conf):
+        super(Install, self).__init__()
+
         self.conf = conf
         self.index = self.conf.get('index')
         self.database = Database()
         self.logger = logger(__name__)
+
+        self.update = Signal()
+        self.finished = Signal()
 
     def start_services(self):
         # General params for all the services
@@ -68,61 +85,64 @@ class Install(object):
         self.uploader = Uploader(**args)
 
         # Building the pipeline to [download -> compile -> install deps]
-        self.downloader.connect('finished', only(self.curdler.queue, r'^(?!.*\.whl$)'))
-        self.downloader.connect('finished', only(self.dependencer.queue, r'.*\.whl$'))
-        self.downloader.connect('finished', mark(self.maestro, 'retrieved'))
-        self.downloader.connect('failed', mark(self.maestro, 'failed'))
+        self.downloader.connect('finished', only(self.curdler.queue, 'tarball'))
+        self.downloader.connect('finished', only(self.dependencer.queue, 'wheel'))
+        self.downloader.connect('finished', mark(self.maestro, Maestro.Status.RETRIEVED))
+        self.downloader.connect('failed', mark(self.maestro, Maestro.Status.FAILED))
         self.curdler.connect('finished', self.dependencer.queue)
-        self.curdler.connect('failed', mark(self.maestro, 'failed'))
+        self.curdler.connect('failed', mark(self.maestro, Maestro.Status.FAILED))
         self.dependencer.connect('dependency_found', self.request_install)
-        self.dependencer.connect('built', mark(self.maestro, 'built'))
-        self.dependencer.connect('failed', mark(self.maestro, 'failed'))
+        self.dependencer.connect('built', mark(self.maestro, Maestro.Status.BUILT))
+        self.dependencer.connect('failed', mark(self.maestro, Maestro.Status.FAILED))
 
         # Installer pipeline
-        self.installer.connect('finished', mark(self.maestro, 'installed'))
+        self.installer.connect('finished', mark(self.maestro, Maestro.Status.INSTALLED))
 
-    def report(self):
-        if self.maestro.failed:
-            print('\nSome milk was spilled in the process:')
-        for package_name in self.maestro.failed:
-            print(' * {0}: '.format(package_name))
-            for version in self.maestro.best_version(package_name):
-                exception = version[1]['data']['exception']
-                print('   {0}:\n{1}'.format(
-                    exception.__class__.__name__,
-                    spaces(5, str(exception))))
+    def retrieve_and_build_stats(self):
+        total = len(self.maestro.mapping.keys())
+        retrieved = len(self.maestro.filter_by(Maestro.Status.RETRIEVED))
+        built = len(self.maestro.filter_by(Maestro.Status.BUILT))
+        failed = len(self.maestro.filter_by(Maestro.Status.FAILED))
+        return total, retrieved, built, failed
 
     def run(self):
-        ui = RetrieveAndBuildProgress(self, 'built')
-        while ui:
+        # Wait until all the packages have the chance to be processed
+        while True:
+            total, retrieved, built, failed = self.retrieve_and_build_stats()
+            self.emit('update', total, retrieved, built, failed)
+            if total == built + failed:
+                break
             time.sleep(0.5)
-            ui.update()
 
-        if self.maestro.failed:
-            self.report()
+        # Let's not proceed on failures
+        failed = self.maestro.filter_by(Maestro.Status.FAILED)
+        if failed:
+            self.emit('finished', self.maestro, failed)
             return FAILURE
 
         # We've got everything we need, let's rock it off!
-        self.run_installer()
+        # self.run_installer()
 
         # Upload missing stuff that we couldn't find in curdling servers
-        if self.conf.get('upload'):
-            self.run_uploader()
+        # if self.conf.get('upload'):
+        #     self.run_uploader()
+        self.emit('finished', self.maestro)
         return SUCCESS
 
     def run_installer(self):
-        if not self.maestro.mapping:
-            return SUCCESS
-        else:
-            self.installer.start()
-
-        # If there's packages to install, let's queue them.
-        for package_name in self.maestro.mapping:
-            _, version = self.maestro.best_version(package_name)
+        packages = self.maestro.filter_by(Maestro.Status.BUILT)
+        for package_name in packages:
+            _, requirement = self.maestro.best_version(package_name)
             self.installer.queue('main', package_name,
-                path=version['data']['path'])
+                wheel=self.maestro.get_data('wheel'))
 
-        ui = InstallProgress(self, 'installed')
+        # If we don't have anything to do, we just bail
+        if not packages:
+            return SUCCESS
+
+        # Installer UI
+        self.installer.start()
+        ui = InstallProgress(self, Maestro.Status.INSTALLED)
         while ui:
             time.sleep(0.5)
             ui.update()
@@ -132,7 +152,9 @@ class Install(object):
         # `run_uploader`) when changing the uploader to have a nice UI
         sys.stdout.write('\n')
 
-        if self.maestro.failed:
+        failed = self.maestro.filter_by(Maestro.Status.FAILED)
+        if failed:
+            self.report(failed)
             return FAILURE
 
         return SUCCESS
@@ -165,19 +187,15 @@ class Install(object):
         if not self.conf.get('force') and self.database.check_installed(requirement):
             return True
 
-        # We shouldn't queue the same requirement twice
-        if not self.maestro.should_queue(requirement):
-            return False
-
         # Let's tell the maestro we have a new challenger
         self.maestro.file_requirement(
             requirement, dependency_of=data.get('dependency_of'))
 
         # Looking for built packages
         try:
-            path = self.index.get("{0};whl".format(requirement))
-            self.dependencer.queue(requester, requirement, path=path)
-            self.maestro.mark('retrieved', requirement, 'whl')
+            wheel = self.index.get("{0};whl".format(requirement))
+            self.maestro.set_data(requirement, 'wheel', wheel)
+            self.dependencer.queue(requester, requirement, wheel=wheel)
             return False
         except PackageNotFound:
             pass
@@ -185,9 +203,10 @@ class Install(object):
         # Looking for downloaded packages. If there's packages of any of the
         # following distributions, we'll just build the wheel
         try:
-            path = self.index.get("{0};~whl".format(requirement))
-            self.curdler.queue(requester, requirement, path=path)
-            self.maestro.mark('retrieved', requirement, 'compressed')
+            tarball = self.index.get("{0};~whl".format(requirement))
+            self.maestro.set_data(requirement, 'tarball', tarball)
+            self.maestro.set_status(requirement, Maestro.Status.RETRIEVED)
+            self.curdler.queue(requester, requirement, tarball=tarball)
             return False
         except PackageNotFound:
             pass
@@ -195,46 +214,3 @@ class Install(object):
         # Nops, we really don't have the package
         self.downloader.queue(requester, requirement, **data)
         return False
-
-
-class Progress(object):
-
-    def __init__(self, install, watch):
-        self.install = install
-        self.watch = watch
-
-    def __nonzero__(self):
-        return bool(self.install.maestro.pending(self.watch))
-
-    def processed_packages(self):
-        total = len(self.install.maestro.mapping)
-        pending = len(self.install.maestro.pending(self.watch))
-        processed = total - pending
-        percent = int((processed) / float(total) * 100.0)
-        return total, processed, percent
-
-    def bar(self, prefix, percent):
-        percent_count = percent / 10
-        progress_bar = ('#' * percent_count) + (' ' * (10 - percent_count))
-        return "\r\033[K{0}: [{1}] {2:>2}% ".format(prefix, progress_bar, percent)
-
-
-class RetrieveAndBuildProgress(Progress):
-
-    def update(self):
-        total, processed, percent = self.processed_packages()
-        msg = [self.bar("Retrieving", percent)]
-        msg.append("({0} requested, {1} retrieved, {2} built)".format(
-            total, len(self.install.maestro.retrieved), processed))
-        sys.stdout.write(''.join(msg))
-        sys.stdout.flush()
-
-
-class InstallProgress(Progress):
-
-    def update(self):
-        total, processed, percent = self.processed_packages()
-        msg = [self.bar("Installing", percent)]
-        msg.append("({0}/{1})".format(processed, total))
-        sys.stdout.write(''.join(msg))
-        sys.stdout.flush()
