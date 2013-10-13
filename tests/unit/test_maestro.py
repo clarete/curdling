@@ -194,7 +194,7 @@ def test_set_data_only_works_once():
     # When I try to call this same function again; Then I see that it's going
     # to throw an exception
     maestro.set_data.when.called_with('forbiddenfruit (0.1.1)', 'directory', 'whatever').should.throw(
-        ValueError, 'Data field `directory` is not empty',
+        ValueError, 'Data field `directory` is not empty for the requirement "forbiddenfruit (0.1.1)"',
     )
 
 
