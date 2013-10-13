@@ -50,7 +50,7 @@ def test_request_install_no_cache():
     env = Install(conf={'index': index})
     env.start_services()
     env.database.check_installed = Mock(return_value=False)
-    env.downloader = Mock()
+    env.finder = Mock()
 
     # When I request an installation of a package
     env.request_install('main', 'gherkin==0.1.0')
@@ -64,7 +64,7 @@ def test_request_install_no_cache():
     ])
 
     # And then I see that the download queue was populated
-    env.downloader.queue.assert_called_once_with('main', 'gherkin==0.1.0')
+    env.finder.queue.assert_called_once_with('main', 'gherkin==0.1.0')
 
 
 def test_request_install_installed_package():

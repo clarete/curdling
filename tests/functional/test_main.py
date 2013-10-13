@@ -11,7 +11,7 @@ from curdling.install import Install
 from curdling.database import Database
 
 from curdling.services.base import Service
-from curdling.services.downloader import Downloader
+from curdling.services.downloader import Downloader, Finder
 from curdling.services.curdler import Curdler
 from curdling.services.installer import Installer
 
@@ -22,7 +22,7 @@ def test_downloader_with_no_sources():
     "It should be possible to download packages from pip repos with no sources"
 
     # Given the following downloader component with NO SOURCES
-    downloader = Downloader(**{'index': Index('')})
+    downloader = Finder()
 
     # When I try to retrieve a package from it, than I see it just blows up
     # with a nice exception

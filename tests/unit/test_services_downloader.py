@@ -6,9 +6,6 @@ from distlib import database
 from curdling.exceptions import UnknownURL, ReportableError
 from curdling.services import downloader
 
-# Helper to build a distribution that contains a URL
-distribution = lambda url, locator=None: Mock(download_url=url, locator=locator)
-
 
 class TestPyPiLocator(downloader.PyPiLocator):
     def __init__(self, *args, **kw):
@@ -309,6 +306,36 @@ def test_pypilocator_fetch_when_not_seen():
     })
 
 
+def test_finder_handle():
+    "Finder#handle() should be able to find requirements"
+
+    # Given that I have a Finder instance that returns the given distribution
+    service = downloader.Finder(index=Mock())
+    distribution = Mock(
+        metadata=Mock(download_url='http://srv.com/pkg-0.1.zip'),
+        locator=Mock(base_url='http://usr:passwd@srv.com/simple'))
+    service.locator = Mock(locate=Mock(return_value=distribution))
+
+    # When I call the service handler with a URL requirement
+    service.handle('tests', {'requirement': 'pkg'}).should.equal({
+        'locator_url': 'http://usr:passwd@srv.com/simple',
+        'url': 'http://srv.com/pkg-0.1.zip'
+    })
+
+
+def test_finder_handle_not_found():
+    "Finder#handle() should raise ReportableError when it doesn't find the requirement"
+
+    # Given that I have a Downloader instance
+    service = downloader.Finder(index=Mock())
+    service.locator = Mock(locate=Mock(return_value=None))
+
+    # When I call the service handler with a URL requirement
+    service.handle.when.called_with('tests', {'requirement': 'package'}).should.throw(
+        ReportableError, 'Requirement `package\' not found'
+    )
+
+
 def test_downloader_handle():
     "Downloader#handle() should return the `tarball' path"
 
@@ -317,52 +344,10 @@ def test_downloader_handle():
     service._download_http = Mock(return_value='package-0.1.zip')
 
     # When I call the service handler with a URL requirement
-    tarball = service.handle('tests', 'http://host/path/package-0.1.zip', {})
+    tarball = service.handle('tests', {'url': 'http://host/path/package-0.1.zip'})
 
     # Then I see that the right tarball name was returned
     tarball.should.equal({'tarball': 'package-0.1.zip'})
-
-
-def test_downloader_handle_not_found():
-    "Downloader#handle() should raise ReportableError when it doesn't find the requirement"
-
-    # Given that I have a Downloader instance
-    service = downloader.Downloader(index=Mock())
-    service.locator = Mock(locate=Mock(return_value=None))
-
-    # When I call the service handler with a URL requirement
-    service.handle.when.called_with('tests', 'package', {}).should.throw(
-        ReportableError, 'Requirement `package\' not found'
-    )
-
-
-def test_downloader_find_deal_with_links():
-    "Downloader#find() should know if a requirement is a link and create a downloadable distro for it"
-
-    # Given that I have a Downloader instance
-    service = downloader.Downloader()
-
-    # When I try to find a link
-    distribution = service.find('http://host/path/package-0.1.zip')
-
-    # Then I see that the distribution was built with the right meta data
-    distribution.metadata.download_url.should.equal(
-        'http://host/path/package-0.1.zip')
-
-
-def test_downloader_find_deal_with_packages():
-    "Downloader#find() should know if a requirement points to a package and, if so, try to find it with a locator"
-
-    # Given that I have a Downloader instance
-    service = downloader.Downloader()
-    service.locator = Mock()
-    service.locator.locate.return_value = '<The-Package>'
-
-    # When I try to find a package
-    distribution = service.find('package (0.1)')
-
-    # Then I see that #find() called the locate method of the locator
-    distribution.should.equal('<The-Package>')
 
 
 def test_downloader_download():
@@ -378,10 +363,10 @@ def test_downloader_download():
     service._download_svn = Mock()
 
     # When I try to download certain URLs
-    service.download(distribution('http://source.com/blah'))
-    service.download(distribution('git+ssh://github.com/clarete/curdling.git'))
-    service.download(distribution('hg+http://hg.python.org.com/cpython'))
-    service.download(distribution('svn+http://svn.oldschool.com/repo'))
+    service.download('http://source.com/blah')
+    service.download('git+ssh://github.com/clarete/curdling.git')
+    service.download('hg+http://hg.python.org.com/cpython')
+    service.download('svn+http://svn.oldschool.com/repo')
 
     # Then I see that the right handlers were called. Notice that the vcs
     # prefixes will be stripped out
@@ -401,8 +386,7 @@ def test_downloader_download_with_locator():
     service._download_http = Mock()
 
     # When I download an HTTP link with a locator
-    locator = Mock(base_url='http://user:passwd@source.com')
-    service.download(distribution('http://source.com/blah', locator))
+    service.download('http://source.com/blah', 'http://user:passwd@source.com')
 
     # Then I see URL forwarded to the handler still have the authentication info
     service._download_http.assert_called_once_with('http://user:passwd@source.com/blah')
@@ -415,7 +399,7 @@ def test_downloader_download_bad_url():
     service = downloader.Downloader()
 
     # When I try to download a weird link
-    service.download.when.called_with(distribution('weird link')).should.throw(
+    service.download.when.called_with('weird link').should.throw(
         UnknownURL,
         '''\
    "weird link"
@@ -530,4 +514,3 @@ def test_downloader_download_vcs_handlers(util, tempfile):
         call('hg', 'clone', 'hg-url', 'tmp'),
         call('svn', 'co', 'svn-url', 'tmp'),
     ])
-

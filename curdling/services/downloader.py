@@ -212,19 +212,24 @@ class CurdlingLocator(locators.Locator):
         return distribution
 
 
-class Downloader(Service):
+class Finder(Service):
 
     def __init__(self, *args, **kwargs):
-        super(Downloader, self).__init__(*args, **kwargs)
+        super(Finder, self).__init__(*args, **kwargs)
         self.opener = Pool(maxsize=POOL_MAX_SIZE)
         self.locator = get_locator(self.conf)
 
-    def handle(self, requester, requirement, sender_data):
-        found = self.find(requirement)
-        if found:
-            return {"tarball": self.download(found)}
-        raise ReportableError('Requirement `{0}\' not found'.format(
-            requirement))
+    def handle(self, requester, data):
+        requirement = data.get('requirement')
+        prereleases = self.conf.get('prereleases', True)
+        distribution = self.locator.locate(requirement, prereleases)
+        if not distribution:
+            raise ReportableError('Requirement `{0}\' not found'.format(
+                requirement))
+        return {
+            'url': distribution.metadata.download_url,
+            'locator_url': distribution.locator.base_url,
+        }
 
     def get_servers_to_update(self):
         failures = {}
@@ -233,30 +238,26 @@ class Downloader(Service):
                 failures[locator.base_url] = locator.requirements_not_found
         return failures
 
-    # -- Private API of the Download service --
 
-    def find(self, requirement):
-        prereleases = self.conf.get('prereleases', True)
+class Downloader(Service):
 
-        if not util.parse_requirement(requirement).is_link:
-            # We're dealing with the regular requirements: "name (x.y.z)"
-            return self.locator.locate(requirement, prereleases)
-        else:
-            # We're dealing with a link
-            mdata = metadata.Metadata(scheme=self.locator.scheme)
-            mdata.source_url = mdata.download_url = requirement
-            return database.Distribution(mdata)
+    def __init__(self, *args, **kwargs):
+        super(Downloader, self).__init__(*args, **kwargs)
+        self.opener = Pool(maxsize=POOL_MAX_SIZE)
+        self.locator = get_locator(self.conf)
 
-    def download(self, distribution):
-        final_url = url = distribution.download_url
+    def handle(self, requester, data):
+        return {"tarball": self.download(data['url'], data.get('locator_url'))}
+
+    def download(self, url, locator_url=None):
+        final_url = url
 
         # We're dealing with a requirement, not a link
-        if distribution.locator:
+        if locator_url:
             # The locator's URL might contain authentication credentials, while
             # the package URL might not (the scraper doesn't return with that
             # information)
-            base_url = distribution.locator.base_url
-            final_url = update_url_credentials(base_url, url)
+            final_url = update_url_credentials(locator_url, url)
 
         # Find out the right handler for the given protocol present in the
         # download url.
