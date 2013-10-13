@@ -95,6 +95,42 @@ def test_file_dependencies():
     })
 
 
+def test_file_requirement_update_dependency_list():
+    "Maestro#file_requirement() should update the dependency_of list if a requirement is requested more than once and is unique"
+
+    # Given the following maestro loaded with a few packages
+    maestro = Maestro()
+    maestro.file_requirement('forbiddenfruit (0.1.0)')
+    maestro.set_data('forbiddenfruit (0.1.0)', 'tarball', 'package.tar.gz')
+    maestro.file_requirement('sure (1.2.1)')
+    maestro.file_requirement('forbiddenfruit (0.1.0)', dependency_of='sure (1.2.1)')
+
+    # Then I see that the mapping looks right
+    dict(maestro.mapping).should.equal({
+        'sure (1.2.1)': {
+            'status': Maestro.Status.PENDING,
+            'dependency_of': [None],
+            'data': {
+                'directory': None,
+                'tarball': None,
+                'wheel': None,
+                'exception': None,
+            }
+        },
+
+        'forbiddenfruit (0.1.0)': {
+            'status': Maestro.Status.PENDING,
+            'dependency_of': [None, 'sure (1.2.1)'],
+            'data': {
+                'directory': None,
+                'tarball': 'package.tar.gz',
+                'wheel': None,
+                'exception': None,
+            }
+        }
+    })
+
+
 def test_default_status():
     "Maestro#file_requirement() should add requirements to the default status set"
 

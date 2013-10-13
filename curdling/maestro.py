@@ -74,11 +74,14 @@ class Maestro(object):
 
     def file_requirement(self, requirement, dependency_of=None):
         requirement = format_requirement(requirement)
-
         with self.lock:
-            entry = self.mapping[requirement] = self.requirement_structure()
+            entry = self.mapping.get(requirement, None)
+        if not entry:
+            entry = self.requirement_structure()
             entry['data'] = self.data_structure()
-            entry['dependency_of'].append(dependency_of)
+            with self.lock:
+                self.mapping[requirement] = entry
+        entry['dependency_of'].append(dependency_of)
 
     def set_status(self, requirement, status):
         self.mapping[format_requirement(requirement)]['status'] = status
