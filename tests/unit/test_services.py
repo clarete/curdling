@@ -15,13 +15,13 @@ def test_service():
     service.connect('failed', callback)
 
     # When I queue one package to be processed than I queue the stop sentinel
-    service.queue('main', 'package')
-    service.queue(None, None)
+    service.queue('tests')
+    service.queue(None)
     service._worker()
 
     # Then I see that the package is indeed processed but the service dies
     # properly when it receives the sentinel.
-    callback.assert_called_once_with('myservice', 'package', exception=ANY)
+    callback.assert_called_once_with('myservice', exception=ANY)
 
     # And that in the `path` parameter we receive an exception (Unfortunately
     # we can't compare NotImplementedError() instances :(
@@ -35,7 +35,7 @@ def test_service_success():
 
     # Given the following service
     class MyService(Service):
-        def handle(self, requester, package, sender_data):
+        def handle(self, requester, sender_data):
             return {'package': 'processed-package'}
 
     callback = Mock()
@@ -43,13 +43,12 @@ def test_service_success():
     service.connect('finished', callback)
 
     # When I queue one package to be processed than I queue the stop sentinel
-    service.queue('main', 'package')
-    service.queue(None, None)
+    service.queue('tests')
+    service.queue(None)
     service._worker()
 
     # Then I see that the right signal was emitted
-    callback.assert_called_once_with(
-        'myservice', 'package', package='processed-package')
+    callback.assert_called_once_with('myservice', package='processed-package')
 
 
 def test_service_start_join():
@@ -57,7 +56,7 @@ def test_service_start_join():
 
     # Given the following service
     class MyService(Service):
-        def handle(self, requester, package, sender_data):
+        def handle(self, requester, sender_data):
             return {'package': 'processed-package'}
 
     # And a callback connected to the 'finished' signal
@@ -66,11 +65,9 @@ def test_service_start_join():
     service.connect('finished', callback)
 
     # When I queue the package, start and join the service
-    service.queue('main', 'package')
+    service.queue('main')
     service.start()
     service.join()
 
     # Then I see that the right signal was emitted
-    callback.assert_called_once_with(
-        'myservice', 'package', package='processed-package')
-
+    callback.assert_called_once_with('myservice', package='processed-package')

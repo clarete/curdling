@@ -8,7 +8,7 @@ import time
 
 # See `Service._worker()`. This is the sentinel that gently stops the iterator
 # over there.
-SENTINEL = (None, None, {})
+SENTINEL = (None, {})
 
 # Number of threads that a service will spawn by default.
 DEFAULT_CONCURRENCY = 10
@@ -33,15 +33,13 @@ class Service(SignalEmitter):
         self.finished = Signal()
         self.failed = Signal()
 
-    def queue(self, requester, requirement, **data):
-        self._queue.put((requester, requirement, data))
-        self.logger.info(
-            'queue(from="%s", to="%s", requirement="%s", data="%s")',
-            requester, self.name, requirement, data)
+    def queue(self, requester, **data):
+        self.logger.debug('%s.queue(from="%s", data="%s")', self.name, requester, data)
+        self._queue.put((requester, data))
         return self
 
     def start(self):
-        self.logger.info(' * %s.start()', self.name)
+        self.logger.debug('%s.start()', self.name)
         for _ in range(self.conf.get('concurrency', DEFAULT_CONCURRENCY)):
             worker = threading.Thread(target=self._worker)
             worker.daemon = True
@@ -58,29 +56,26 @@ class Service(SignalEmitter):
             worker.join()
         self.workers = []
 
-    def handle(self, requester, requirement, sender_data):
+    def handle(self, requester, sender_data):
         raise NotImplementedError(
             "The service subclass should override this method")
 
     # -- Private API --
 
     def _worker(self):
+        name = '{0}[{1}]'.format(self.name, threading.current_thread().name)
+
         # If the service consumer invokes `.queue(None, None)` it causes the
         # worker to die elegantly by matching the following sentinel:
-        for requester, requirement, sender_data in iter(self._queue.get, SENTINEL):
-            self.logger.debug('%s[%s].run(requirement="%s", sender_data="%s")',
-                self.name, threading.current_thread().name,
-                requirement, sender_data)
+        for requester, sender_data in iter(self._queue.get, SENTINEL):
+            self.logger.debug('%s.run(data="%s")', name, sender_data)
             try:
-                self.emit('started', self.name, requirement, **sender_data)
-                handler_data = self.handle(requester, requirement, sender_data) or {}
+                self.emit('started', self.name, **sender_data)
+                result = self.handle(requester, sender_data) or {}
                 self._queue.task_done()
             except BaseException as exception:
-                self.emit('failed', self.name, requirement, exception=exception)
-                self.logger.exception(
-                    'failed to run %s (requested by:%s) for requirement %s:',
-                    self.name, requester, requirement)
+                self.logger.exception('%s.run(from="%s") failed', name, requester)
+                self.emit('failed', self.name, exception=exception)
             else:
-                self.emit('finished', self.name, requirement, **handler_data)
-                self.logger.info('%s.result(requirement="%s"): %s ... OK',
-                    self.name, requirement, handler_data)
+                self.logger.info('%s.run(data="%s"): %s', name, sender_data, result)
+                self.emit('finished', self.name, **result)
