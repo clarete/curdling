@@ -490,6 +490,25 @@ def test_downloader_download_http_handler_use_content_disposition():
         'sure-0.1.1.tar.gz', response.read.return_value)
 
 
+def test_downloader_download_http_handler_use_content_disposition_with_quotes():
+    "Downloader#_download_http() should know how to use the header Content-Disposition to name the new file and strip the quotes"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader(index=Mock())
+
+    # And I patch the opener so we'll just pretend the HTTP IO is happening
+    response = Mock(status=200)
+    response.headers.get.return_value = 'attachment; filename="sure-0.1.1.tar.gz"'
+    service.opener.retrieve = Mock(return_value=(response, None))
+
+    # When I download an HTTP link
+    service._download_http('http://blah/package.tar.gz')
+
+    # Then I see the file name forward to the index was the one found in the header
+    service.index.from_data.assert_called_once_with(
+        'sure-0.1.1.tar.gz', response.read.return_value)
+
+
 @patch('curdling.services.downloader.tempfile')
 @patch('curdling.services.downloader.util')
 def test_downloader_download_vcs_handlers(util, tempfile):
@@ -511,3 +530,4 @@ def test_downloader_download_vcs_handlers(util, tempfile):
         call('hg', 'clone', 'hg-url', 'tmp'),
         call('svn', 'co', 'svn-url', 'tmp'),
     ])
+

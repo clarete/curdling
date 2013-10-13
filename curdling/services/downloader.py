@@ -298,7 +298,7 @@ class Downloader(Service):
 
         # Now that we're sure that our request was successful
         header = response.headers.get('content-disposition', '')
-        file_name = re.findall(r'filename=([^;]+)', header)
+        file_name = re.findall(r'filename=\"?([^;\"]+)', header)
         return self.index.from_data(
             file_name and file_name[0] or url,
             response.read(cache_content=True, decode_content=False))
