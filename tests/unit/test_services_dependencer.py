@@ -16,14 +16,16 @@ def test_dependencer(Wheel):
     Wheel.return_value = Mock(metadata=Mock(requires_dist=['forbiddenfruit (0.1.1)']))
 
     # When I queue a package and a sentinel and then call the worker
-    dependencer.queue('tests', 'sure')
-    dependencer.queue(None, None)
+    dependencer.queue('tests', requirement='sure')
+    dependencer.queue(None)
     dependencer._worker()
 
     # Than I see that the signal was called for the dependency with the right
     # parameters
     callback.assert_called_once_with(
-        'dependencer', u'forbiddenfruit (0.1.1)', dependency_of='sure')
+        'dependencer',
+        requirement='forbiddenfruit (0.1.1)',
+        dependency_of='sure')
 
 
 @patch('curdling.services.dependencer.Wheel')
@@ -33,17 +35,17 @@ def test_dependencer_package_with_no_deps(Wheel):
     # Given that I have the depencencer service
     callback = Mock()
     dependencer = Dependencer()
-    dependencer.connect('built', callback)
+    dependencer.connect('finished', callback)
 
     # And that the package to test the service will have the following
     # dependencies:
     Wheel.return_value = Mock(metadata=Mock(requires_dist=[]))
 
     # When I queue a package and a sentinel and then call the worker
-    dependencer.queue('tests', 'sure', wheel='path-to-the-wheel')
-    dependencer.queue(None, None)
+    dependencer.queue('tests', requirement='sure', wheel='path-to-the-wheel')
+    dependencer.queue(None)
     dependencer._worker()
 
     # Than I see that the signal was called for the dependency with the right
     # parameters
-    callback.assert_called_once_with('dependencer', 'sure')
+    callback.assert_called_once_with('dependencer', requirement='sure')

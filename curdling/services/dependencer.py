@@ -9,20 +9,16 @@ class Dependencer(Service):
     def __init__(self, *args, **kwargs):
         super(Dependencer, self).__init__(*args, **kwargs)
         self.dependency_found = Signal()
-        self.built = Signal()
 
-    def handle(self, requester, requirement, sender_data):
-        # Find the wheel
-        wheel_path = sender_data.get('wheel')
-        wheel = Wheel(wheel_path)
+    def handle(self, requester, data):
+        requirement = data.get('requirement')
+        wheel = Wheel(data.get('wheel'))
         run_time_dependencies = wheel.metadata.requires_dist
 
         for spec in run_time_dependencies:
             # Packages might declare their "extras" here, so let's split it
             dependency, extra = (';' in spec and spec or spec + ';').split(';')
             self.emit('dependency_found', self.name,
-                dependency, dependency_of=requirement)
-        else:
-            self.emit('built', self.name, requirement)
-
-        return {'deps': run_time_dependencies}
+                      requirement=dependency,
+                      dependency_of=requirement)
+        return {'requirement': requirement}
