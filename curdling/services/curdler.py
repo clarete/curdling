@@ -113,7 +113,7 @@ def unpack(package, destination):
 
 class Curdler(Service):
 
-    def handle(self, requester, requirement, sender_data):
+    def handle(self, requester, sender_data):
         tarball = sender_data.get('tarball')
         directory = sender_data.get('directory')
 
