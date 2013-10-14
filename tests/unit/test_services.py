@@ -71,3 +71,19 @@ def test_service_start_join():
 
     # Then I see that the right signal was emitted
     callback.assert_called_once_with('myservice', package='processed-package')
+
+
+def test_service_call():
+    "Service#__call__ should forward the execution parameters to the #handle() method"
+
+    # Given the following service
+    class MyService(Service): pass
+    instance = MyService()
+    instance.handle = Mock()
+
+    # When I call an instance
+    instance('service', p1='v1', p2='v2')
+
+    # Then I see the parameters were forwarded correctly
+    instance.handle.assert_called_once_with(
+        'service', {'p2': 'v2', 'p1': 'v1'})
