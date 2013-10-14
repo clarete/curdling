@@ -22,29 +22,32 @@ def test_downloader_with_no_sources():
     "It should be possible to download packages from pip repos with no sources"
 
     # Given the following downloader component with NO SOURCES
-    downloader = Finder()
+    finder = Finder()
 
     # When I try to retrieve a package from it, than I see it just blows up
     # with a nice exception
-    downloader.handle.when.called_with(
-        'main', 'gherkin==0.1.0', {}).should.throw(ReportableError)
+    finder.handle.when.called_with(
+        'tests', {'requirement': 'gherkin==0.1.0'}).should.throw(
+            ReportableError)
 
 
 def test_downloader():
     "It should be possible to download packages from pip repos"
 
-    # Given the following downloader component associated with a temporary
-    # index
-    index = Index(FIXTURE('tmpindex'))
-    downloader = Downloader(**{
-        'index': index,
-        'conf': {
-            'pypi_urls': ['http://localhost:8000/simple'],
-        },
+    # Given that I have a finder pointing to our local pypi server
+    finder = Finder(**{
+        'conf': {'pypi_urls': ['http://localhost:8000/simple']},
     })
 
-    # When I try to retrieve a package from it
-    package = downloader.handle('main', 'gherkin (== 0.1.0)', {})
+    # And a downloader pointing to a temporary index
+    index = Index(FIXTURE('tmpindex'))
+    downloader = Downloader(**{'index': index})
+
+    # When I find the link
+    link = finder.handle('tests', {'requirement': 'gherkin (== 0.1.0)'})
+
+    # And When I try to retrieve a package from it
+    downloader.handle('main', link)
 
     # Then I see that the package was downloaded correctly to the storage
     index.get('gherkin==0.1.0').should_not.be.empty
@@ -53,68 +56,53 @@ def test_downloader():
     index.delete()
 
 
-def test_downloader_hyphen_on_pkg_name():
-    "The Downloader() service should be able to locate packages with hyphens on the name"
+def test_finder_hyphen_on_pkg_name():
+    "Finder#handle() should be able to locate packages with hyphens on the name"
 
-    # Given the following downloader component associated with a temporary
-    # index
-    index = Index(FIXTURE('tmpindex'))
-    downloader = Downloader(**{
-        'index': index,
-        'conf': {
-            'pypi_urls': ['http://localhost:8000/simple'],
-        },
+    # Given a finder component
+    finder = Finder(**{
+        'conf': {'pypi_urls': ['http://localhost:8000/simple']},
     })
 
     # When I try to retrieve a package from it
-    package = downloader.handle('main', 'fake-pkg (== 0.0.0)', {})
+    url = finder.handle('main', {'requirement': 'fake-pkg (== 0.0.0)'})
 
     # Then I see that the package was downloaded correctly to the storage
-    index.get('fake-pkg (== 0.0.0)').should_not.be.empty
+    url.should.equal({
+        'locator_url': 'http://localhost:8000/simple/',
+        'url': 'http://localhost:8000/simple/fake-pkg/fake-pkg-0.0.0.tar.gz',
+    })
 
-    # And I cleanup the mess
-    index.delete()
 
+def test_finder_underscore_on_pkg_name():
+    "Finder#handle() should be able to locate packages with underscore on the name"
 
-def test_downloader_underscore_on_pkg_name():
-    "The Downloader() service should be able to locate packages with underscores on the name"
-
-    # Given the following downloader component associated with a temporary
-    # index
-    index = Index(FIXTURE('tmpindex'))
-    downloader = Downloader(**{
-        'index': index,
-        'conf': {
-            'pypi_urls': ['http://localhost:8000/simple'],
-        },
+    # Given a finder component
+    finder = Finder(**{
+        'conf': {'pypi_urls': ['http://localhost:8000/simple']},
     })
 
     # When I try to retrieve a package from it
-    package = downloader.handle('main', 'fake_pkg (== 0.0.0)', {})
+    url = finder.handle('main', {'requirement': 'fake_pkg (== 0.0.0)'})
 
     # Then I see that the package was downloaded correctly to the storage
-    index.get('fake_pkg (== 0.0.0)').should_not.be.empty
+    url.should.equal({
+        'locator_url': 'http://localhost:8000/simple/',
+        'url': 'http://localhost:8000/simple/fake-pkg/fake-pkg-0.0.0.tar.gz',
+    })
 
-    # And I cleanup the mess
-    index.delete()
 
+def test_finder_not_found():
+    "Finder#handle() should raise `ReportableError` if it can't find the package"
 
-def test_downloader_with_no_packages():
-    "After downloading packages, the result queue should be fed"
-
-    # Given the following downloader component associated with a temporary
-    # index
-    index = Index(FIXTURE('tmpindex'))
-    downloader = Downloader(**{
-        'index': index,
-        'conf': {
-            'pypi_urls': ['http://localhost:8000/simple'],
-        },
+    # Given a finder component
+    finder = Finder(**{
+        'conf': {'pypi_urls': ['http://localhost:8000/simple']},
     })
 
     # When I try to retrieve a package from it
-    downloader.handle.when.called_with(
-        'main', 'donotexist==0.1.0', {}).should.throw(ReportableError,
+    finder.handle.when.called_with(
+        'main', {'requirement': 'donotexist==0.1.0'}).should.throw(ReportableError,
             'Requirement `donotexist==0.1.0\' not found')
 
 
