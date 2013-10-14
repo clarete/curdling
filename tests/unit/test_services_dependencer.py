@@ -16,7 +16,7 @@ def test_dependencer(Wheel):
     Wheel.return_value = Mock(metadata=Mock(requires_dist=['forbiddenfruit (0.1.1)']))
 
     # When I queue a package and a sentinel and then call the worker
-    dependencer.queue('tests', requirement='sure')
+    dependencer.queue('tests', requirement='sure', wheel='forbiddenfruit-0.1-cp27.whl')
     dependencer.queue(None)
     dependencer._worker()
 

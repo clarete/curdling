@@ -11,8 +11,8 @@ class Dependencer(Service):
         self.dependency_found = Signal()
 
     def handle(self, requester, data):
-        requirement = data.get('requirement')
-        wheel = Wheel(data.get('wheel'))
+        requirement = data['requirement']
+        wheel = Wheel(data['wheel'])
         run_time_dependencies = wheel.metadata.requires_dist
 
         for spec in run_time_dependencies:
