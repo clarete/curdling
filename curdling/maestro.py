@@ -42,42 +42,32 @@ class Maestro(object):
 
     def __init__(self):
         # This is the structure that saves all the meta-data about all the
-        # requested packages. If you want to see how this structure looks like
-        # when it contains actuall data.
-        #
-        # You should take a look in the file # `tests/unit/test_maestro.py`.
-        # It contains all the possible combinations of values stored in this
-        # structure.
-
-        self.data_structure = lambda: {
-            'requirement': None,
-            'url': None,
-            'locator_url': None,
-            'directory': None,
-            'tarball': None,
-            'wheel': None,
-            'exception': None,
-        }
-
+        # requested packages. You should take a look in the file
+        # `tests/unit/test_maestro.py`. It contains all the possible
+        # combinations of values stored in this structure.
         self.requirement_structure = lambda: {
             'status': Maestro.Status.PENDING,
             'dependency_of': [],
-            'data': defaultdict(self.data_structure),
+            'data': {
+                'requirement': None,
+                'url': None,
+                'locator_url': None,
+                'directory': None,
+                'tarball': None,
+                'wheel': None,
+                'exception': None,
+            }
         }
 
         # Main container for all the package meta-data we extract. Read notice
         # above.
         self.mapping = {}
 
-        # The possible states of a package
-        self.status_sets = defaultdict(set)
-
     def file_requirement(self, requirement, dependency_of=None):
         requirement = format_requirement(requirement)
         entry = self.mapping.get(requirement, None)
         if not entry:
             entry = self.requirement_structure()
-            entry['data'] = self.data_structure()
             self.mapping[requirement] = entry
         entry['dependency_of'].append(dependency_of)
 
