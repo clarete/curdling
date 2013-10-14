@@ -113,9 +113,10 @@ def unpack(package, destination):
 
 class Curdler(Service):
 
-    def handle(self, requester, sender_data):
-        tarball = sender_data.get('tarball')
-        directory = sender_data.get('directory')
+    def handle(self, requester, data):
+        requirement = data['requirement']
+        tarball = data.get('tarball')
+        directory = data.get('directory')
 
         # Place used to unpack the wheel
         destination = tempfile.mkdtemp()
@@ -129,7 +130,8 @@ class Curdler(Service):
             else:
                 setup_py = unpack(package=tarball, destination=destination)
             wheel_file = setup_py('bdist_wheel')
-            return {'wheel': self.index.from_file(wheel_file)}
+            return {'wheel': self.index.from_file(wheel_file),
+                    'requirement': requirement}
         except BaseException as exc:
             raise BuildError(str(exc))
         finally:

@@ -117,8 +117,10 @@ def test_curd_package():
     curdling = Curdler(**{'index': index})
 
     # When I request a curd to be created
-    package = curdling.handle('main',
-        {'tarball': index.get('gherkin==0.1.0;~whl')})
+    package = curdling.handle('main', {
+        'tarball': index.get('gherkin==0.1.0;~whl'),
+        'requirement': 'gherkin (0.1.0)',
+    })
 
     # Then I see it's a wheel package.
     package['wheel'].should.match(
