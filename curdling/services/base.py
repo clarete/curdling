@@ -24,6 +24,10 @@ class Service(SignalEmitter):
         self.index = args.pop('index', None)
         self.logger = logger(__name__)
 
+        # Uniqueness
+        self.unique = args.get('unique', False)
+        self.seen = set()
+
         # Components to implement the thread pool
         self._queue = queue.Queue()
         self.pool = []
@@ -34,6 +38,12 @@ class Service(SignalEmitter):
         self.failed = Signal()
 
     def queue(self, requester, **data):
+        key = tuple(data.items())
+        if key in self.seen and (requester, data) != SENTINEL:
+            self.logger.debug('%s.skip.queue(from="%s", data="%s"): key: %s',
+                self.name, requester, data, key)
+            return self
+        self.seen.add(key)
         self.logger.debug('%s.queue(from="%s", data="%s")', self.name, requester, data)
         self._queue.put((requester, data))
         return self
