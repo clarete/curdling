@@ -115,10 +115,10 @@ def get_install_command(args):
 
     # Let's start the required services and request the installation of the
     # received packages before returning the command instance
-    cmd.start_services()
+    cmd.pipeline()
+    cmd.start()
     for pkg in get_packages_from_args(args):
-        cmd.request_install('main', pkg)
-
+        cmd.feed('main', requirement=pkg)
     return cmd
 
 
