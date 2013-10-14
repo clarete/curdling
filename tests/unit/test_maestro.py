@@ -26,6 +26,7 @@ def test_file_requirement():
             'status': Maestro.Status.PENDING,
             'dependency_of': [None],
             'data': {
+                'requirement': None,
                 'url': None,
                 'locator_url': None,
                 'directory': None,
@@ -52,6 +53,7 @@ def test_file_requirement_with_constraints():
             'status': Maestro.Status.PENDING,
             'dependency_of': [None],
             'data': {
+                'requirement': None,
                 'url': None,
                 'locator_url': None,
                 'directory': None,
@@ -79,6 +81,7 @@ def test_file_dependencies():
             'status': Maestro.Status.PENDING,
             'dependency_of': [None],
             'data': {
+                'requirement': None,
                 'url': None,
                 'locator_url': None,
                 'directory': None,
@@ -92,6 +95,7 @@ def test_file_dependencies():
             'status': Maestro.Status.PENDING,
             'dependency_of': ['sure (1.2.1)'],
             'data': {
+                'requirement': None,
                 'url': None,
                 'locator_url': None,
                 'directory': None,
@@ -119,6 +123,7 @@ def test_file_requirement_update_dependency_list():
             'status': Maestro.Status.PENDING,
             'dependency_of': [None],
             'data': {
+                'requirement': None,
                 'url': None,
                 'locator_url': None,
                 'directory': None,
@@ -132,6 +137,7 @@ def test_file_requirement_update_dependency_list():
             'status': Maestro.Status.PENDING,
             'dependency_of': [None, 'sure (1.2.1)'],
             'data': {
+                'requirement': None,
                 'url': None,
                 'locator_url': None,
                 'directory': None,

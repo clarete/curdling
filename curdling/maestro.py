@@ -50,6 +50,7 @@ class Maestro(object):
         # structure.
 
         self.data_structure = lambda: {
+            'requirement': None,
             'url': None,
             'locator_url': None,
             'directory': None,
