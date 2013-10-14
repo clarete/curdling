@@ -90,5 +90,5 @@ class Service(SignalEmitter):
                 self.logger.exception('%s.run(from="%s") failed', name, requester)
                 self.emit('failed', self.name, exception=exception)
             else:
-                self.logger.info('%s.run(data="%s"): %s', name, sender_data, result)
+                self.logger.debug('%s.run(data="%s"): %s', name, sender_data, result)
                 self.emit('finished', self.name, **result)
