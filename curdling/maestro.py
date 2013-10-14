@@ -5,8 +5,6 @@ from distlib.version import LegacyMatcher, LegacyVersion
 from . import util
 from .exceptions import BrokenDependency, VersionConflict
 
-import threading
-
 
 def list_constraints(requirement):
     return (
@@ -35,10 +33,12 @@ class Maestro(object):
 
     class Status:
         PENDING   = 0
-        RETRIEVED = 1 << 0
-        BUILT     = 1 << 1
-        INSTALLED = 1 << 2
-        FAILED    = 1 << 3
+        FOUND     = 1 << 0
+        RETRIEVED = 1 << 1
+        BUILT     = 1 << 2
+        CHECKED   = 1 << 3
+        INSTALLED = 1 << 4
+        FAILED    = 1 << 5
 
     def __init__(self):
         # This is the structure that saves all the meta-data about all the
@@ -50,6 +50,8 @@ class Maestro(object):
         # structure.
 
         self.data_structure = lambda: {
+            'url': None,
+            'locator_url': None,
             'directory': None,
             'tarball': None,
             'wheel': None,
@@ -69,18 +71,13 @@ class Maestro(object):
         # The possible states of a package
         self.status_sets = defaultdict(set)
 
-        # Ensure more than one thread can write in the mapping
-        self.lock = threading.RLock()
-
     def file_requirement(self, requirement, dependency_of=None):
         requirement = format_requirement(requirement)
-        with self.lock:
-            entry = self.mapping.get(requirement, None)
+        entry = self.mapping.get(requirement, None)
         if not entry:
             entry = self.requirement_structure()
             entry['data'] = self.data_structure()
-            with self.lock:
-                self.mapping[requirement] = entry
+            self.mapping[requirement] = entry
         entry['dependency_of'].append(dependency_of)
 
     def set_status(self, requirement, status):
@@ -114,7 +111,7 @@ class Maestro(object):
 
     def get_requirements_by_package_name(self, package_name):
         return [x for x in self.mapping.keys()
-            if util.parse_requirement(x).name == package_name]
+            if util.parse_requirement(x).name == util.parse_requirement(package_name).name]
 
     def available_versions(self, package_name):
         return sorted(set(wheel_version(self.mapping[requirement]['data']['wheel'])
