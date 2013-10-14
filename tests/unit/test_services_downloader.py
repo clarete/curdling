@@ -318,6 +318,7 @@ def test_finder_handle():
 
     # When I call the service handler with a URL requirement
     service.handle('tests', {'requirement': 'pkg'}).should.equal({
+        'requirement': 'pkg',
         'locator_url': 'http://usr:passwd@srv.com/simple',
         'url': 'http://srv.com/pkg-0.1.zip'
     })
@@ -344,10 +345,16 @@ def test_downloader_handle():
     service._download_http = Mock(return_value='package-0.1.zip')
 
     # When I call the service handler with a URL requirement
-    tarball = service.handle('tests', {'url': 'http://host/path/package-0.1.zip'})
+    tarball = service.handle('tests', {
+        'requirement': 'package (0.1)',
+        'url': 'http://host/path/package-0.1.zip',
+    })
 
     # Then I see that the right tarball name was returned
-    tarball.should.equal({'tarball': 'package-0.1.zip'})
+    tarball.should.equal({
+        'requirement': 'package (0.1)',
+        'tarball': 'package-0.1.zip',
+    })
 
 
 def test_downloader_download():

@@ -65,10 +65,11 @@ def test_finder_hyphen_on_pkg_name():
     })
 
     # When I try to retrieve a package from it
-    url = finder.handle('main', {'requirement': 'fake-pkg (== 0.0.0)'})
+    url = finder.handle('main', {'requirement': 'fake-pkg (0.0.0)'})
 
     # Then I see that the package was downloaded correctly to the storage
     url.should.equal({
+        'requirement': 'fake-pkg (0.0.0)',
         'locator_url': 'http://localhost:8000/simple/',
         'url': 'http://localhost:8000/simple/fake-pkg/fake-pkg-0.0.0.tar.gz',
     })
@@ -83,10 +84,11 @@ def test_finder_underscore_on_pkg_name():
     })
 
     # When I try to retrieve a package from it
-    url = finder.handle('main', {'requirement': 'fake_pkg (== 0.0.0)'})
+    url = finder.handle('main', {'requirement': 'fake_pkg (0.0.0)'})
 
     # Then I see that the package was downloaded correctly to the storage
     url.should.equal({
+        'requirement': 'fake_pkg (0.0.0)',
         'locator_url': 'http://localhost:8000/simple/',
         'url': 'http://localhost:8000/simple/fake-pkg/fake-pkg-0.0.0.tar.gz',
     })

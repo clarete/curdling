@@ -220,13 +220,14 @@ class Finder(Service):
         self.locator = get_locator(self.conf)
 
     def handle(self, requester, data):
-        requirement = data.get('requirement')
+        requirement = data['requirement']
         prereleases = self.conf.get('prereleases', True)
         distribution = self.locator.locate(requirement, prereleases)
         if not distribution:
             raise ReportableError('Requirement `{0}\' not found'.format(
                 requirement))
         return {
+            'requirement': data['requirement'],
             'url': distribution.metadata.download_url,
             'locator_url': distribution.locator.base_url,
         }
@@ -247,7 +248,9 @@ class Downloader(Service):
         self.locator = get_locator(self.conf)
 
     def handle(self, requester, data):
-        return {"tarball": self.download(data['url'], data.get('locator_url'))}
+        return {
+            'requirement': data['requirement'],
+            'tarball': self.download(data['url'], data.get('locator_url'))}
 
     def download(self, url, locator_url=None):
         final_url = url
