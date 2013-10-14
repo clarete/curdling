@@ -87,7 +87,8 @@ class Service(SignalEmitter):
                 result = self(requester, **sender_data) or {}
                 self._queue.task_done()
             except BaseException as exception:
-                self.logger.exception('%s.run(from="%s") failed', name, requester)
+                self.logger.exception('%s.run(from="%s", data="%s") failed',
+                    name, requester, sender_data)
                 self.emit('failed', self.name, exception=exception)
             else:
                 self.logger.debug('%s.run(data="%s"): %s', name, sender_data, result)
