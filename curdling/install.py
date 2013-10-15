@@ -223,7 +223,7 @@ class Install(SignalEmitter):
         if not failures:
             return
 
-        uploader = self.uploader.start()
+        self.uploader.start()
         for server, requirements in failures.items():
             for requirement in requirements:
                 wheel = self.maestro.get_data(requirement, 'wheel')

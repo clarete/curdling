@@ -28,4 +28,4 @@ class Uploader(Service):
         self.opener.request_encode_body(
             b'PUT', bytes(url), {file_name: (file_name, contents)},
             headers=get_auth_info_from_url(url))
-        return {'upload_url': url}
+        return {'upload_url': url, 'requirement': data['requirement']}
