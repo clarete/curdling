@@ -30,28 +30,6 @@ def only(func, field):
     return wrapper
 
 
-def mark(maestro, status):
-    marklogger = logger('{0}.mark'.format(__name__))
-    status_name = {
-        Maestro.Status.PENDING: 'PENDING',
-        Maestro.Status.FOUND: 'FOUND',
-        Maestro.Status.RETRIEVED: 'RETRIEVED',
-        Maestro.Status.BUILT: 'BUILT',
-        Maestro.Status.CHECKED: 'CHECKED',
-        Maestro.Status.INSTALLED: 'INSTALLED',
-        Maestro.Status.FAILED: 'FAILED',
-    }[status]
-
-    def marker(requester, **data):
-        requirement = data['requirement']
-        marklogger.debug("%s, %s, %s", requirement, status_name, data)
-        maestro.add_status(requirement, status)
-        for field, value in tuple(data.items()):
-            if field != 'requirement':
-                maestro.set_data(requirement, field, value)
-    return marker
-
-
 class Install(SignalEmitter):
 
     def __init__(self, conf):

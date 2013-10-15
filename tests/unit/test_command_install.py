@@ -25,24 +25,6 @@ def test_decorator_only():
     callback2.called.should.be.false
 
 
-def test_decorator_mark():
-    "install@mark() should use the maestro API to update the requirement status and data"
-
-    maestro = Maestro()
-    maestro.file_requirement('curd')
-
-    install.mark(maestro, Maestro.Status.RETRIEVED)(
-        'tests', requirement='curd', tarball='curd.tar.gz')
-    (maestro.get_status('curd') & Maestro.Status.RETRIEVED).should.be.true
-    maestro.get_data('curd', 'tarball').should.equal('curd.tar.gz')
-
-    install.mark(maestro, Maestro.Status.BUILT)(
-        'tests', requirement='curd', wheel='curd.whl')
-    (maestro.get_status('curd') & Maestro.Status.RETRIEVED).should.be.true
-    (maestro.get_status('curd') & Maestro.Status.BUILT).should.be.true
-    maestro.get_data('curd', 'wheel').should.equal('curd.whl')
-
-
 # def test_request_install_no_cache():
 #     "Request the installation of a package when there is no cache"
 
