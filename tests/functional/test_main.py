@@ -157,3 +157,33 @@ def test_install_package():
 
     # And I uninstall the package
     Database.uninstall('gherkin==0.1.0')
+
+
+
+def test_retrieve_and_build():
+    "Install#retrieve_and_build() "
+
+    # Given that I have an installer with a working index
+    index = Index(FIXTURE('tmp'))
+    installer = Install(**{
+        'conf': {
+            'index': index,
+            'pypi_urls': ['http://localhost:8000/simple']
+        },
+    })
+    installer.pipeline()
+
+    # And I feed the installer with a requirement
+    installer.feed('tests', requirement='gherkin')
+
+    # And start the installer
+    installer.start()
+
+    # When I run the retrieve and build loop
+    packages = installer.retrieve_and_build()
+
+    # Than I see that the package was retrieved
+    packages.should.equal(set(['gherkin']))
+
+    # And I clean the mess
+    index.delete()

@@ -25,55 +25,6 @@ def test_decorator_only():
     callback2.called.should.be.false
 
 
-# def test_request_install_no_cache():
-#     "Request the installation of a package when there is no cache"
-
-#     # Given that I have an environment
-#     index = Mock()
-#     index.get.side_effect = PackageNotFound('gherkin==0.1.0', 'whl')
-#     env = Install(conf={'index': index})
-#     env.start_services()
-#     env.database.check_installed = Mock(return_value=False)
-#     env.finder = Mock()
-
-#     # When I request an installation of a package
-#     env.request_install('main', requirement='gherkin==0.1.0')
-
-#     # Then I see that the caches were checked
-#     env.database.check_installed.assert_called_once_with('gherkin==0.1.0')
-
-#     list(env.index.get.call_args_list).should.equal([
-#         call('gherkin==0.1.0;whl'),
-#         call('gherkin==0.1.0;~whl'),
-#     ])
-
-#     # And then I see that the download queue was populated
-#     env.finder.queue.assert_called_once_with('main', requirement='gherkin==0.1.0')
-
-
-# @nottest
-# def test_request_install_installed_package():
-#     "Request the installation of an already installed package"
-
-#     # Given that I have an environment
-#     index = Mock()
-#     env = Install(conf={'index': index})
-#     env.start_services()
-#     env.database.check_installed = Mock(return_value=True)
-#     env.downloader = Mock()
-
-#     # When I request an installation of a package
-#     env.request_install('main', requirement='gherkin==0.1.0').should.be.true
-
-#     # Then I see that, since the package was installed, the local cache was not
-#     # queried
-#     env.database.check_installed.assert_called_once_with('gherkin==0.1.0')
-#     env.index.get.called.should.be.false
-
-#     # And then I see that the download queue was not touched
-#     env.downloader.queue.called.should.be.false
-
-
 def test_install_feed_when_theres_a_tarball_cached():
     "Install#feed() Should route the requirements that already have a tarball to the curdler"
 
@@ -158,7 +109,7 @@ def test_feed_requirement_finder():
         'tests', requirement='curdling')
 
 
-def test_pipeline_link_download():
+def test_feed_link_download():
     "Install#feed() should route all queued links to the downloader"
 
     # Given that I have the install command
@@ -178,6 +129,50 @@ def test_pipeline_link_download():
         'tests',
         requirement='http://srv/pkgs/curdling-0.1.tar.gz',
         url='http://srv/pkgs/curdling-0.1.tar.gz')
+
+
+def test_feed_filter_dups():
+    "Install#feed() Should skip duplicated requirements"
+
+    # Given that I have the install command
+    index = Index('')
+    index.storage = {}
+    install = Install(conf={'index': index})
+
+    # And I mock the finder service end-point
+    install.finder.queue = Mock()
+    install.pipeline()
+
+    # Feed the installer with the requirement
+    install.feed('tests', requirement='package')
+    install.finder.queue.assert_called_once_with('tests', requirement='package')
+    install.requirements.should.equal(set(['package']))
+
+    # When I fire the finder.finished() signal with proper data
+    install.feed('tests', requirement='package')
+
+    # Then I see the feed function just skipped this repeated requirement
+    install.finder.queue.assert_called_once_with('tests', requirement='package')
+    install.requirements.should.equal(set(['package']))
+
+
+def test_feed_filter_blacklisted_packages():
+    "Install#feed() Should skip blacklisted package names"
+
+    # Given that I have the install command
+    index = Index('')
+    index.storage = {}
+    install = Install(conf={'index': index})
+
+    # And I mock the finder service end-point
+    install.finder.queue = Mock()
+    install.pipeline()
+
+    # When I feed the installer with the requirement
+    install.feed('tests', requirement='setuptools')
+
+    # Then I see it was just skipped
+    install.finder.queue.called.should.be.false
 
 
 def test_pipeline_finder_found_downloader():
