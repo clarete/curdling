@@ -101,9 +101,10 @@ class Maestro(object):
             if util.parse_requirement(x).name == util.parse_requirement(package_name).name]
 
     def available_versions(self, package_name):
-        return sorted(set(wheel_version(self.mapping[requirement]['data']['wheel'])
-            for requirement in self.mapping.keys()),
-                reverse=True)
+        return sorted(set(wheel_version(self.get_data(requirement, 'wheel'))
+            for requirement in self.mapping.keys()
+                if util.parse_requirement(requirement).name == package_name),
+                      reverse=True)
 
     def matching_versions(self, requirement):
         matcher = LegacyMatcher(requirement)

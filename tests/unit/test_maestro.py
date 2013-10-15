@@ -340,6 +340,9 @@ def test_available_versions():
     maestro.set_data('forbiddenfruit (<= 0.0.9)', 'wheel',
         '/path/to/wheelhouse/forbiddenfruit-0.0.9-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.9
 
+    # And I add another random package to the maestrro
+    maestro.file_requirement('sure')
+
     # When I list all the available versions of forbidden fruit; Then I see it
     # found all the wheels related to that package. Newest first!
     maestro.available_versions('forbiddenfruit').should.equal(['0.1.1', '0.0.9', '0.0.6'])
