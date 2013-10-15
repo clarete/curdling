@@ -357,6 +357,26 @@ def test_downloader_handle():
     })
 
 
+def test_downloader_handle_return_wheel():
+    "Downloader#handle() should return the `wheel' path when it downloads a whl file"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader(index=Mock())
+    service._download_http = Mock(return_value='package-0.1-cp27-none-macosx_10_8_x86_64.whl')
+
+    # When I call the service handler with a URL requirement
+    tarball = service.handle('tests', {
+        'requirement': 'package (0.1)',
+        'url': 'http://host/path/package-0.1-cp27-none-macosx_10_8_x86_64.whl',
+    })
+
+    # Then I see that the right tarball name was returned
+    tarball.should.equal({
+        'requirement': 'package (0.1)',
+        'wheel': 'package-0.1-cp27-none-macosx_10_8_x86_64.whl',
+    })
+
+
 def test_downloader_download():
     "Downloader#download() Should call the right handler given the protocol of the link being processed"
 

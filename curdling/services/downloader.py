@@ -248,9 +248,11 @@ class Downloader(Service):
         self.locator = get_locator(self.conf)
 
     def handle(self, requester, data):
+        field_name = 'wheel' if data['url'].endswith('.whl') else 'tarball'
         return {
             'requirement': data['requirement'],
-            'tarball': self.download(data['url'], data.get('locator_url'))}
+            field_name: self.download(data['url'], data.get('locator_url'))
+        }
 
     def download(self, url, locator_url=None):
         final_url = url
