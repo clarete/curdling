@@ -70,7 +70,7 @@ def progress_bar(prefix, percent):
     return "\r\033[K{0}: [{1}] {2:>2}% ".format(prefix, progress_bar, percent)
 
 
-def install_progress(total, retrieved, built, failed):
+def build_and_retrieve_progress(total, retrieved, built, failed):
     processed = built + failed
     percent = int((processed) / float(total) * 100.0)
     msg = [progress_bar('Retrieving', percent)]
@@ -80,6 +80,14 @@ def install_progress(total, retrieved, built, failed):
     else:
         msg.append("({0} requested, {1} retrieved, {2} processed)".format(
             total, retrieved, built))
+    sys.stdout.write(''.join(msg))
+    sys.stdout.flush()
+
+
+def install_progress(total, installed):
+    percent = int((installed) / float(total) * 100.0)
+    msg = [progress_bar('Installing', percent)]
+    msg.append("({0}/{1})".format(installed, total))
     sys.stdout.write(''.join(msg))
     sys.stdout.flush()
 
@@ -116,7 +124,8 @@ def get_install_command(args):
 
     # Callbacks that show feedback for the user
     if not args.quiet:
-        cmd.connect('update', install_progress)
+        cmd.connect('update', build_and_retrieve_progress)
+        cmd.connect('update_install', install_progress)
         cmd.connect('finished', show_report)
 
     # Let's start the required services and request the installation of the

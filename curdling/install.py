@@ -64,6 +64,7 @@ class Install(SignalEmitter):
 
         # Used by the CLI tool
         self.update = Signal()
+        self.update_install = Signal()
         self.finished = Signal()
 
         # General params for all the services
@@ -195,7 +196,8 @@ class Install(SignalEmitter):
                     })
             else:
                 wheel = self.maestro.get_data(chosen_requirement, 'wheel')
-                self.installer.queue('main', wheel=wheel)
+                self.installer.queue('main',
+                    requirement=chosen_requirement, wheel=wheel)
         return package_names, errors
 
     def run(self):
@@ -215,14 +217,24 @@ class Install(SignalEmitter):
         # version
         packages, errors = self.load_installer()
         if errors:
-            self.emit('finished', errors)
+            return self.emit('finished', errors)
+
+        self.installer.start()
+        while True:
+            total = len(packages)
+            installed = self.count('installer')
+            self.emit('update_install', total, installed)
+            if total == installed:
+                break
+            time.sleep(0.5)
+        return self.emit('finished')
 
     def run_installer(self):
-        self.installer.start()
         while True:
             self.emit('update', total, retrieved, built, failed)
             time.sleep(0.5)
 
+        self.installer.start()
         self.emit('finished', errors)
         return SUCCESS
 
