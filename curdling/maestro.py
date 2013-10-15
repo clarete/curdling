@@ -107,10 +107,11 @@ class Maestro(object):
                       reverse=True)
 
     def matching_versions(self, requirement):
-        matcher = LegacyMatcher(requirement)
+        matcher = LegacyMatcher(requirement.replace('-', '_'))
         package_name = util.parse_requirement(requirement).name
         versions = self.available_versions(package_name)
-        return [version for version in versions if matcher.match(version)]
+        return [version for version in versions
+            if matcher.match(version)]
 
     def broken_versions(self, requirement):
         package_name = util.parse_requirement(requirement).name

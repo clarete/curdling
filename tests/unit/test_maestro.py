@@ -376,6 +376,21 @@ def test_matching_versions():
          '0.0.9', '0.0.6',
     ])
 
+def test_matching_versions_with_hyphen():
+    "Maestro#matching_versions() Should be aware of hyphens in the version info"
+
+    # Given that I have a maestro that contains a package with hyphens in the
+    # version info
+    maestro = Maestro()
+    maestro.file_requirement('pkg (0.1.1-RC1)')
+    maestro.set_data('pkg (0.1.1-RC1)', 'wheel',
+        '/path/pkg-0.1.1_RC1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
+
+    # When I filter the matching versions
+    maestro.matching_versions('pkg (0.1.1-RC1)').should.equal([
+        '0.1.1_RC1',
+    ])
+
 
 def test_broken_versions():
     "Maestro#broken_versions() Should return all versions of a requirement without a usable version"
