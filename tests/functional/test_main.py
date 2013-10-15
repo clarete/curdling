@@ -147,8 +147,10 @@ def test_install_package():
     installer = Installer(**{'index': index})
 
     # When I request a curd to be created
-    installer.handle('main', 'gherkin==0.1.0', {
-        'wheel': index.get('gherkin==0.1.0;whl')})
+    installer.handle('main', {
+        'requirement': 'gherkin==0.1.0',
+        'wheel': index.get('gherkin==0.1.0;whl'),
+    })
 
     # Then I see that the package was installed
     Database.check_installed('gherkin==0.1.0').should.be.true
