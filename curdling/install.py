@@ -6,7 +6,7 @@ from .database import Database
 from .index import PackageNotFound
 from .maestro import Maestro
 from .signal import SignalEmitter, Signal
-from .util import logger, is_url, parse_requirement
+from .util import logger, is_url, parse_requirement, safe_name
 
 from .services.downloader import Finder, Downloader
 from .services.curdler import Curdler
@@ -98,14 +98,14 @@ class Install(SignalEmitter):
         # Error report
         def update_error_list(name, **data):
             for field, value in list(data.items()):
-                self.maestro.set_data(data['requirement'], field, value)
+                self.maestro.set_data(safe_name(data['requirement']), field, value)
             self.errors.append(data)
 
         # Count how many finished packages we have
         def update_count(name, **data):
             self.stats[name] += 1
             for field, value in list(data.items()):
-                self.maestro.set_data(data['requirement'], field, value)
+                self.maestro.set_data(safe_name(data['requirement']), field, value)
 
         [(s.connect('finished', update_count),
           s.connect('failed', update_error_list)) for s in [
@@ -148,14 +148,16 @@ class Install(SignalEmitter):
             return False
 
     def feed(self, requester, **data):
+        requirement = safe_name(data['requirement'])
+
         # Blacklist
-        if parse_requirement(data['requirement']).name in PACKAGE_BLACKLIST:
+        if safe_name(parse_requirement(requirement).name) in PACKAGE_BLACKLIST:
             return
 
         # Filter duplicated requirements
-        if data['requirement'] in self.requirements:
+        if safe_name(requirement) in self.requirements:
             return
-        self.requirements.add(data['requirement'])
+        self.requirements.add(requirement)
 
         # Defining which place we're moving our requirements
         service = self.finder
@@ -168,10 +170,10 @@ class Install(SignalEmitter):
 
         # Registering information in maestro
         self.maestro.file_requirement(
-            data['requirement'],
+            requirement,
             dependency_of=data.get('dependency_of'))
         for field, value in list(data.items()):
-            self.maestro.set_data(data['requirement'], field, value)
+            self.maestro.set_data(requirement, field, value)
 
         # Finally feeding the chosen service
         service.queue(requester, **data)
