@@ -121,7 +121,7 @@ class Maestro(object):
                 is not None]
 
     def is_primary_requirement(self, requirement):
-        return not bool(filter(None, self.mapping[requirement]['dependency_of']))
+        return bool(self.mapping[requirement]['dependency_of'].count(None))
 
     def best_version(self, requirement_or_package_name, debug=False):
         package_name = util.parse_requirement(requirement_or_package_name).name
