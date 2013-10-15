@@ -18,6 +18,10 @@ import os
 import time
 
 
+PACKAGE_BLACKLIST = (
+    'setuptools',
+)
+
 def only(func, field):
     @wraps(func)
     def wrapper(requester, **data):
@@ -144,6 +148,10 @@ class Install(SignalEmitter):
             return False
 
     def feed(self, requester, **data):
+        # Blacklist
+        if parse_requirement(data['requirement']).name in PACKAGE_BLACKLIST:
+            return
+
         # Filter duplicated requirements
         if data['requirement'] in self.requirements:
             return
