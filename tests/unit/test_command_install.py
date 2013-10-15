@@ -207,12 +207,18 @@ def test_pipeline_finder_found_downloader():
     install = Install(conf={'index': index})
 
     # And I mock the downloader service end-point
+    install.finder.queue = Mock()
     install.downloader.queue = Mock()
     install.pipeline()
+
+    # Feed the installer with the requirement
+    install.finder.queue = Mock()
+    install.feed('tests', requirement='package')
 
     # When I fire the finder.finished() signal with proper data
     install.finder.emit('finished',
         'finder',
+        requirement='package',
         url='http://srv.com/package.tar.gz',
         locator_url='http://usr:passwd@srv.com/simple',
     )
@@ -220,6 +226,7 @@ def test_pipeline_finder_found_downloader():
     # Then I see that the downloader received a request
     install.downloader.queue.assert_called_once_with(
         'finder',
+        requirement='package',
         url='http://srv.com/package.tar.gz',
         locator_url='http://usr:passwd@srv.com/simple',
     )
@@ -237,14 +244,20 @@ def test_pipeline_downloader_tarzip_curdler():
     install.curdler.queue = Mock(__name__=b'queue')
     install.pipeline()
 
+    # Feed the installer with the requirement
+    install.finder.queue = Mock()
+    install.feed('tests', requirement='curdling')
+
     # When I fire the download.finished() signal with proper data
     install.downloader.emit('finished',
         'downloader',
+        requirement='curdling',
         tarball='curdling-0.1.tar.gz')
 
     # Than I see that the curdler received a request
     install.curdler.queue.assert_called_once_with(
         'downloader',
+        requirement='curdling',
         tarball='curdling-0.1.tar.gz')
 
 
@@ -260,14 +273,20 @@ def test_pipeline_downloader_wheel_dependencer():
     install.dependencer.queue = Mock(__name__=b'queue')
     install.pipeline()
 
+    # Feed the installer with the requirement
+    install.finder.queue = Mock()
+    install.feed('tests', requirement='curdling')
+
     # When I fire the download.finished() signal with proper data
     install.downloader.emit('finished',
         'downloader',
+        requirement='curdling',
         wheel='curdling-0.1.0-py27-none-any.whl')
 
     # Than I see that the curdler received a request
     install.dependencer.queue.assert_called_once_with(
         'downloader',
+        requirement='curdling',
         wheel='curdling-0.1.0-py27-none-any.whl')
 
 
@@ -283,14 +302,20 @@ def test_pipeline_curdler_wheel_dependencer():
     install.dependencer.queue = Mock(__name__=b'queue')
     install.pipeline()
 
+    # Feed the installer with the requirement
+    install.finder.queue = Mock()
+    install.feed('tests', requirement='curdling')
+
     # When I fire the curdler.finished() signal with proper data
     install.curdler.emit('finished',
         'curdler',
+        requirement='curdling',
         wheel='curdling-0.1.0-py27-none-any.whl')
 
     # Than I see that the dependencer received a request
     install.dependencer.queue.assert_called_once_with(
         'curdler',
+        requirement='curdling',
         wheel='curdling-0.1.0-py27-none-any.whl')
 
 
@@ -312,3 +337,42 @@ def test_pipeline_dependencer_queue():
     # Than I see that the curdler received a request
     install.feed.assert_called_once_with(
         'dependencer', requirement='curdling (0.3.0)')
+
+
+def test_count_errors():
+    "Install#errors Should contain all the errors happened in all the services"
+
+    # Given that I have the install command
+    index = Index('')
+    index.storage = {}
+    install = Install(conf={'index': index})
+    install.pipeline()
+
+    install.finder.handle = Mock(side_effect=Exception('P0wned!'))
+
+    # When I feed the installer with a requirement
+    install.feed('tests', requirement='pkg')
+    install.finder.queue(None)
+    install.finder._worker()
+
+    install.errors.should.have.length_of(1)
+    str(install.errors[0]['exception']).should.equal('P0wned!')
+
+
+def test_count():
+    "Install#count() Should know how many finished requests a given service has"
+
+    # Given that I have the install command
+    index = Index('')
+    index.storage = {}
+    install = Install(conf={'index': index})
+    install.pipeline()
+
+    install.finder.handle = Mock(return_value={'requirement': 'pkg'})
+
+    # When I feed the installer with a requirement
+    install.feed('tests', requirement='pkg')
+    install.finder.queue(None)
+    install.finder._worker()
+
+    install.count('finder').should.equal(1)

@@ -1,5 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from functools import wraps
+from collections import defaultdict
 
 from .database import Database
 from .index import PackageNotFound
@@ -65,6 +66,7 @@ class Install(SignalEmitter):
         self.database = Database()
         self.logger = logger(__name__)
 
+        # Used by the CLI tool
         self.update = Signal()
         self.finished = Signal()
 
@@ -74,17 +76,18 @@ class Install(SignalEmitter):
             'env': self,
             'index': self.index,
             'conf': self.conf,
+            'unique': True,
         })
 
         self.maestro = Maestro()
+        self.requirements = set()
+        self.errors = []
+        self.stats = defaultdict(int)
+
         self.finder = Finder(**args)
         self.downloader = Downloader(**args)
         self.curdler = Curdler(**args)
         self.dependencer = Dependencer(**args)
-
-        # Not starting those guys since we don't actually have a lot to do here
-        # right now. Check the `run` method, we'll call the installer and
-        # uploader after making sure all the dependencies are installed.
         self.installer = Installer(**args)
         self.uploader = Uploader(**args)
 
@@ -95,6 +98,25 @@ class Install(SignalEmitter):
         self.downloader.connect('finished', only(self.dependencer.queue, 'wheel'))
         self.curdler.connect('finished', self.dependencer.queue)
         self.dependencer.connect('dependency_found', self.feed)
+
+        # Error report
+        def update_error_list(name, **data):
+            self.errors.append(data)
+
+        # Count how many finished packages we have
+        def update_count(name, **data):
+            self.stats[name] += 1
+            for field, value in list(data.items()):
+                self.maestro.set_data(data['requirement'], field, value)
+
+        [(s.connect('finished', update_count),
+          s.connect('failed', update_error_list)) for s in [
+            self.finder, self.downloader, self.curdler,
+            self.dependencer, self.installer, self.uploader,
+        ]]
+
+    def count(self, service):
+        return self.stats[service]
 
     def start(self):
         self.finder.start()
@@ -128,40 +150,38 @@ class Install(SignalEmitter):
             return False
 
     def feed(self, requester, **data):
-        service = None
+        if data['requirement'] in self.requirements:
+            return
+        self.requirements.add(data['requirement'])
+        self.maestro.file_requirement(
+            data['requirement'],
+            dependency_of=data.get('dependency_of'))
+
+        service = self.finder
         if self.set_wheel(data):
             service = self.dependencer
         elif self.set_tarball(data):
             service = self.curdler
         elif self.set_url(data):
             service = self.downloader
-        else:
-            service = self.finder
-
         service.queue(requester, **data)
-
-    def retrieve_and_build_stats(self):
-        total = len(self.maestro.mapping.keys())
-        pending = len(self.maestro.filter_by(Maestro.Status.PENDING))
-        found = len(self.maestro.filter_by(Maestro.Status.FOUND))
-        retrieved = len(self.maestro.filter_by(Maestro.Status.RETRIEVED))
-        checked = len(self.maestro.filter_by(Maestro.Status.CHECKED))
-        failed = len(self.maestro.filter_by(Maestro.Status.FAILED))
-        return total, pending, found, retrieved, checked, failed
 
     def run(self):
         # Wait until all the packages have the chance to be processed
         while True:
-            total, pending, found, retrieved, built, failed = self.retrieve_and_build_stats()
+            total = len(self.requirements)
+            retrieved = self.count('downloader')
+            built = self.count('dependencer')
+            failed = len(self.errors)
             self.emit('update', total, retrieved, built, failed)
-            # if total == pending + found + retrieved + built + failed:
-            #     break
+
+            if total == built + failed:
+                break
             time.sleep(0.5)
 
         # Let's not proceed on failures
-        failed = self.maestro.filter_by(Maestro.Status.FAILED)
-        if failed:
-            self.emit('finished', self.maestro, failed)
+        if self.errors:
+            self.emit('finished', self.errors)
             return FAILURE
 
         # We've got everything we need, let's rock it off!
@@ -170,7 +190,7 @@ class Install(SignalEmitter):
         # Upload missing stuff that we couldn't find in curdling servers
         # if self.conf.get('upload'):
         #     self.run_uploader()
-        self.emit('finished', self.maestro)
+        self.emit('finished')
         return SUCCESS
 
     def run_installer(self):

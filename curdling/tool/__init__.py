@@ -84,13 +84,13 @@ def install_progress(total, retrieved, built, failed):
     sys.stdout.flush()
 
 
-def show_report(maestro, failed=None):
+def show_report(failed=None):
     if failed:
-        sys.stdout.write('\nSome milk was spilled in the process:')
-    for requirement in failed or []:
-        exception = maestro.get_data(requirement, 'exception')
-        sys.stdout.write(' * {0} ({1})\n{2}'.format(
-            requirement, exception.__class__.__name__,
+        sys.stdout.write('\nSome milk was spilled in the process:\n')
+    for data in failed or []:
+        exception = data['exception']
+        sys.stdout.write(' * {0}\n{1}\n'.format(
+            exception.__class__.__name__,
             spaces(5, str(exception))))
     sys.stdout.write('\n')
 
