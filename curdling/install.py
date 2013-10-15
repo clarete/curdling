@@ -177,7 +177,7 @@ class Install(SignalEmitter):
             except Exception as exc:
                 for requirement in self.maestro.get_requirements_by_package_name(package_name):
                     exception = self.maestro.get_data(requirement, 'exception') or exc
-                    dependency_of = self.maestro.get_data(requirement, 'dependency_of')
+                    dependency_of = self.maestro.mapping[requirement]['dependency_of']
                     errors[package_name].append({
                         'exception': exception,
                         'requirement': requirement,
