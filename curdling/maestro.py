@@ -82,10 +82,6 @@ class Maestro(object):
 
     def set_data(self, requirement, field, value):
         requirement = format_requirement(requirement)
-        if self.mapping[requirement]['data'][field] is not None:
-            raise ValueError(
-                'Data field `{0}` is not empty for the requirement "{1}"'.format(
-                    field, requirement))
         self.mapping[requirement]['data'][field] = value
 
     def get_data(self, requirement, field):

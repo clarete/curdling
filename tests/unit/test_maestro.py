@@ -233,25 +233,6 @@ def test_set_data():
     )
 
 
-def test_set_data_only_works_once():
-    """Maestro#set_data() should not work more than once to the same requirement's data key
-
-    Meaning that if you set `directory` once through `set_data()` a `ValueError`
-    will be raised if you try to set the same field again."""
-
-    # Given that I have a maestro with a requirement that has the `directory`
-    # data key fulfilled.
-    maestro = Maestro()
-    maestro.file_requirement('forbiddenfruit (0.1.1)')
-    maestro.set_data('forbiddenfruit (0.1.1)', 'directory', '/path/to/my/requirement/folder')
-
-    # When I try to call this same function again; Then I see that it's going
-    # to throw an exception
-    maestro.set_data.when.called_with('forbiddenfruit (0.1.1)', 'directory', 'whatever').should.throw(
-        ValueError, 'Data field `directory` is not empty for the requirement "forbiddenfruit (0.1.1)"',
-    )
-
-
 def test_get_data():
     "Maestro#get_data() should get the content of a given key under the requirements' data key"
 
