@@ -6,7 +6,7 @@ from .database import Database
 from .index import PackageNotFound
 from .maestro import Maestro
 from .signal import SignalEmitter, Signal
-from .util import logger, is_url
+from .util import logger, is_url, parse_requirement
 
 from .services.downloader import Finder, Downloader
 from .services.curdler import Curdler
@@ -16,14 +16,6 @@ from .services.uploader import Uploader
 
 import os
 import time
-
-SUCCESS = 0
-
-FAILURE = 1
-
-PACKAGE_BLACKLIST = (
-    'setuptools',
-)
 
 
 def only(func, field):
@@ -101,6 +93,8 @@ class Install(SignalEmitter):
 
         # Error report
         def update_error_list(name, **data):
+            for field, value in list(data.items()):
+                self.maestro.set_data(data['requirement'], field, value)
             self.errors.append(data)
 
         # Count how many finished packages we have
@@ -150,13 +144,12 @@ class Install(SignalEmitter):
             return False
 
     def feed(self, requester, **data):
+        # Filter duplicated requirements
         if data['requirement'] in self.requirements:
             return
         self.requirements.add(data['requirement'])
-        self.maestro.file_requirement(
-            data['requirement'],
-            dependency_of=data.get('dependency_of'))
 
+        # Defining which place we're moving our requirements
         service = self.finder
         if self.set_wheel(data):
             service = self.dependencer
@@ -164,7 +157,36 @@ class Install(SignalEmitter):
             service = self.curdler
         elif self.set_url(data):
             service = self.downloader
+
+        # Registering information in maestro
+        self.maestro.file_requirement(
+            data['requirement'],
+            dependency_of=data.get('dependency_of'))
+        for field, value in list(data.items()):
+            self.maestro.set_data(data['requirement'], field, value)
+
+        # Finally feeding the chosen service
         service.queue(requester, **data)
+
+    def load_installer(self):
+        errors = defaultdict(list)
+        package_names = set(parse_requirement(r).name for r in self.requirements)
+        for package_name in package_names:
+            try:
+                _, chosen_requirement = self.maestro.best_version(package_name)
+            except Exception as exc:
+                for requirement in self.maestro.get_requirements_by_package_name(package_name):
+                    exception = self.maestro.get_data(requirement, 'exception') or exc
+                    dependency_of = self.maestro.get_data(requirement, 'dependency_of')
+                    errors[package_name].append({
+                        'exception': exception,
+                        'requirement': requirement,
+                        'dependency_of': dependency_of,
+                    })
+            else:
+                wheel = self.maestro.get_data(chosen_requirement, 'wheel')
+                self.installer.queue('main', wheel=wheel)
+        return package_names, errors
 
     def run(self):
         # Wait until all the packages have the chance to be processed
@@ -179,48 +201,19 @@ class Install(SignalEmitter):
                 break
             time.sleep(0.5)
 
-        # Let's not proceed on failures
-        if self.errors:
-            self.emit('finished', self.errors)
-            return FAILURE
-
-        # We've got everything we need, let's rock it off!
-        # self.run_installer()
-
-        # Upload missing stuff that we couldn't find in curdling servers
-        # if self.conf.get('upload'):
-        #     self.run_uploader()
-        self.emit('finished')
-        return SUCCESS
+        # Walk through all the requested requirements and queue their best
+        # version
+        packages, errors = self.load_installer()
+        if errors:
+            self.emit('finished', errors)
 
     def run_installer(self):
-        packages = self.maestro.filter_by(Maestro.Status.CHECKED)
-        for package_name in packages:
-            _, requirement = self.maestro.best_version(package_name)
-            self.installer.queue('main', package_name,
-                wheel=self.maestro.get_data(requirement, 'wheel'))
-
-        # If we don't have anything to do, we just bail
-        if not packages:
-            self.emit('finished')
-            return SUCCESS
-
-        # Installer UI
         self.installer.start()
         while True:
-            total = len(self.maestro.filter_by(Maestro.Status.CHECKED))
-            installed = len(self.maestro.filter_by(Maestro.Status.INSTALLED))
-
-        ui = InstallProgress(self, Maestro.Status.INSTALLED)
-        while ui:
+            self.emit('update', total, retrieved, built, failed)
             time.sleep(0.5)
-            ui.update()
 
-        failed = self.maestro.filter_by(Maestro.Status.FAILED)
-        if failed:
-            self.report(failed)
-            return FAILURE
-
+        self.emit('finished', errors)
         return SUCCESS
 
     def run_uploader(self):

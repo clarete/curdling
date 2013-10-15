@@ -87,12 +87,16 @@ def install_progress(total, retrieved, built, failed):
 def show_report(failed=None):
     if failed:
         sys.stdout.write('\nSome milk was spilled in the process:\n')
-    for data in failed or []:
-        exception = data['exception']
-        sys.stdout.write(' * {0}\n{1}\n'.format(
-            exception.__class__.__name__,
-            spaces(5, str(exception))))
-    sys.stdout.write('\n')
+    else:
+        sys.stdout.write('\n')
+    for package, errors in list((failed or {}).items()):
+        sys.stdout.write('{0}\n'.format(package))
+        for data in errors:
+            exception = data['exception']
+            sys.stdout.write(' * {0}: {1}:\n{2}\n'.format(
+                data['requirement'],
+                exception.__class__.__name__,
+                spaces(5, str(exception))))
 
 
 def get_install_command(args):
