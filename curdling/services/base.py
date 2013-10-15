@@ -89,7 +89,7 @@ class Service(SignalEmitter):
             except BaseException as exception:
                 self.logger.exception('%s.run(from="%s", data="%s") failed',
                     name, requester, sender_data)
-                self.emit('failed', self.name, exception=exception)
+                self.emit('failed', self.name, exception=exception, **sender_data)
             else:
                 self.logger.debug('%s.run(data="%s"): %s', name, sender_data, result)
                 self.emit('finished', self.name, **result)
