@@ -22,6 +22,7 @@ PACKAGE_BLACKLIST = (
     'setuptools',
 )
 
+
 def only(func, field):
     @wraps(func)
     def wrapper(requester, **data):
@@ -75,13 +76,13 @@ class Install(SignalEmitter):
         self.curdler.connect('finished', self.dependencer.queue)
         self.dependencer.connect('dependency_found', self.feed)
 
-        # Error report
+        # Error report, let's just remember what happened
         def update_error_list(name, **data):
             for field, value in list(data.items()):
                 self.maestro.set_data(safe_name(data['requirement']), field, value)
             self.errors.append(data)
 
-        # Count how many finished packages we have
+        # Count how many packages we have in each place
         def update_count(name, **data):
             self.stats[name] += 1
             for field, value in list(data.items()):
@@ -110,8 +111,6 @@ class Install(SignalEmitter):
         return False
 
     def set_tarball(self, data):
-        # Looking for downloaded packages. If there's packages of any of the
-        # following distributions, we'll just build the wheel
         try:
             data['tarball'] = \
                 self.index.get("{0};~whl".format(data['requirement']))
@@ -210,14 +209,6 @@ class Install(SignalEmitter):
                 break
             time.sleep(0.5)
 
-    def run(self):
-        packages = self.retrieve_and_build()
-        if packages:
-            self.install(packages)
-        if self.conf.get('upload'):
-            self.upload()
-        return self.emit('finished')
-
     def upload(self):
         failures = self.finder.get_servers_to_update()
         if not failures:
@@ -236,3 +227,11 @@ class Install(SignalEmitter):
             if total == uploaded:
                 break
             time.sleep(0.5)
+
+    def run(self):
+        packages = self.retrieve_and_build()
+        if packages:
+            self.install(packages)
+        if self.conf.get('upload'):
+            self.upload()
+        return self.emit('finished')
