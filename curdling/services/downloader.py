@@ -278,7 +278,7 @@ class Downloader(Service):
         except IndexError:
             raise UnknownURL(
                 util.spaces(3, '\n'.join([
-                    '"{}"'.format(url),
+                    '"{0}"'.format(url),
                     '',
                     'Your URL looks wrong. Make sure it\'s a valid HTTP',
                     'link or a valid VCS link prefixed with the name of',
