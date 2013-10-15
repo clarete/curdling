@@ -14,18 +14,18 @@ class Uploader(Service):
         super(Uploader, self).__init__(*args, **kwargs)
         self.opener = urllib3.PoolManager()
 
-    def handle(self, requester, requirement, sender_data):
+    def handle(self, requester, data):
         # Preparing the url to PUT the file
-        path = sender_data.get('path')
-        server = sender_data.get('server')
-        package_name = os.path.basename(path)
-        url = compat.urljoin(server, 'p/{0}'.format(package_name))
+        wheel = data.get('wheel')
+        server = data.get('server')
+        file_name = os.path.basename(wheel)
+        url = compat.urljoin(server, 'p/{0}'.format(file_name))
 
         # Sending the file to the server. Both `method` and `url` parameters
         # for calling `request_encode_body()` must be `str()` instances, not
         # unicode.
-        contents = io.open(path, 'rb').read()
+        contents = io.open(wheel, 'rb').read()
         self.opener.request_encode_body(
-            b'PUT', bytes(url), {package_name: (package_name, contents)},
+            b'PUT', bytes(url), {file_name: (file_name, contents)},
             headers=get_auth_info_from_url(url))
-        return {'url': url}
+        return {'upload_url': url}

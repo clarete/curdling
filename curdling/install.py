@@ -43,6 +43,7 @@ class Install(SignalEmitter):
         # Used by the CLI tool
         self.update = Signal()
         self.update_install = Signal()
+        self.update_upload = Signal()
         self.finished = Signal()
 
         # General params for all the services
@@ -178,7 +179,7 @@ class Install(SignalEmitter):
                     requirement=chosen_requirement, wheel=wheel)
         return package_names, errors
 
-    def run(self):
+    def retrieve_and_build(self):
         # Wait until all the packages have the chance to be processed
         while True:
             total = len(self.requirements)
@@ -195,8 +196,11 @@ class Install(SignalEmitter):
         # version
         packages, errors = self.load_installer()
         if errors:
-            return self.emit('finished', errors)
+            self.emit('finished', errors)
+            return []
+        return packages
 
+    def install(self, packages):
         self.installer.start()
         while True:
             total = len(packages)
@@ -205,27 +209,30 @@ class Install(SignalEmitter):
             if total == installed:
                 break
             time.sleep(0.5)
+
+    def run(self):
+        packages = self.retrieve_and_build()
+        if packages:
+            self.install(packages)
+        if self.conf.get('upload'):
+            self.upload()
         return self.emit('finished')
 
-    def run_installer(self):
-        while True:
-            self.emit('update', total, retrieved, built, failed)
-            time.sleep(0.5)
-
-        self.installer.start()
-        self.emit('finished', errors)
-        return SUCCESS
-
-    def run_uploader(self):
-        failures = self.downloader.get_servers_to_update()
+    def upload(self):
+        failures = self.finder.get_servers_to_update()
         if not failures:
-            return SUCCESS
+            return
 
         uploader = self.uploader.start()
-        for server, package_names in failures.items():
-            for package_name in package_names:
-                _, version = self.maestro.best_version(package_name)
-                uploader.queue('main', package_name,
-                    path=version['data'].get('path'), server=server)
-        uploader.join()
-        return SUCCESS
+        for server, requirements in failures.items():
+            for requirement in requirements:
+                wheel = self.maestro.get_data(requirement, 'wheel')
+                self.uploader.queue('main',
+                    wheel=wheel, server=server, requirement=requirement)
+
+        while True:
+            total = len(failures)
+            uploaded = self.count('uploader')
+            if total == uploaded:
+                break
+            time.sleep(0.5)
