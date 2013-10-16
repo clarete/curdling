@@ -42,7 +42,7 @@ class Install(SignalEmitter):
         self.logger = logger(__name__)
 
         # Used by the CLI tool
-        self.update = Signal()
+        self.update_retrieve_and_build = Signal()
         self.update_install = Signal()
         self.update_upload = Signal()
         self.finished = Signal()
@@ -185,8 +185,8 @@ class Install(SignalEmitter):
             retrieved = self.count('downloader')
             built = self.count('dependencer')
             failed = len(self.errors)
-            self.emit('update', total, retrieved, built, failed)
-
+            self.emit('update_retrieve_and_build',
+                total, retrieved, built, failed)
             if total == built + failed:
                 break
             time.sleep(0.5)
@@ -224,6 +224,7 @@ class Install(SignalEmitter):
         while True:
             total = len(failures)
             uploaded = self.count('uploader')
+            self.emit('update_upload', total, uploaded)
             if total == uploaded:
                 break
             time.sleep(0.5)

@@ -1,4 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
+from functools import partial
 from ..index import Index
 from ..util import expand_requirements, safe_name, spaces
 
@@ -84,9 +85,9 @@ def build_and_retrieve_progress(total, retrieved, built, failed):
     sys.stdout.flush()
 
 
-def install_progress(total, installed):
+def progress(phrase, total, installed):
     percent = int((installed) / float(total) * 100.0)
-    msg = [progress_bar('Installing', percent)]
+    msg = [progress_bar(phrase, percent)]
     msg.append("({0}/{1})".format(installed, total))
     sys.stdout.write(''.join(msg))
     sys.stdout.flush()
@@ -124,8 +125,9 @@ def get_install_command(args):
 
     # Callbacks that show feedback for the user
     if not args.quiet:
-        cmd.connect('update', build_and_retrieve_progress)
-        cmd.connect('update_install', install_progress)
+        cmd.connect('update_retrieve_and_build', build_and_retrieve_progress)
+        cmd.connect('update_install', partial(progress, 'Installing'))
+        cmd.connect('update_upload', partial(progress, 'Uploading'))
         cmd.connect('finished', show_report)
 
     # Let's start the required services and request the installation of the
