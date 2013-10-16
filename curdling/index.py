@@ -64,7 +64,7 @@ class Index(object):
     def index(self, path):
         pkg = os.path.basename(path)
         name, version = pkg_name(pkg)
-        self.storage[safe_name(name.lower())][version].append(pkg)
+        self.storage[safe_name(name)][version].append(pkg)
 
     def from_file(self, path):
         # Moving the file around
