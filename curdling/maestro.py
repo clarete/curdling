@@ -161,8 +161,8 @@ class Maestro(object):
             raise VersionConflict(
                 'Requirement: {0} ({1}), Available versions: {2}'.format(
                     package_name,
-                    ', '.join(filter(None, all_constraints)),
-                    ', '.join(self.available_versions(package_name)),
+                    ', '.join(sorted(filter(None, all_constraints), reverse=True)),
+                    ', '.join(sorted(self.available_versions(package_name), reverse=True)),
                 ))
 
         return get_requirement(newest(compatible_versions))
