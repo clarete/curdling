@@ -219,9 +219,6 @@ class Finder(Service):
         self.opener = Pool(maxsize=POOL_MAX_SIZE)
         self.locator = get_locator(self.conf)
 
-    def hash_data(self, data):
-        return data.get('requirement')
-
     def handle(self, requester, data):
         requirement = data['requirement']
         prereleases = self.conf.get('prereleases', True)
