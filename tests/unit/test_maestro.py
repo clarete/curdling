@@ -296,7 +296,7 @@ def test_filed_packages():
     maestro.file_requirement('forbiddenfruit (>= 0.0.5, < 0.0.7)')
 
     # When I list the filed packages
-    packages = maestro.filed_packages()
+    packages = sorted(maestro.filed_packages())
 
     # I see that a list with the all package names was returned without
     # duplications
@@ -313,7 +313,7 @@ def test_get_requirements_by_package_name():
     maestro.file_requirement('forbiddenfruit (>= 0.0.5, < 0.0.7)')
 
     # When I filter by the package name 'forbiddenfruit'
-    maestro.get_requirements_by_package_name('forbiddenfruit').should.equal([
+    sorted(maestro.get_requirements_by_package_name('forbiddenfruit')).should.equal([
         'forbiddenfruit (0.1.1)',
         'forbiddenfruit (>= 0.0.5, < 0.0.7)',
     ])

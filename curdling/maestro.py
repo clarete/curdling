@@ -92,7 +92,7 @@ class Maestro(object):
         return list(set(util.parse_requirement(r).name for r in self.mapping.keys()))
 
     def filter_by(self, status):
-        is_pending = lambda k: self.get_status(key) == 0 and status == 0
+        is_pending = lambda k: self.get_status(k) == 0 and status == 0
         return [key for key in self.mapping.keys()
             if is_pending(key) or self.get_status(key) & status]
 
@@ -132,19 +132,19 @@ class Maestro(object):
         get_requirement = lambda v: (v, requirements_by_version[v])
 
         # A helper that sorts the versions putting the newest ones first
-        newest = lambda versions: sorted(versions, reverse=True)[0]
+        newest = lambda versions: sorted(versions, key=LegacyVersion, reverse=True)[0]
 
         # Gather all version info available inside of all requirements
         all_versions = []
         all_constraints = []
         primary_versions = []
         for requirement in requirements:
+            version = wheel_version(self.get_data(requirement, 'wheel'))
+            requirements_by_version[version] = requirement
             if self.is_primary_requirement(requirement):
-                version = wheel_version(self.get_data(requirement, 'wheel'))
                 primary_versions.append(version)
 
             versions = self.matching_versions(requirement)
-            requirements_by_version.update((v, requirement) for v in versions)
             all_versions.extend(versions)
             all_constraints.append(list_constraints(util.parse_requirement(requirement)))
 

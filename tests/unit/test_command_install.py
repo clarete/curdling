@@ -11,15 +11,15 @@ from curdling.maestro import Maestro
 def test_decorator_only():
     "install@only() should not call the decorated function if `field` is set"
 
-    callback = Mock(__name__=b'callback')
+    callback = Mock(__name__=str('callback'))
     decorated = install.only(callback, 'tarball')
 
     decorated('tests', tarball='tarball.tar.gz')
     callback.assert_called_once_with(
         'tests', tarball='tarball.tar.gz')
 
-    callback2 = Mock(__name__=b'callback')
-    decorated = install.only(callback, 'tarball')
+    callback2 = Mock(__name__=str('callback2'))
+    decorated = install.only(callback2, 'tarball')
 
     decorated('tests', directory='/path/to/a/package')
     callback2.called.should.be.false
@@ -218,7 +218,7 @@ def test_pipeline_downloader_tarzip_curdler():
     install = Install(conf={'index': index})
 
     # And I mock the curdler service end-point and start all the services
-    install.curdler.queue = Mock(__name__=b'queue')
+    install.curdler.queue = Mock(__name__=str('queue'))
     install.pipeline()
 
     # Feed the installer with the requirement
@@ -247,7 +247,7 @@ def test_pipeline_downloader_wheel_dependencer():
     install = Install(conf={'index': index})
 
     # And I mock the curdler service end-point and start all the services
-    install.dependencer.queue = Mock(__name__=b'queue')
+    install.dependencer.queue = Mock(__name__=str('queue'))
     install.pipeline()
 
     # Feed the installer with the requirement
@@ -276,7 +276,7 @@ def test_pipeline_curdler_wheel_dependencer():
     install = Install(conf={'index': index})
 
     # And I mock the curdler service end-point and start all the services
-    install.dependencer.queue = Mock(__name__=b'queue')
+    install.dependencer.queue = Mock(__name__=str('queue'))
     install.pipeline()
 
     # Feed the installer with the requirement
@@ -305,7 +305,7 @@ def test_pipeline_dependencer_queue():
     install = Install(conf={'index': index})
 
     # And I mock the curdler service end-point and start all the services
-    install.feed = Mock(__name__=b'feed')
+    install.feed = Mock(__name__=str('feed'))
     install.pipeline()
 
     # When I fire the download.finished() signal with proper data
