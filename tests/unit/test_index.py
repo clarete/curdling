@@ -49,6 +49,7 @@ def test_index_feed_backend():
     index.index('gherkin-0.1.0.tar.gz')
     index.index('Gherkin-0.1.5.tar.gz')  # I know, weird right?
     index.index('a/weird/dir/gherkin-0.2.0.tar.gz')
+    index.index('package.name-0.1.0.tar.gz')
 
     # Then I see that the backend structure looks right
     dict(index.storage).should.equal({
@@ -64,6 +65,11 @@ def test_index_feed_backend():
                 'gherkin-0.1.0.tar.gz',
             ],
         },
+        'package.name': {
+            '0.1.0': [
+                'package.name-0.1.0.tar.gz',
+            ]
+        }
     })
 
 
