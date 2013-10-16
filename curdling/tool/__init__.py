@@ -102,8 +102,10 @@ def show_report(failed=None):
         sys.stdout.write('{0}\n'.format(package))
         for data in errors:
             exception = data['exception']
-            parents = ', '.join((d or 'explicit') for d in data['dependency_of'])
-            sys.stdout.write(' * {0} from {1}: {2}:\n{3}\n'.format(
+            parents = ', '.join(
+                ('from {0}'.format(d) if d else 'explicit requirement')
+                for d in data['dependency_of'])
+            sys.stdout.write(' * {0} ({1}): {2}:\n{3}'.format(
                 data['requirement'],
                 parents,
                 exception.__class__.__name__,

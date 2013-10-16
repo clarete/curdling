@@ -3,8 +3,10 @@ from ..signal import Signal, SignalEmitter
 from ..util import logger
 from distlib.compat import queue
 
+import sys
 import threading
 import time
+import traceback
 
 # See `Service._worker()`. This is the sentinel that gently stops the iterator
 # over there.
@@ -89,10 +91,15 @@ class Service(SignalEmitter):
                 self.emit('started', self.name, **sender_data)
                 result = self(requester, **sender_data) or {}
                 self._queue.task_done()
-            except BaseException as exception:
-                self.logger.exception('%s.run(from="%s", data="%s") failed',
-                    name, requester, sender_data)
-                sender_data.update(exception=exception)
+            except BaseException:
+                fname, lineno, fn, text = traceback.extract_tb(sys.exc_info()[2])[0]
+                self.logger.exception(
+                    '%s.run(from="%s", data="%s") failed:\n'
+                    '%s:%d (%s) %s',
+                    name, requester, sender_data,
+                    fname, lineno, fn, text,
+                )
+                sender_data.update(exception=sys.exc_info()[1])
                 self.emit('failed', self.name, **sender_data)
             else:
                 self.logger.debug('%s.run(data="%s"): %s', name, sender_data, result)
