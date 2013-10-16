@@ -7,6 +7,7 @@ from .index import PackageNotFound
 from .maestro import Maestro
 from .signal import SignalEmitter, Signal
 from .util import logger, is_url, parse_requirement, safe_name
+from .exceptions import VersionConflict
 
 from .services.downloader import Finder, Downloader
 from .services.curdler import Curdler
@@ -209,20 +210,27 @@ class Install(SignalEmitter):
                 break
             time.sleep(0.5)
 
-    def upload(self):
+    def load_uploader(self):
         failures = self.finder.get_servers_to_update()
-        if not failures:
-            return
+        total = sum(len(v) for v in failures.values())
+        if not total:
+            return total
 
         self.uploader.start()
-        for server, requirements in failures.items():
-            for requirement in requirements:
+        for server, package_names in failures.items():
+            for package_name in package_names:
+                try:
+                    _, requirement = self.maestro.best_version(package_name)
+                except VersionConflict:
+                    continue
                 wheel = self.maestro.get_data(requirement, 'wheel')
                 self.uploader.queue('main',
                     wheel=wheel, server=server, requirement=requirement)
+        return total
 
-        while True:
-            total = len(failures)
+    def upload(self):
+        total = self.load_uploader()
+        while total:
             uploaded = self.count('uploader')
             self.emit('update_upload', total, uploaded)
             if total == uploaded:
@@ -233,6 +241,6 @@ class Install(SignalEmitter):
         packages = self.retrieve_and_build()
         if packages:
             self.install(packages)
-        if self.conf.get('upload'):
+        if not self.errors and self.conf.get('upload'):
             self.upload()
         return self.emit('finished')
