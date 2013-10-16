@@ -161,7 +161,11 @@ def main():
         help='Log verbosity level (for nerds): {0}'.format(', '.join(levels)))
 
     parser.add_argument(
-        '--logger-name', default=None,
+        '--log-file', type=argparse.FileType('w'), default=sys.stderr,
+        help='File to write the log')
+
+    parser.add_argument(
+        '--log-name', default=None,
         help=(
             'Name of the logger you want to set the level with '
             '`-l` (for the nerdests)'
@@ -177,11 +181,11 @@ def main():
     args = parser.parse_args()
 
     # Set the log level for the requested logger
-    handler = logging.StreamHandler()
+    handler = logging.StreamHandler(stream=args.log_file)
     handler.setLevel(args.log_level)
     handler.setFormatter(logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s'))
-    logging.getLogger(args.logger_name).setLevel(level=args.log_level)
-    logging.getLogger(args.logger_name).addHandler(handler)
+    logging.getLogger(args.log_name).setLevel(level=args.log_level)
+    logging.getLogger(args.log_name).addHandler(handler)
 
     # Here we choose which function will be called to setup the command
     # instance that will be ran. Notice that all the `add_parser_*` functions
