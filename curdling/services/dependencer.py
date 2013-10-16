@@ -10,6 +10,9 @@ class Dependencer(Service):
         super(Dependencer, self).__init__(*args, **kwargs)
         self.dependency_found = Signal()
 
+    def hash_data(self, data):
+        return data.get('wheel')
+
     def handle(self, requester, data):
         requirement = data['requirement']
         wheel = Wheel(data['wheel'])

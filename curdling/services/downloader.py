@@ -219,6 +219,9 @@ class Finder(Service):
         self.opener = Pool(maxsize=POOL_MAX_SIZE)
         self.locator = get_locator(self.conf)
 
+    def hash_data(self, data):
+        return data.get('requirement')
+
     def handle(self, requester, data):
         requirement = data['requirement']
         prereleases = self.conf.get('prereleases', True)
@@ -253,6 +256,9 @@ class Downloader(Service):
             'requirement': data['requirement'],
             field_name: self.download(data['url'], data.get('locator_url'))
         }
+
+    def hash_data(self, data):
+        return data.get('url')
 
     def download(self, url, locator_url=None):
         final_url = url

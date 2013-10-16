@@ -37,8 +37,11 @@ class Service(SignalEmitter):
         self.finished = Signal()
         self.failed = Signal()
 
+    def hash_data(self, data):
+        return tuple(data.items())
+
     def queue(self, requester, **data):
-        key = tuple(data.items())
+        key = self.hash_data(data)
         if key in self.seen and (requester, data) != SENTINEL:
             self.logger.debug('%s.skip.queue(from="%s", data="%s"): key: %s',
                 self.name, requester, data, key)

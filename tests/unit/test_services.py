@@ -80,6 +80,33 @@ def test_service_queue_do_not_add_seen_items_when_unique():
     ])
 
 
+def test_service_hash_data():
+    "Service#hash_data() should be used to define which items are unique in Service#queue()"
+
+    # Given the following unique service
+    class MyService(Service):
+        def hash_data(self, data):
+            return data.get('country')
+    service = MyService(unique=True)
+    service.handle = Mock(return_value={})
+
+    # And I queue a few items that repeat the URL key
+    service.queue('tests', hacker='Lincoln Clarete', country='br')
+    service.queue('tests', hacker='Gabriel Falcao', country='br')
+
+    # And I queue the sentinel to tell the service to stop
+    service.queue(None)
+
+    # When I execute the server
+    service._worker()
+
+    # Then I see that my handler was called only once, cause we had an item
+    # with a repeated key
+    list(service.handle.call_args_list).should.equal([
+        call('tests', {'hacker': 'Lincoln Clarete', 'country': 'br'})
+    ])
+
+
 def test_service_start_join():
     "Service#join() should hang until the service is finished"
 
