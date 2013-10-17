@@ -58,17 +58,25 @@ def add_parser_uninstall(subparsers):
 def get_packages_from_args(args):
     if not args.packages and not args.requirements:
         return []
-
     packages = [safe_name(req) for req in (args.packages or [])]
     if args.requirements:
         for pkg in expand_requirements(args.requirements):
             packages.append(pkg)
     return packages
 
+
 def progress_bar(prefix, percent):
     percent_count = percent / 10
     progress_bar = ('#' * percent_count) + (' ' * (10 - percent_count))
     return "\r\033[K{0}: [{1}] {2:>2}% ".format(prefix, progress_bar, percent)
+
+
+def progress(phrase, total, installed):
+    percent = int((installed) / float(total) * 100.0)
+    msg = [progress_bar(phrase, percent)]
+    msg.append("({0}/{1})".format(installed, total))
+    sys.stdout.write(''.join(msg))
+    sys.stdout.flush()
 
 
 def build_and_retrieve_progress(total, retrieved, built, failed):
@@ -81,14 +89,6 @@ def build_and_retrieve_progress(total, retrieved, built, failed):
     else:
         msg.append("({0} requested, {1} retrieved, {2} processed)".format(
             total, retrieved, built))
-    sys.stdout.write(''.join(msg))
-    sys.stdout.flush()
-
-
-def progress(phrase, total, installed):
-    percent = int((installed) / float(total) * 100.0)
-    msg = [progress_bar(phrase, percent)]
-    msg.append("({0}/{1})".format(installed, total))
     sys.stdout.write(''.join(msg))
     sys.stdout.flush()
 
@@ -201,6 +201,4 @@ def main():
     try:
         return command.run()
     except KeyboardInterrupt:
-        print('\b\b')
-        command.report()
         raise SystemExit(0)
