@@ -176,7 +176,7 @@ def test_feed_filter_blacklisted_packages():
 
 
 def test_pipeline_finder_found_downloader():
-    "Install#pipelien() should route the finder output to the downloader"
+    "Install#pipeline() should route the finder output to the downloader"
 
     # Given that I have the install command
     index = Index('')
@@ -184,13 +184,14 @@ def test_pipeline_finder_found_downloader():
     install = Install(conf={'index': index})
 
     # And I mock the downloader service end-point
-    install.finder.queue = Mock()
-    install.downloader.queue = Mock()
+    install.finder.queue = Mock(__name__=str('queue'))
+    install.downloader.queue = Mock(__name__=str('queue'))
     install.pipeline()
 
     # Feed the installer with the requirement
     install.finder.queue = Mock()
     install.feed('tests', requirement='package')
+    install.feed('tests', requirement='package (0.0.1)')
 
     # When I fire the finder.finished() signal with proper data
     install.finder.emit('finished',
@@ -200,7 +201,21 @@ def test_pipeline_finder_found_downloader():
         locator_url='http://usr:passwd@srv.com/simple',
     )
 
-    # Then I see that the downloader received a request
+    # And manually add the first package to the `processing_packages` set,
+    # because we mock `queue`, the component that actually does that for us.
+    install.downloader.processing_packages.add('package.tar.gz')
+
+    # And When I fire another finished signal with a different requirement but
+    # the same url
+    install.finder.emit('finished',
+        'finder',
+        requirement='package (0.0.1)',
+        url='http://another.srv.com/package.tar.gz',
+        locator_url='http://srv.com/simple',
+    )
+
+    # Then I see that the downloader received a single request. The second one
+    # was duplicated
     install.downloader.queue.assert_called_once_with(
         'finder',
         requirement='package',
@@ -345,7 +360,10 @@ def test_count():
     install = Install(conf={'index': index})
     install.pipeline()
 
-    install.finder.handle = Mock(return_value={'requirement': 'pkg'})
+    install.finder.handle = Mock(return_value={
+        'requirement': 'pkg',
+        'url': 'pkg.tar.gz',
+    })
 
     # When I feed the installer with a requirement
     install.feed('tests', requirement='pkg')

@@ -4,6 +4,7 @@ from .. import util
 from .base import Service
 from distlib import database, metadata, compat, locators
 
+import os
 import re
 import json
 import urllib3
@@ -247,15 +248,20 @@ class Downloader(Service):
         self.opener = Pool(maxsize=POOL_MAX_SIZE)
         self.locator = get_locator(self.conf)
 
+        # List of packages that we're aware of, so people that want to send
+        # jobs to the downloader can avoid duplications.
+        self.processing_packages = set()
+
+    def queue(self, requester, **data):
+        self.processing_packages.add(os.path.basename(data['url']))
+        super(Downloader, self).queue(requester, **data)
+
     def handle(self, requester, data):
         field_name = 'wheel' if data['url'].endswith('.whl') else 'tarball'
         return {
             'requirement': data['requirement'],
             field_name: self.download(data['url'], data.get('locator_url'))
         }
-
-    def hash_data(self, data):
-        return data.get('url')
 
     def download(self, url, locator_url=None):
         final_url = url

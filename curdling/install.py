@@ -32,6 +32,15 @@ def only(func, field):
     return wrapper
 
 
+def unique(func, downloader):
+    @wraps(func)
+    def wrapper(requester, **data):
+        tarball = os.path.basename(data['url'])
+        if tarball not in downloader.processing_packages:
+            return func(requester, **data)
+    return wrapper
+
+
 class Install(SignalEmitter):
 
     def __init__(self, conf):
@@ -54,7 +63,6 @@ class Install(SignalEmitter):
             'env': self,
             'index': self.index,
             'conf': self.conf,
-            'unique': True,
         })
 
         self.maestro = Maestro()
@@ -71,7 +79,7 @@ class Install(SignalEmitter):
 
     def pipeline(self):
         # Building the pipeline to [find -> download -> build -> find deps]
-        self.finder.connect('finished', self.downloader.queue)
+        self.finder.connect('finished', unique(self.downloader.queue, self.downloader))
         self.downloader.connect('finished', only(self.curdler.queue, 'tarball'))
         self.downloader.connect('finished', only(self.dependencer.queue, 'wheel'))
         self.curdler.connect('finished', self.dependencer.queue)
