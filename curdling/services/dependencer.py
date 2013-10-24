@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals, print_function
 from ..signal import Signal
+from .. import util
 from .base import Service
 from distlib.wheel import Wheel
 
@@ -19,6 +20,6 @@ class Dependencer(Service):
             # Packages might declare their "extras" here, so let's split it
             dependency, extra = (';' in spec and spec or spec + ';').split(';')
             self.emit('dependency_found', self.name,
-                      requirement=dependency,
+                      requirement=util.safe_name(dependency),
                       dependency_of=requirement)
         return {'requirement': requirement}

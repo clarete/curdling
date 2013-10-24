@@ -32,12 +32,14 @@ def only(func, field):
     return wrapper
 
 
-def unique(func, downloader):
+def unique(func, install):
     @wraps(func)
     def wrapper(requester, **data):
         tarball = os.path.basename(data['url'])
-        if tarball not in downloader.processing_packages:
+        if tarball not in install.downloader.processing_packages:
             return func(requester, **data)
+        else:
+            install.repeated += 1
     return wrapper
 
 
@@ -56,6 +58,9 @@ class Install(SignalEmitter):
         self.update_install = Signal()
         self.update_upload = Signal()
         self.finished = Signal()
+
+        # Used to count how many packages we skip
+        self.repeated = 0
 
         # General params for all the services
         args = self.conf
@@ -79,7 +84,7 @@ class Install(SignalEmitter):
 
     def pipeline(self):
         # Building the pipeline to [find -> download -> build -> find deps]
-        self.finder.connect('finished', unique(self.downloader.queue, self.downloader))
+        self.finder.connect('finished', unique(self.downloader.queue, self))
         self.downloader.connect('finished', only(self.curdler.queue, 'tarball'))
         self.downloader.connect('finished', only(self.dependencer.queue, 'wheel'))
         self.curdler.connect('finished', self.dependencer.queue)
@@ -137,13 +142,11 @@ class Install(SignalEmitter):
 
     def feed(self, requester, **data):
         requirement = safe_name(data['requirement'])
-
-        # Blacklist
-        if safe_name(parse_requirement(requirement).name) in PACKAGE_BLACKLIST:
+        if not is_url(requirement) and parse_requirement(requirement).name in PACKAGE_BLACKLIST:
             return
 
         # Filter duplicated requirements
-        if safe_name(requirement) in self.requirements:
+        if requirement in self.requirements:
             return
         self.requirements.add(requirement)
 
@@ -191,8 +194,8 @@ class Install(SignalEmitter):
         # Wait until all the packages have the chance to be processed
         while True:
             total = len(self.requirements)
-            retrieved = self.count('downloader')
-            built = self.count('dependencer')
+            retrieved = self.count('downloader') + self.repeated
+            built = self.count('dependencer') + self.repeated
             failed = len(self.errors)
             self.emit('update_retrieve_and_build',
                 total, retrieved, built, failed)

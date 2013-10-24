@@ -20,8 +20,8 @@ def test_expand_requirements(open_func):
 
     # Then I see that all the required files were retrieved
     requirements.should.equal([
-        'gherkin (== 0.1.0)',
-        'sure (== 0.2.1)',
+        'gherkin (0.1.0)',
+        'sure (0.2.1)',
     ])
 
 
@@ -41,7 +41,7 @@ def test_expand_commented_requirements(open_func):
 
     # Then I see that all the required files were retrieved
     requirements.should.equal([
-        'gherkin (== 0.1.0)',
+        'gherkin (0.1.0)',
     ])
 
 
@@ -60,7 +60,7 @@ def test_expand_requirements_ignore_http_links(open_func):
 
     # Then I see that all the required files were retrieved
     requirements.should.equal([
-        'sure (== 0.2.1)',
+        'sure (0.2.1)',
         'http://python.org',
     ])
 

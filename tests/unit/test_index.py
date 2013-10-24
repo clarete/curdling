@@ -117,25 +117,25 @@ def test_index_get():
     index.get.when.called_with('gherkin (== 0.1.1);whl').should.throw(
         PackageNotFound, (
             "The index does not have the requested package: "
-            "gherkin (== 0.1.1) (whl)"))
+            "gherkin (0.1.1) (whl)"))
 
     # With version and a format that is not available: Blows up! :)
     index.get.when.called_with('gherkin (== 0.1.1);whl').should.throw(
         PackageNotFound, (
             "The index does not have the requested package: "
-            "gherkin (== 0.1.1) (whl)"))
+            "gherkin (0.1.1) (whl)"))
 
     # With a version we simply don't have: Blows up! :)
     index.get.when.called_with('gherkin (== 0.2.1)').should.throw(
         PackageNotFound, (
             "The index does not have the requested package: "
-            "gherkin (== 0.2.1)"))
+            "gherkin (0.2.1)"))
 
     # With a package we simply don't have: Blows up! :)
     index.get.when.called_with('nonexisting (== 0.2.1)').should.throw(
         PackageNotFound, (
             "The index does not have the requested package: "
-            "nonexisting (== 0.2.1)"))
+            "nonexisting (0.2.1)"))
 
     # Case insensitive
     index.get('Gherkin').should.equal('gherkin-0.2.0.tar.gz')

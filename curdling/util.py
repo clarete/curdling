@@ -17,18 +17,32 @@ LINK_PATTERN = re.compile(r'^([^\:]+):\/\/.+')
 ROOT_LOGGER = logging.getLogger('curdling')
 
 
+class Requirement(object):
+    name = None
+
+
 def is_url(requirement):
     return ':' in requirement
 
 
-class Requirement(object):
-    name = None
+def safe_name(requirement):
+    if is_url(requirement):
+        return requirement
+    safe = requirement.lower().replace('_', '-')
+    return safe_requirement(safe)
+
+
+def safe_requirement(requirement):
+    return (util.parse_requirement(requirement).requirement
+            .replace('== ', '')
+            .replace('==', ''))
 
 
 def parse_requirement(spec):
     if not is_url(spec):
         requirement = util.parse_requirement(spec)
         requirement.name = safe_name(requirement.name)
+        requirement.requirement = safe_requirement(spec)
         requirement.is_link = False
     else:
         requirement = Requirement()
@@ -49,10 +63,6 @@ def split_name(fname):
     return name, ext[1:], frag
 
 
-def safe_name(name):
-    return name.lower().replace('_', '-')
-
-
 def expand_requirements(file_name):
     requirements = []
 
@@ -69,7 +79,7 @@ def expand_requirements(file_name):
             continue
 
         # Finally, we're sure that it's just a package description
-        requirements.append(parse_requirement(req).requirement)
+        requirements.append(safe_name(req))
     return requirements
 
 
