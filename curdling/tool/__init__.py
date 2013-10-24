@@ -105,7 +105,7 @@ def show_report(failed=None):
             parents = ', '.join(
                 ('from {0}'.format(d) if d else 'explicit requirement')
                 for d in data['dependency_of'])
-            sys.stdout.write(' * {0} ({1}): {2}:\n{3}'.format(
+            sys.stdout.write(' * {0} ({1}): {2}:\n{3}\n'.format(
                 data['requirement'],
                 parents,
                 exception.__class__.__name__,
