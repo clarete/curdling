@@ -342,12 +342,12 @@ def test_count_errors():
     install.finder.handle = Mock(side_effect=Exception('P0wned!'))
 
     # When I feed the installer with a requirement
-    install.feed('tests', requirement='pkg')
+    install.feed('tests', requirement='pkg (0.1)')
     install.finder.queue(None)
     install.finder._worker()
 
     install.errors.should.have.length_of(1)
-    str(install.errors['pkg']).should.equal('P0wned!')
+    str(install.errors['pkg'][0]['exception']).should.equal('P0wned!')
 
 
 def test_count():

@@ -66,8 +66,8 @@ class Install(SignalEmitter):
         self.requirements = set()
         self.dependencies = defaultdict(list)
         self.stats = defaultdict(int)
+        self.errors = defaultdict(list)
         self.wheels = {}
-        self.errors = {}
 
         # General params for all the services
         args = self.conf
@@ -99,7 +99,12 @@ class Install(SignalEmitter):
 
         # Error report, let's just remember what happened
         def update_error_list(name, **data):
-            self.errors[data['requirement']] = data['exception']
+            package_name = parse_requirement(data['requirement']).name
+            self.errors[package_name].append({
+                'exception': data['exception'],
+                'requirement': data['requirement'],
+                'dependency_of': [data.get('dependency_of')],
+            })
 
         # Count how many packages we have in each place
         def update_count(name, **data):
