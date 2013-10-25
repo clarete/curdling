@@ -5,7 +5,6 @@ from nose.tools import nottest
 from curdling.index import Index, PackageNotFound
 from curdling.install import Install
 from curdling import install
-from curdling.maestro import Maestro
 
 
 def test_decorator_only():
@@ -348,7 +347,7 @@ def test_count_errors():
     install.finder._worker()
 
     install.errors.should.have.length_of(1)
-    str(install.errors[0]['exception']).should.equal('P0wned!')
+    str(install.errors['pkg']).should.equal('P0wned!')
 
 
 def test_count():

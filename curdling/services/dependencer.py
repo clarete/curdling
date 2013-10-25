@@ -22,4 +22,4 @@ class Dependencer(Service):
             self.emit('dependency_found', self.name,
                       requirement=util.safe_name(dependency),
                       dependency_of=requirement)
-        return {'requirement': requirement}
+        return {'requirement': requirement, 'wheel': data['wheel']}

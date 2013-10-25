@@ -29,42 +29,22 @@ def wheel_version(path):
     return path.split('-')[1]
 
 
-class Maestro(object):
-
-    class Status:
-        PENDING   = 0
-        FOUND     = 1 << 0
-        RETRIEVED = 1 << 1
-        BUILT     = 1 << 2
-        CHECKED   = 1 << 3
-        INSTALLED = 1 << 4
-        FAILED    = 1 << 5
+class Mapping(object):
 
     def __init__(self):
         # This is the structure that saves all the meta-data about all the
         # requested packages. You should take a look in the file
-        # `tests/unit/test_maestro.py`. It contains all the possible
+        # `tests/unit/test_mapping.py`. It contains all the possible
         # combinations of values stored in this structure.
         self.requirement_structure = lambda: {
-            'status': Maestro.Status.PENDING,
             'dependency_of': [],
-            'data': {
-                'requirement': None,
-                'url': None,
-                'locator_url': None,
-                'directory': None,
-                'tarball': None,
-                'wheel': None,
-                'exception': None,
-            }
+            'wheel': None,
+            'exception': None,
         }
 
-        # Main container for all the package meta-data we extract. Read notice
-        # above.
         self.mapping = {}
 
     def file_requirement(self, requirement, dependency_of=None):
-        requirement = format_requirement(requirement)
         entry = self.mapping.get(requirement, None)
         if not entry:
             entry = self.requirement_structure()
@@ -72,29 +52,22 @@ class Maestro(object):
         entry['dependency_of'].append(dependency_of)
 
     def set_status(self, requirement, status):
-        self.mapping[format_requirement(requirement)]['status'] = status
+        self.mapping[requirement]['status'] = status
 
     def add_status(self, requirement, status):
         self.set_status(requirement, self.get_status(requirement) | status)
 
     def get_status(self, requirement):
-        return self.mapping[format_requirement(requirement)]['status']
+        return self.mapping[requirement]['status']
 
     def set_data(self, requirement, field, value):
-        requirement = format_requirement(requirement)
-        self.mapping[requirement]['data'][field] = value
+        self.mapping[requirement][field] = value
 
     def get_data(self, requirement, field):
-        requirement = format_requirement(requirement)
-        return self.mapping[requirement]['data'][field]
+        return self.mapping[requirement][field]
 
     def filed_packages(self):
         return list(set(util.parse_requirement(r).name for r in self.mapping.keys()))
-
-    def filter_by(self, status):
-        is_pending = lambda k: self.get_status(k) == 0 and status == 0
-        return [key for key in self.mapping.keys()
-            if is_pending(key) or self.get_status(key) & status]
 
     def get_requirements_by_package_name(self, package_name):
         return [x for x in self.mapping.keys()

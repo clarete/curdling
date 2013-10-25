@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from .database import Database
 from .index import PackageNotFound
-from .maestro import Maestro
+from .mapping import Mapping
 from .signal import SignalEmitter, Signal
 from .util import logger, is_url, parse_requirement, safe_name
 from .exceptions import VersionConflict
@@ -62,6 +62,13 @@ class Install(SignalEmitter):
         # Used to count how many packages we skip
         self.repeated = 0
 
+        # Track dependencies and requirements to be installed
+        self.requirements = set()
+        self.dependencies = defaultdict(list)
+        self.stats = defaultdict(int)
+        self.wheels = {}
+        self.errors = {}
+
         # General params for all the services
         args = self.conf
         args.update({
@@ -69,11 +76,6 @@ class Install(SignalEmitter):
             'index': self.index,
             'conf': self.conf,
         })
-
-        self.maestro = Maestro()
-        self.requirements = set()
-        self.errors = []
-        self.stats = defaultdict(int)
 
         self.finder = Finder(**args)
         self.downloader = Downloader(**args)
@@ -90,19 +92,20 @@ class Install(SignalEmitter):
         self.curdler.connect('finished', self.dependencer.queue)
         self.dependencer.connect('dependency_found', self.feed)
 
+        # Save the wheels that reached the end of the flow
+        def queue_install(requester, **data):
+            self.wheels[data['requirement']] = data['wheel']
+        self.dependencer.connect('finished', queue_install)
+
         # Error report, let's just remember what happened
         def update_error_list(name, **data):
-            for field, value in list(data.items()):
-                self.maestro.set_data(safe_name(data['requirement']), field, value)
-            self.errors.append(data)
+            self.errors[data['requirement']] = data['exception']
 
         # Count how many packages we have in each place
-        def update_count_and_data(name, **data):
+        def update_count(name, **data):
             self.stats[name] += 1
-            for field, value in list(data.items()):
-                self.maestro.set_data(safe_name(data['requirement']), field, value)
 
-        [(s.connect('finished', update_count_and_data),
+        [(s.connect('finished', update_count),
           s.connect('failed', update_error_list)) for s in [
             self.finder, self.downloader, self.curdler,
             self.dependencer, self.installer, self.uploader,
@@ -148,7 +151,10 @@ class Install(SignalEmitter):
         # Filter duplicated requirements
         if requirement in self.requirements:
             return
+
+        # Save the requirement and its requester for later
         self.requirements.add(requirement)
+        self.dependencies[requirement] = data.get('dependency_of')
 
         # Defining which place we're moving our requirements
         service = self.finder
@@ -159,33 +165,33 @@ class Install(SignalEmitter):
         elif self.set_url(data):
             service = self.downloader
 
-        # Registering information in maestro
-        self.maestro.file_requirement(
-            requirement,
-            dependency_of=data.get('dependency_of'))
-        for field, value in list(data.items()):
-            self.maestro.set_data(requirement, field, value)
-
         # Finally feeding the chosen service
         service.queue(requester, **data)
 
     def load_installer(self):
+        maestro = Mapping()
+        package_names = set()
+
+        for requirement in self.wheels:
+            maestro.file_requirement(requirement, self.dependencies[requirement])
+            maestro.set_data(requirement, 'wheel', self.wheels[requirement])
+            package_names.add(parse_requirement(requirement).name)
+
         errors = defaultdict(list)
-        package_names = set(parse_requirement(r).name for r in self.requirements)
         for package_name in package_names:
             try:
-                _, chosen_requirement = self.maestro.best_version(package_name)
+                _, chosen_requirement = maestro.best_version(package_name)
             except Exception as exc:
-                for requirement in self.maestro.get_requirements_by_package_name(package_name):
-                    exception = self.maestro.get_data(requirement, 'exception') or exc
-                    dependency_of = self.maestro.mapping[requirement]['dependency_of']
+                for requirement in maestro.get_requirements_by_package_name(package_name):
+                    exception = maestro.get_data(requirement, 'exception') or exc
+                    dependency_of = maestro.mapping[requirement]['dependency_of']
                     errors[package_name].append({
                         'exception': exception,
                         'requirement': requirement,
                         'dependency_of': dependency_of,
                     })
             else:
-                wheel = self.maestro.get_data(chosen_requirement, 'wheel')
+                wheel = maestro.get_data(chosen_requirement, 'wheel')
                 self.installer.queue('main',
                     requirement=chosen_requirement, wheel=wheel)
         return package_names, errors

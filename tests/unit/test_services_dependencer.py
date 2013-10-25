@@ -48,4 +48,8 @@ def test_dependencer_package_with_no_deps(Wheel):
 
     # Than I see that the signal was called for the dependency with the right
     # parameters
-    callback.assert_called_once_with('dependencer', requirement='sure')
+    callback.assert_called_once_with(
+        'dependencer',
+        requirement='sure',
+        wheel='path-to-the-wheel'
+    )
