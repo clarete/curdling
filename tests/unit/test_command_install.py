@@ -350,6 +350,27 @@ def test_count_errors():
     str(install.errors['pkg'][0]['exception']).should.equal('P0wned!')
 
 
+def test_wheels():
+    "Install#wheels Should contain all the processed wheels from the dependencer"
+
+    # Given that I have the install command
+    install = Install(conf={})
+    install.pipeline()
+
+    # When the dependencer runs
+    install.dependencer.emit(
+        'finished',             # signal name
+        'tests',                # requester
+        requirement='pkg (0.1)',
+        wheel='pkg.whl')
+
+    # Than I see that the `Install.wheels` property was updated
+    # properly
+    install.wheels.should.equal({
+        'pkg (0.1)': 'pkg.whl',
+    })
+
+
 def test_count():
     "Install#count() Should know how many finished requests a given service has"
 
