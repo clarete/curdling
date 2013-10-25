@@ -297,9 +297,13 @@ class Downloader(Service):
                     ' $ curd install git+ssh://github.com/clarete/curdling.git\n'
                 ])))
 
-        # Remove the protocol prefix from the url before passing to the handler
-        # which is not prepared to handle urls starting with `vcs+`.
-        return protocol_mapping[handler](re.sub('[^\+]+\+', '', final_url))
+        # Remove the protocol prefix from the url before passing to
+        # the handler which is not prepared to handle urls starting
+        # with `vcs+`. This RE is smart enough to handle plus (+)
+        # signs out of the scheme. Like in this example:
+        #   https://launchpad.com/path/+download/dirspec-13.10.tar.gz
+        url = re.sub('^([^\+]+)\+([^:]+\:)', r'\2', final_url)
+        return protocol_mapping[handler](url)
 
     def _download_http(self, url):
         response, _ = self.opener.retrieve(url)
