@@ -97,12 +97,12 @@ class Install(SignalEmitter):
             self.errors.append(data)
 
         # Count how many packages we have in each place
-        def update_count(name, **data):
+        def update_count_and_data(name, **data):
             self.stats[name] += 1
             for field, value in list(data.items()):
                 self.maestro.set_data(safe_name(data['requirement']), field, value)
 
-        [(s.connect('finished', update_count),
+        [(s.connect('finished', update_count_and_data),
           s.connect('failed', update_error_list)) for s in [
             self.finder, self.downloader, self.curdler,
             self.dependencer, self.installer, self.uploader,
