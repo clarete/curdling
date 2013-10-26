@@ -256,7 +256,7 @@ class Install(SignalEmitter):
                     _, requirement = self.mapping.best_version(package_name)
                 except VersionConflict:
                     continue
-                wheel = self.mapping.get_data(requirement, 'wheel')
+                wheel = self.mapping.wheels[requirement]
                 self.uploader.queue('main',
                     wheel=wheel, server=server, requirement=requirement)
         return total
