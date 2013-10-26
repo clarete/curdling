@@ -402,7 +402,7 @@ def test_load_installer():
     # work on python3. The order of the call list I build manually to
     # compare doesn't match the order of `call_args_list` from our
     # mock on py3 :/
-    sorted(install.installer.queue.call_args_list, key=lambda i: i[0], reverse=True).should.equal([
+    sorted(install.installer.queue.call_args_list, key=lambda i: i[1]['wheel']).should.equal([
         call('main',
              wheel='another_package-0.1-py27-none-any.whl',
              requirement='another-package (0.1)'),
@@ -443,6 +443,7 @@ def test_load_installer_handle_version_conflicts():
     # And Then I see that the error list was filled properly
     errors.should.have.length_of(1)
     errors.should.have.key('package').with_value.being.a(list)
+    errors['package'].sort(key=lambda i: i['requirement'], reverse=True)
     errors['package'].should.have.length_of(2)
 
     errors['package'][0]['dependency_of'].should.equal(['bleh'])
