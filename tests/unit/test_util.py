@@ -155,3 +155,5 @@ def test_safe_constraints():
         '0.3.3, >= 0.3.2')
 
     util.safe_constraints('curdling').should.be.none
+
+    util.safe_constraints('http://codeload.github.com/clarete/curdling').should.be.none

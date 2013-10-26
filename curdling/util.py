@@ -39,6 +39,8 @@ def safe_requirement(requirement):
 
 
 def safe_constraints(spec):
+    if is_url(spec):
+        return None
     constraints = util.parse_requirement(spec).constraints or ()
     constraint = lambda k, v: \
         ('{0} {1}'.format(k, v)
