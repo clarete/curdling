@@ -60,7 +60,7 @@ if __name__ == '__main__':
     setup(
         name="curdling",
         version=read_version(),
-        description="Curdles your cheesy code and extracts its binaries",
+        description='Concurrent package manager for Python',
         long_description=local_file('README.md'),
         author='Lincoln Clarete',
         author_email='lincoln@clarete.li',
