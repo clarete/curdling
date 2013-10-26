@@ -1,9 +1,7 @@
 # Curdling - A Concurrent package manager for Python
 
-
 [![Build Status](https://secure.travis-ci.org/clarete/curdling.png)](http://travis-ci.org/clarete/curdling)
 [![instanc.es Badge](https://instanc.es/bin/clarete/curdling.png)](http://instanc.es)
-
 
 # Installing
 
@@ -41,7 +39,7 @@ user	0m3.036s
 sys	0m1.005s
 ```
 
-# Why is it faster to install with curdling ?
+## Why is it faster to install with curdling ?
 
 Python has a new<sup>1</sup>
 [PEP](http://en.wikipedia.org/wiki/Python_Enhancement_Proposal#Development)
@@ -54,6 +52,7 @@ compiling, caching and installing.
 
 It's like `easy_install` or `pip`, but a lot faster.
 
+<sup>1</sup>: The PEP is "relatively new" from September 2012
 
 # License
 
