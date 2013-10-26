@@ -50,7 +50,7 @@ def test_file_dependencies():
     mapping.file_requirement('sure (1.2.1)')
 
     # When I file another requirement using the `dependency_of` parameter
-    mapping.file_requirement('forbiddenfruit (0.1.0)', dependency_of='sure (1.2.1)')
+    mapping.file_requirement('forbiddenfruit (0.1.0)', ['sure (1.2.1)'])
 
     # Then I see that the mapping looks right
     dict(mapping.mapping).should.equal({
@@ -75,7 +75,7 @@ def test_file_requirement_update_dependency_list():
     mapping = Mapping()
     mapping.file_requirement('forbiddenfruit (0.1.0)')
     mapping.file_requirement('sure (1.2.1)')
-    mapping.file_requirement('forbiddenfruit (0.1.0)', dependency_of='sure (1.2.1)')
+    mapping.file_requirement('forbiddenfruit (0.1.0)', ['sure (1.2.1)'])
 
     # Then I see that the mapping looks right
     dict(mapping.mapping).should.equal({
@@ -266,7 +266,7 @@ def test_is_primary_requirement():
     # Given that I have a mapping with two requirements filed
     mapping = Mapping()
     mapping.file_requirement('sure (1.2.1)')
-    mapping.file_requirement('forbiddenfruit (0.1.1)', dependency_of='sure (1.2.1)')
+    mapping.file_requirement('forbiddenfruit (0.1.1)', ['sure (1.2.1)'])
 
     # When I test if the above requirements are primary
     mapping.is_primary_requirement('sure (1.2.1)').should.be.true
@@ -306,12 +306,12 @@ def test_best_version_with_conflicts():
     # Given that I have a mapping with a package that contains more than one
     # version
     mapping = Mapping()
-    mapping.file_requirement('pkg (>= 0.1.1)', dependency_of='blah')
+    mapping.file_requirement('pkg (>= 0.1.1)', ['blah'])
     mapping.set_data('pkg (>= 0.1.1)', 'wheel',
         '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
 
     # And the second version is older
-    mapping.file_requirement('pkg (>= 0.0.5, < 0.0.7)', dependency_of='bleh')
+    mapping.file_requirement('pkg (>= 0.0.5, < 0.0.7)', ['bleh'])
     mapping.set_data('pkg (>= 0.0.5, < 0.0.7)', 'wheel',
         '/path/pkg-0.0.6-cp27-none-macosx_10_8_x86_64.whl')  # 0.0.6
 
@@ -335,7 +335,7 @@ def test_best_version_with_explicit_requirement():
     # Given that I have a mapping with a package that contains more than one
     # version
     mapping = Mapping()
-    mapping.file_requirement('pkg (>= 0.1.1)', dependency_of='other_pkg (0.1)')
+    mapping.file_requirement('pkg (>= 0.1.1)', ['other_pkg (0.1)'])
     mapping.set_data('pkg (>= 0.1.1)', 'wheel',
         '/path/pkg-0.1.1-cp27-none-macosx_10_8_x86_64.whl')  # 0.1.1
 
@@ -357,7 +357,7 @@ def test_best_version_no_strict_requirements_but_strict_version():
 
     # Given that I have a mapping with two requirements
     mapping = Mapping()
-    mapping.file_requirement('forbiddenfruit', dependency_of='sure (== 0.2.1)')
+    mapping.file_requirement('forbiddenfruit', ['sure (== 0.2.1)'])
     mapping.set_data('forbiddenfruit', 'wheel', '/curds/forbiddenfruit-0.1.0-cp27.whl')
 
     # When I retrieve the best match

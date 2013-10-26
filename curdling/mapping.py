@@ -6,12 +6,6 @@ from . import util
 from .exceptions import BrokenDependency, VersionConflict
 
 
-def list_constraints(requirement):
-    return (
-        ', '.join(' '.join(x) for x in requirement.constraints or ()).replace('== ', '')
-        or None)
-
-
 def wheel_version(path):
     """Retrieve the version inside of a package data slot
 
@@ -40,12 +34,12 @@ class Mapping(object):
 
         self.mapping = {}
 
-    def file_requirement(self, requirement, dependency_of=None):
+    def file_requirement(self, requirement, dependencies=None):
         entry = self.mapping.get(requirement, None)
         if not entry:
             entry = self.requirement_structure()
             self.mapping[requirement] = entry
-        entry['dependency_of'].append(dependency_of)
+        entry['dependency_of'].extend(dependencies or [None])
 
     def set_data(self, requirement, field, value):
         self.mapping[requirement][field] = value
@@ -106,7 +100,7 @@ class Mapping(object):
 
             versions = self.matching_versions(requirement)
             all_versions.extend(versions)
-            all_constraints.append(list_constraints(util.parse_requirement(requirement)))
+            all_constraints.append(util.safe_constraints(requirement))
 
         # List that will gather all the primary versions. This catches
         # duplicated first level requirements with different versions.
