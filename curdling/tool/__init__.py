@@ -112,6 +112,10 @@ def show_report(failed=None):
                 spaces(5, str(exception))))
 
 
+def handle_install_exit(failed=None):
+    raise SystemExit(int(failed != None))
+
+
 def get_install_command(args):
     index = Index(os.path.expanduser('~/.curds'))
     index.scan()
@@ -131,6 +135,11 @@ def get_install_command(args):
         cmd.connect('update_install', partial(progress, 'Installing'))
         cmd.connect('update_upload', partial(progress, 'Uploading'))
         cmd.connect('finished', show_report)
+
+    # This is the last thing called in the software. It will raise a
+    # SystemExit to return the right code to the OS depending on the
+    # value of received by the callback below:
+    cmd.connect('finished', handle_install_exit)
 
     # Let's start the required services and request the installation of the
     # received packages before returning the command instance
