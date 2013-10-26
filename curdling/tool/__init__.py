@@ -129,8 +129,10 @@ def get_install_command(args):
         'index': index,
     })
 
+    initial_requirements = get_packages_from_args(args)
+
     # Callbacks that show feedback for the user
-    if not args.quiet:
+    if not args.quiet and initial_requirements:
         cmd.connect('update_retrieve_and_build', build_and_retrieve_progress)
         cmd.connect('update_install', partial(progress, 'Installing'))
         cmd.connect('update_upload', partial(progress, 'Uploading'))
@@ -145,7 +147,7 @@ def get_install_command(args):
     # received packages before returning the command instance
     cmd.pipeline()
     cmd.start()
-    for pkg in get_packages_from_args(args):
+    for pkg in initial_requirements:
         cmd.feed('main', requirement=pkg)
     return cmd
 
