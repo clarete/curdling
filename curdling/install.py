@@ -188,12 +188,10 @@ class Install(SignalEmitter):
                 _, chosen_requirement = maestro.best_version(package_name)
             except Exception as exc:
                 for requirement in maestro.get_requirements_by_package_name(package_name):
-                    exception = maestro.get_data(requirement, 'exception') or exc
-                    dependency_of = maestro.mapping[requirement]['dependency_of']
                     errors[package_name].append({
-                        'exception': exception,
                         'requirement': requirement,
-                        'dependency_of': dependency_of,
+                        'exception': maestro.get_data(requirement, 'exception') or exc,
+                        'dependency_of': maestro.get_data(requirement, 'dependency_of'),
                     })
             else:
                 wheel = maestro.get_data(chosen_requirement, 'wheel')

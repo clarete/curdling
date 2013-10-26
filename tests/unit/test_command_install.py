@@ -2,6 +2,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 from mock import call, patch, Mock
 from nose.tools import nottest
 
+from curdling.exceptions import VersionConflict
 from curdling.index import Index, PackageNotFound
 from curdling.install import Install
 from curdling import install
@@ -369,6 +370,87 @@ def test_wheels():
     install.wheels.should.equal({
         'pkg (0.1)': 'pkg.whl',
     })
+
+
+def test_load_installer():
+    "Install#load_installer() should load all the wheels collected in Install#wheels and add them to the installer queue"
+
+    # Given that I have the install command
+    install = Install(conf={})
+    install.pipeline()
+
+    # And I mock the installer queue
+    install.installer.queue = Mock(__name__=str('queue'))
+
+    # And a few packages inside of the `Install.wheels` attribute
+    install.wheels = {
+        'package (0.1)': 'package-0.1-py27-none-any.whl',
+        'another-package (0.1)': 'another_package-0.1-py27-none-any.whl',
+    }
+
+    # When I load the installer
+    names, errors = install.load_installer()
+
+    # Then I see no errors
+    errors.should.be.empty
+
+    # And Then I see the list of all successfully processed packages
+    names.should.equal(set(['package', 'another-package']))
+
+    # And Then I see that the installer should be loaded will all the
+    # requested packages
+    list(install.installer.queue.call_args_list).should.equal([
+        call('main',
+             wheel='another_package-0.1-py27-none-any.whl',
+             requirement='another-package (0.1)'),
+        call('main',
+             wheel='package-0.1-py27-none-any.whl',
+             requirement='package (0.1)'),
+    ])
+
+
+def test_load_installer_handle_version_conflicts():
+    "Install#load_installer() should return conflicts in all requirements being installed"
+
+    # Given that I have the install command
+    install = Install(conf={})
+    install.pipeline()
+
+    # And I mock the installer queue
+    install.installer.queue = Mock(__name__=str('queue'))
+
+    # And two conflicting packages requested
+    install.wheels = {
+        'package (0.1)': 'package-0.1-py27-none-any.whl',
+        'package (0.2)': 'package-0.2-py27-none-any.whl',
+    }
+
+    # And I know it is a corner case for non-primary packages
+    install.dependencies = {
+        'package (0.1)': ['blah'],
+        'package (0.2)': ['bleh'],
+    }
+
+    # When I load the installer
+    names, errors = install.load_installer()
+
+    # Then I see the list of all successfully processed packages
+    names.should.equal(set(['package']))
+
+    # And Then I see that the error list was filled properly
+    errors.should.have.length_of(1)
+    errors.should.have.key('package').with_value.being.a(list)
+    errors['package'].should.have.length_of(2)
+
+    errors['package'][0]['dependency_of'].should.equal(['bleh'])
+    errors['package'][0]['exception'].should.be.a(VersionConflict)
+    str(errors['package'][0]['exception']).should.equal(
+        'Requirement: package (0.2, 0.1), Available versions: 0.2, 0.1')
+
+    errors['package'][1]['dependency_of'].should.equal(['blah'])
+    errors['package'][1]['exception'].should.be.a(VersionConflict)
+    str(errors['package'][1]['exception']).should.equal(
+        'Requirement: package (0.2, 0.1), Available versions: 0.2, 0.1')
 
 
 def test_count():
