@@ -33,6 +33,28 @@ class Mapping(object):
         }
 
         self.mapping = {}
+        self.requirements = set()
+        self.dependencies = defaultdict(list)
+        self.stats = defaultdict(int)
+        self.errors = defaultdict(list)
+        self.wheels = {}
+
+    def count(self, service):
+        return self.stats[service]
+
+    def initially_required_packages(self):
+        return set(util.parse_requirement(r).name for r in self.requirements)
+
+    def installable_packages(self):
+        # Load all the wheels we built so far into the mapping, so
+        # we'll be able to narrow down all the versions collected for
+        # each single package to the best one.
+        packages = set()
+        for requirement in self.wheels:
+            self.file_requirement(requirement, self.dependencies[requirement])
+            self.set_data(requirement, 'wheel', self.wheels[requirement])
+            packages.add(util.parse_requirement(requirement).name)
+        return packages
 
     def file_requirement(self, requirement, dependencies=None):
         entry = self.mapping.get(requirement, None)

@@ -146,14 +146,14 @@ def test_feed_filter_dups():
     # Feed the installer with the requirement
     install.feed('tests', requirement='package')
     install.finder.queue.assert_called_once_with('tests', requirement='package')
-    install.requirements.should.equal(set(['package']))
+    install.mapping.requirements.should.equal(set(['package']))
 
     # When I fire the finder.finished() signal with proper data
     install.feed('tests', requirement='package')
 
     # Then I see the feed function just skipped this repeated requirement
     install.finder.queue.assert_called_once_with('tests', requirement='package')
-    install.requirements.should.equal(set(['package']))
+    install.mapping.requirements.should.equal(set(['package']))
 
 
 def test_feed_filter_blacklisted_packages():
@@ -173,6 +173,69 @@ def test_feed_filter_blacklisted_packages():
 
     # Then I see it was just skipped
     install.finder.queue.called.should.be.false
+
+
+def test_pipeline_update_mapping_stats():
+    "Install#pipeline() Should update the Install#mapping#stats"
+
+    # Given that I have the install command
+    index = Index('')
+    index.storage = {}
+    install = Install(conf={'index': index})
+    install.pipeline()
+
+    install.finder.handle = Mock(return_value={
+        'requirement': 'pkg',
+        'url': 'pkg.tar.gz',
+    })
+
+    # When I feed the installer with a requirement
+    install.feed('tests', requirement='pkg')
+    install.finder.queue(None)
+    install.finder._worker()
+
+    install.mapping.count('finder').should.equal(1)
+
+
+def test_pipeline_update_mapping_errors():
+    "Install#pipeline() Should update Install#mapping#errors whenever an error occurs"
+
+    # Given that I have the install command
+    index = Index('')
+    index.storage = {}
+    install = Install(conf={'index': index})
+    install.pipeline()
+
+    install.finder.handle = Mock(side_effect=Exception('P0wned!'))
+
+    # When I feed the installer with a requirement
+    install.feed('tests', requirement='pkg (0.1)')
+    install.finder.queue(None)
+    install.finder._worker()
+
+    install.mapping.errors.should.have.length_of(1)
+    str(install.mapping.errors['pkg'][0]['exception']).should.equal('P0wned!')
+
+
+def test_pipeline_update_mapping_wheels():
+    "Install#pipeline() Should update the list Install#mapping#wheels every time we process a dependency"
+
+    # Given that I have the install command
+    install = Install(conf={})
+    install.pipeline()
+
+    # When the dependencer runs
+    install.dependencer.emit(
+        'finished',             # signal name
+        'tests',                # requester
+        requirement='pkg (0.1)',
+        wheel='pkg.whl')
+
+    # Than I see that the `Install.mapping.wheels` property was updated
+    # properly
+    install.mapping.wheels.should.equal({
+        'pkg (0.1)': 'pkg.whl',
+    })
 
 
 def test_pipeline_finder_found_downloader():
@@ -331,46 +394,6 @@ def test_pipeline_dependencer_queue():
         'dependencer', requirement='curdling (0.3.0)')
 
 
-def test_count_errors():
-    "Install#errors Should contain all the errors happened in all the services"
-
-    # Given that I have the install command
-    index = Index('')
-    index.storage = {}
-    install = Install(conf={'index': index})
-    install.pipeline()
-
-    install.finder.handle = Mock(side_effect=Exception('P0wned!'))
-
-    # When I feed the installer with a requirement
-    install.feed('tests', requirement='pkg (0.1)')
-    install.finder.queue(None)
-    install.finder._worker()
-
-    install.errors.should.have.length_of(1)
-    str(install.errors['pkg'][0]['exception']).should.equal('P0wned!')
-
-
-def test_wheels():
-    "Install#wheels Should contain all the processed wheels from the dependencer"
-
-    # Given that I have the install command
-    install = Install(conf={})
-    install.pipeline()
-
-    # When the dependencer runs
-    install.dependencer.emit(
-        'finished',             # signal name
-        'tests',                # requester
-        requirement='pkg (0.1)',
-        wheel='pkg.whl')
-
-    # Than I see that the `Install.wheels` property was updated
-    # properly
-    install.wheels.should.equal({
-        'pkg (0.1)': 'pkg.whl',
-    })
-
 
 def test_load_installer():
     "Install#load_installer() should load all the wheels collected in Install#wheels and add them to the installer queue"
@@ -383,7 +406,7 @@ def test_load_installer():
     install.installer.queue = Mock(__name__=str('queue'))
 
     # And a few packages inside of the `Install.wheels` attribute
-    install.wheels = {
+    install.mapping.wheels = {
         'package (0.1)': 'package-0.1-py27-none-any.whl',
         'another-package (0.1)': 'another_package-0.1-py27-none-any.whl',
     }
@@ -423,13 +446,13 @@ def test_load_installer_handle_version_conflicts():
     install.installer.queue = Mock(__name__=str('queue'))
 
     # And two conflicting packages requested
-    install.wheels = {
+    install.mapping.wheels = {
         'package (0.1)': 'package-0.1-py27-none-any.whl',
         'package (0.2)': 'package-0.2-py27-none-any.whl',
     }
 
     # And I know it is a corner case for non-primary packages
-    install.dependencies = {
+    install.mapping.dependencies = {
         'package (0.1)': ['blah'],
         'package (0.2)': ['bleh'],
     }
@@ -494,25 +517,3 @@ def test_load_installer_forward_errors():
     errors['package'][0]['exception'].should.be.a(ReportableError)
     str(errors['package'][0]['exception']).should.equal(
         'Requirement `package\' not found')
-
-
-def test_count():
-    "Install#count() Should know how many finished requests a given service has"
-
-    # Given that I have the install command
-    index = Index('')
-    index.storage = {}
-    install = Install(conf={'index': index})
-    install.pipeline()
-
-    install.finder.handle = Mock(return_value={
-        'requirement': 'pkg',
-        'url': 'pkg.tar.gz',
-    })
-
-    # When I feed the installer with a requirement
-    install.feed('tests', requirement='pkg')
-    install.finder.queue(None)
-    install.finder._worker()
-
-    install.count('finder').should.equal(1)

@@ -63,11 +63,7 @@ class Install(SignalEmitter):
         self.repeated = 0
 
         # Track dependencies and requirements to be installed
-        self.requirements = set()
-        self.dependencies = defaultdict(list)
-        self.stats = defaultdict(int)
-        self.errors = defaultdict(list)
-        self.wheels = {}
+        self.mapping = Mapping()
 
         # General params for all the services
         args = self.conf
@@ -94,13 +90,13 @@ class Install(SignalEmitter):
 
         # Save the wheels that reached the end of the flow
         def queue_install(requester, **data):
-            self.wheels[data['requirement']] = data['wheel']
+            self.mapping.wheels[data['requirement']] = data['wheel']
         self.dependencer.connect('finished', queue_install)
 
         # Error report, let's just remember what happened
         def update_error_list(name, **data):
             package_name = parse_requirement(data['requirement']).name
-            self.errors[package_name].append({
+            self.mapping.errors[package_name].append({
                 'exception': data['exception'],
                 'requirement': data['requirement'],
                 'dependency_of': [data.get('dependency_of')],
@@ -108,16 +104,13 @@ class Install(SignalEmitter):
 
         # Count how many packages we have in each place
         def update_count(name, **data):
-            self.stats[name] += 1
+            self.mapping.stats[name] += 1
 
         [(s.connect('finished', update_count),
           s.connect('failed', update_error_list)) for s in [
             self.finder, self.downloader, self.curdler,
             self.dependencer, self.installer, self.uploader,
         ]]
-
-    def count(self, service):
-        return self.stats[service]
 
     def start(self):
         self.finder.start()
@@ -154,12 +147,12 @@ class Install(SignalEmitter):
             return
 
         # Filter duplicated requirements
-        if requirement in self.requirements:
+        if requirement in self.mapping.requirements:
             return
 
         # Save the requirement and its requester for later
-        self.requirements.add(requirement)
-        self.dependencies[requirement] = data.get('dependency_of')
+        self.mapping.requirements.add(requirement)
+        self.mapping.dependencies[requirement] = data.get('dependency_of')
 
         # Defining which place we're moving our requirements
         service = self.finder
@@ -174,28 +167,19 @@ class Install(SignalEmitter):
         service.queue(requester, **data)
 
     def load_installer(self):
-        # Load all the wheels we built so far into the mapping, so
-        # we'll be able to narrow down all the versions collected for
-        # each single package to the best one.
-        mapping = Mapping()
-        installable_packages = set()
-        for requirement in self.wheels:
-            mapping.file_requirement(requirement, self.dependencies[requirement])
-            mapping.set_data(requirement, 'wheel', self.wheels[requirement])
-            installable_packages.add(parse_requirement(requirement).name)
-
         # Look for the best version collected for each package.
         # Failures will be collected and forwarded to the caller.
         errors = defaultdict(list)
+        installable_packages = self.mapping.installable_packages()
         for package_name in installable_packages:
             try:
-                _, chosen_requirement = mapping.best_version(package_name)
+                _, chosen_requirement = self.mapping.best_version(package_name)
             except Exception as exc:
-                for requirement in mapping.get_requirements_by_package_name(package_name):
+                for requirement in self.mapping.get_requirements_by_package_name(package_name):
                     errors[package_name].append({
                         'requirement': requirement,
-                        'exception': mapping.get_data(requirement, 'exception') or exc,
-                        'dependency_of': mapping.get_data(requirement, 'dependency_of'),
+                        'exception': self.mapping.get_data(requirement, 'exception') or exc,
+                        'dependency_of': self.mapping.get_data(requirement, 'dependency_of'),
                     })
             else:
                 # It's OK to queue all the packages without being sure
@@ -204,26 +188,24 @@ class Install(SignalEmitter):
                 # installed. It won't happen until we check for errors.
                 self.installer.queue('main',
                     requirement=chosen_requirement,
-                    wheel=mapping.get_data(chosen_requirement, 'wheel'))
+                    wheel=self.mapping.get_data(chosen_requirement, 'wheel'))
 
         # Check if the number of packages to install is the same as
         # the number of packages initially requested. If it's not
         # true, it means that a few packages could not be built.  We
         # might have valuable information about the possible failures
         # in the `self.errors` dictionary.
-        initial_requirements = \
-            set(parse_requirement(r).name for r in self.requirements)
-        if installable_packages != initial_requirements:
-            errors.update(self.errors)
+        if installable_packages != self.mapping.initially_required_packages():
+            errors.update(self.mapping.errors)
         return installable_packages, errors
 
     def retrieve_and_build(self):
         # Wait until all the packages have the chance to be processed
         while True:
-            total = len(self.requirements)
-            retrieved = self.count('downloader') + self.repeated
-            built = self.count('dependencer') + self.repeated
-            failed = len(self.errors)
+            total = len(self.mapping.requirements)
+            retrieved = self.mapping.count('downloader') + self.repeated
+            built = self.mapping.count('dependencer') + self.repeated
+            failed = len(self.mapping.errors)
             self.emit('update_retrieve_and_build',
                 total, retrieved, built, failed)
             if total == built + failed:
@@ -242,7 +224,7 @@ class Install(SignalEmitter):
         self.installer.start()
         while True:
             total = len(packages)
-            installed = self.count('installer')
+            installed = self.mapping.count('installer')
             self.emit('update_install', total, installed)
             if total == installed:
                 break
@@ -258,10 +240,10 @@ class Install(SignalEmitter):
         for server, package_names in failures.items():
             for package_name in package_names:
                 try:
-                    _, requirement = self.maestro.best_version(package_name)
+                    _, requirement = self.mapping.best_version(package_name)
                 except VersionConflict:
                     continue
-                wheel = self.maestro.get_data(requirement, 'wheel')
+                wheel = self.mapping.get_data(requirement, 'wheel')
                 self.uploader.queue('main',
                     wheel=wheel, server=server, requirement=requirement)
         return total
@@ -269,7 +251,7 @@ class Install(SignalEmitter):
     def upload(self):
         total = self.load_uploader()
         while total:
-            uploaded = self.count('uploader')
+            uploaded = self.mapping.count('uploader')
             self.emit('update_upload', total, uploaded)
             if total == uploaded:
                 break
@@ -279,6 +261,6 @@ class Install(SignalEmitter):
         packages = self.retrieve_and_build()
         if packages:
             self.install(packages)
-        if not self.errors and self.conf.get('upload'):
+        if not self.mapping.errors and self.conf.get('upload'):
             self.upload()
         return self.emit('finished')
