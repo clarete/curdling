@@ -38,6 +38,15 @@ def safe_requirement(requirement):
             .replace('==', ''))
 
 
+def safe_constraints(spec):
+    constraints = util.parse_requirement(spec).constraints or ()
+    constraint = lambda k, v: \
+        ('{0} {1}'.format(k, v)
+         .replace('== ', '')
+         .replace('==', ''))
+    return ', '.join(constraint(k, v) for k, v in constraints) or None
+
+
 def parse_requirement(spec):
     if not is_url(spec):
         requirement = util.parse_requirement(spec)

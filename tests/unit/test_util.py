@@ -120,3 +120,12 @@ def test_execute_command_when_it_fails(subprocess):
     # When I execute the command; Then I see it raises the right exception
     # containing the stderr of the command we tried to run
     util.execute_command.when.called_with('ls').should.throw(Exception, "stderr")
+
+
+def test_safe_constraints():
+    "safe_constraints() Should return a string with all the constraints of a requirement separated by comma"
+
+    util.safe_constraints('curdling (== 0.3.3, >= 0.3.2)').should.equal(
+        '0.3.3, >= 0.3.2')
+
+    util.safe_constraints('curdling').should.be.none
