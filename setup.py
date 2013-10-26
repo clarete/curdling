@@ -1,6 +1,24 @@
-import re
+import ast
 import os
+import re
 from setuptools import setup, find_packages
+
+
+class VersionFinder(ast.NodeVisitor):
+
+    def __init__(self):
+        self.version = None
+
+    def visit_Assign(self, node):
+        if node.targets[0].id == '__version__':
+            self.version = node.value.s
+
+
+def read_version():
+    """Read version from curdling/version.py without loading any files"""
+    finder = VersionFinder()
+    finder.visit(ast.parse(local_file('curdling', 'version.py')))
+    return finder.version
 
 
 def parse_requirements(path):
@@ -30,8 +48,9 @@ def parse_requirements(path):
     return pkgs, links
 
 
-local_file = lambda f: \
-    open(os.path.join(os.path.dirname(__file__), f)).read()
+local_file = lambda *f: \
+    open(os.path.join(os.path.dirname(__file__), *f)).read()
+
 
 install_requires, dependency_links = \
     parse_requirements('requirements.txt')
@@ -40,7 +59,7 @@ install_requires, dependency_links = \
 if __name__ == '__main__':
     setup(
         name="curdling",
-        version='0.3.3',
+        version=read_version(),
         description="Curdles your cheesy code and extracts its binaries",
         long_description=local_file('README.md'),
         author='Lincoln Clarete',
