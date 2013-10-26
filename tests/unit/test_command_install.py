@@ -131,6 +131,31 @@ def test_feed_link_download():
         url='http://srv/pkgs/curdling-0.1.tar.gz')
 
 
+def test_feed_filter_compatible_requirements():
+    "Install#feed() Should skip requirements that already have compatible matches in the mapping"
+
+    # Given that I have the install command
+    index = Index('')
+    index.storage = {}
+    install = Install(conf={'index': index})
+
+    # And I mock the finder service end-point
+    install.finder.queue = Mock()
+    install.pipeline()
+
+    # When I feed the installer with a requirement *without dependencies*
+    install.feed('tests', requirement='package (1.0)')
+
+    # And I feed the installer with another requirement for the same
+    # package above, requested by `something-else`
+    install.feed('tests', requirement='package (3.0)', dependency_of='something-else')
+
+    # Then I see that the requirement without any dependencies
+    # (primary requirement) is the chosen one
+    install.finder.queue.assert_called_once_with('tests', requirement='package (1.0)')
+    install.mapping.requirements.should.equal(set(['package (1.0)']))
+
+
 def test_feed_filter_dups():
     "Install#feed() Should skip duplicated requirements"
 

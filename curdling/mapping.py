@@ -70,6 +70,12 @@ class Mapping(object):
         return [version for version in versions
             if matcher.match(version)]
 
+    def was_directly_required(self, spec):
+        for requirement in self.get_requirements_by_package_name(spec):
+            if self.is_primary_requirement(requirement):
+                return True
+        return False
+
     def is_primary_requirement(self, requirement):
         return bool(self.dependencies[requirement].count(None))
 

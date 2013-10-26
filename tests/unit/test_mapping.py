@@ -115,6 +115,30 @@ def test_matching_versions_with_hyphen():
     ])
 
 
+def test_was_directly_required():
+    """Mapping#was_directly_required() Should be True for requirements required directly by the user
+
+    This method ignores the version of the received requirement and
+    looks for previously added requirements with the same package name
+    and check each one trying to find any directly required entries.
+    """
+
+    # Given that I have a mapping
+    mapping = Mapping()
+
+    # And a primary requirement
+    mapping.requirements.add('sure (1.2.1)')
+    mapping.dependencies['sure (1.2.1)'] = [None]
+
+    # And a secondary requirement
+    mapping.requirements.add('forbiddenfruit (0.1.1)')
+    mapping.dependencies['forbiddenfruit (0.1.1)'] = ['sure (1.2.1)']
+
+    # Then I can confirm I previously added a primary requirement
+    mapping.was_directly_required('sure (3.9)').should.be.true
+
+    mapping.was_directly_required('forbiddenfruit (0.1.1)').should.be.false
+
 
 def test_is_primary_requirement():
     """Mapping#is_primary_requirement() True for requirements directly requested by the user

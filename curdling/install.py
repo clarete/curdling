@@ -17,6 +17,7 @@ from .services.uploader import Uploader
 
 import os
 import time
+import threading
 
 
 PACKAGE_BLACKLIST = (
@@ -64,6 +65,7 @@ class Install(SignalEmitter):
 
         # Track dependencies and requirements to be installed
         self.mapping = Mapping()
+        self.lock = threading.RLock()
 
         # General params for all the services
         args = self.conf
@@ -146,13 +148,23 @@ class Install(SignalEmitter):
         if not is_url(requirement) and parse_requirement(requirement).name in PACKAGE_BLACKLIST:
             return
 
-        # Filter duplicated requirements
-        if requirement in self.mapping.requirements:
-            return
-
-        # Save the requirement and its requester for later
-        self.mapping.requirements.add(requirement)
-        self.mapping.dependencies[requirement].append(data.get('dependency_of'))
+        # Well, that's a bad thing. We wouldn't really need a lock if
+        # we used the same pattern that we used in the rest of the
+        # system, queuing requirements. Going deeper. It happens
+        # because we have a few `dependencer` instances running and
+        # they might try to write/read from the mapping at the same
+        # time. We'll should get rid of that at some point, creating
+        # more granular services that are part of the main pipeline.
+        with self.lock:
+            # Filter duplicated requirements
+            if requirement in self.mapping.requirements:
+                return
+            # Filter previously primarily required packages
+            if self.mapping.was_directly_required(requirement):
+                return
+            # Save the requirement and its requester for later
+            self.mapping.requirements.add(requirement)
+            self.mapping.dependencies[requirement].append(data.get('dependency_of'))
 
         # Defining which place we're moving our requirements
         service = self.finder
