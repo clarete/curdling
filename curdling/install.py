@@ -152,7 +152,7 @@ class Install(SignalEmitter):
 
         # Save the requirement and its requester for later
         self.mapping.requirements.add(requirement)
-        self.mapping.dependencies[requirement] = data.get('dependency_of')
+        self.mapping.dependencies[requirement].append(data.get('dependency_of'))
 
         # Defining which place we're moving our requirements
         service = self.finder
@@ -178,8 +178,8 @@ class Install(SignalEmitter):
                 for requirement in self.mapping.get_requirements_by_package_name(package_name):
                     errors[package_name].append({
                         'requirement': requirement,
-                        'exception': self.mapping.get_data(requirement, 'exception') or exc,
-                        'dependency_of': self.mapping.get_data(requirement, 'dependency_of'),
+                        'exception': self.mapping.errors.get(requirement, exc),
+                        'dependency_of': self.mapping.dependencies[requirement],
                     })
             else:
                 # It's OK to queue all the packages without being sure
@@ -188,7 +188,7 @@ class Install(SignalEmitter):
                 # installed. It won't happen until we check for errors.
                 self.installer.queue('main',
                     requirement=chosen_requirement,
-                    wheel=self.mapping.get_data(chosen_requirement, 'wheel'))
+                    wheel=self.mapping.wheels[chosen_requirement])
 
         # Check if the number of packages to install is the same as
         # the number of packages initially requested. If it's not

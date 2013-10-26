@@ -406,6 +406,7 @@ def test_load_installer():
     install.installer.queue = Mock(__name__=str('queue'))
 
     # And a few packages inside of the `Install.wheels` attribute
+    install.mapping.requirements = set(['package (0.1)', 'another-package (0.1)'])
     install.mapping.wheels = {
         'package (0.1)': 'package-0.1-py27-none-any.whl',
         'another-package (0.1)': 'another_package-0.1-py27-none-any.whl',
@@ -446,6 +447,7 @@ def test_load_installer_handle_version_conflicts():
     install.installer.queue = Mock(__name__=str('queue'))
 
     # And two conflicting packages requested
+    install.mapping.requirements = set(['package (0.1)', 'package (0.2)'])
     install.mapping.wheels = {
         'package (0.1)': 'package-0.1-py27-none-any.whl',
         'package (0.2)': 'package-0.2-py27-none-any.whl',

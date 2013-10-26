@@ -32,7 +32,6 @@ class Mapping(object):
             'exception': None,
         }
 
-        self.mapping = {}
         self.requirements = set()
         self.dependencies = defaultdict(list)
         self.stats = defaultdict(int)
@@ -49,36 +48,18 @@ class Mapping(object):
         # Load all the wheels we built so far into the mapping, so
         # we'll be able to narrow down all the versions collected for
         # each single package to the best one.
-        packages = set()
-        for requirement in self.wheels:
-            self.file_requirement(requirement, self.dependencies[requirement])
-            self.set_data(requirement, 'wheel', self.wheels[requirement])
-            packages.add(util.parse_requirement(requirement).name)
-        return packages
-
-    def file_requirement(self, requirement, dependencies=None):
-        entry = self.mapping.get(requirement, None)
-        if not entry:
-            entry = self.requirement_structure()
-            self.mapping[requirement] = entry
-        entry['dependency_of'].extend(dependencies or [None])
-
-    def set_data(self, requirement, field, value):
-        self.mapping[requirement][field] = value
-
-    def get_data(self, requirement, field):
-        return self.mapping[requirement][field]
+        return set(util.parse_requirement(r).name for r in self.wheels)
 
     def filed_packages(self):
-        return list(set(util.parse_requirement(r).name for r in self.mapping.keys()))
+        return list(set(util.parse_requirement(r).name for r in self.requirements))
 
     def get_requirements_by_package_name(self, package_name):
-        return [x for x in self.mapping.keys()
+        return [x for x in self.requirements
             if util.parse_requirement(x).name == util.parse_requirement(package_name).name]
 
     def available_versions(self, package_name):
-        return sorted(set(wheel_version(self.get_data(requirement, 'wheel'))
-            for requirement in self.mapping.keys()
+        return sorted(set(wheel_version(self.wheels[requirement])
+            for requirement in self.requirements
                 if util.parse_requirement(requirement).name == package_name),
                       reverse=True)
 
@@ -89,15 +70,8 @@ class Mapping(object):
         return [version for version in versions
             if matcher.match(version)]
 
-    def broken_versions(self, requirement):
-        package_name = util.parse_requirement(requirement).name
-        versions = self.available_versions(package_name)
-        return [version for version in versions
-            if self.get_data(requirement, 'exception')
-                is not None]
-
     def is_primary_requirement(self, requirement):
-        return bool(self.mapping[requirement]['dependency_of'].count(None))
+        return bool(self.dependencies[requirement].count(None))
 
     def best_version(self, requirement_or_package_name, debug=False):
         package_name = util.parse_requirement(requirement_or_package_name).name
@@ -115,7 +89,7 @@ class Mapping(object):
         all_constraints = []
         primary_versions = []
         for requirement in requirements:
-            version = wheel_version(self.get_data(requirement, 'wheel'))
+            version = wheel_version(self.wheels[requirement])
             requirements_by_version[version] = requirement
             if self.is_primary_requirement(requirement):
                 primary_versions.append(version)
