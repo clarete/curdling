@@ -1,7 +1,6 @@
 # Curdling - A Concurrent package manager for Python
 
 [![Build Status](https://secure.travis-ci.org/clarete/curdling.png)](http://travis-ci.org/clarete/curdling)
-[![instanc.es Badge](https://instanc.es/bin/clarete/curdling.png)](http://instanc.es)
 
 # Installing
 
@@ -71,3 +70,7 @@ It's like `easy_install` or `pip`, but a lot faster.
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/clarete/curdling/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+[![instanc.es Badge](https://instanc.es/bin/clarete/curdling.png)](http://instanc.es)
