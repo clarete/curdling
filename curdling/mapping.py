@@ -95,7 +95,7 @@ class Mapping(object):
         all_versions = []
         all_constraints = []
         primary_versions = []
-        for requirement in set(requirements).difference(self.repeated):
+        for requirement in requirements:
             version = wheel_version(self.wheels[requirement])
             requirements_by_version[version] = requirement
             if self.is_primary_requirement(requirement):

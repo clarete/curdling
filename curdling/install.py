@@ -43,6 +43,7 @@ def unique(func, install):
             return func(requester, **data)
         else:
             install.mapping.repeated.append(data['requirement'])
+            install.mapping.requirements.discard(data['requirement'])
     return wrapper
 
 
@@ -217,7 +218,7 @@ class Install(SignalEmitter):
         while True:
             total = len(self.mapping.requirements)
             retrieved = self.mapping.count('downloader') + len(self.mapping.repeated)
-            built = self.mapping.count('dependencer') + len(self.mapping.repeated)
+            built = self.mapping.count('dependencer')
             failed = len(self.mapping.errors)
             self.emit('update_retrieve_and_build',
                 total, retrieved, built, failed)
