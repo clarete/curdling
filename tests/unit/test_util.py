@@ -109,9 +109,35 @@ def test_get_auth_info_from_url():
         'authorization': 'Basic dXNlcjpwYXNzd29yZA=='})
 
 
+def test_get_auth_info_from_url_no_auth_info():
+    "get_auth_info_from_url() Should return an empty dictionary if no authentication info is found in the URL"
+
+    # Given that I have a URL that contains authentication info
+    url = "http://domain.org"
+
+    # When I try to get the authentication information
+    authentication_information = util.get_auth_info_from_url(url)
+
+    # Then I see that the authentication information is just empty
+    authentication_information.should.equal({})
+
+
+@patch('curdling.util.subprocess')
+def test_execute_command(subprocess):
+    "execute_command() Should return None when the subprocess runs successfully"
+
+    # Given that my process will definitely fail
+    subprocess.Popen.return_value.returncode = 0
+    subprocess.Popen.return_value.communicate.return_value = ["stdout", "stderr"]
+
+    # When I execute the command; Then I see it raises the right exception
+    # containing the stderr of the command we tried to run
+    util.execute_command('ls').should.be.none
+
+
 @patch('curdling.util.subprocess')
 def test_execute_command_when_it_fails(subprocess):
-    "execute_command() will raise an exception if the command fails"
+    "execute_command() Should raise an exception if the command fails"
 
     # Given that my process will definitely fail
     subprocess.Popen.return_value.returncode = 1
