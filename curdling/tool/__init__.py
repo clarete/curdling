@@ -2,6 +2,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 from functools import partial
 from ..index import Index
 from ..util import expand_requirements, safe_name, spaces
+from ..version import __version__
 
 from ..install import Install
 from ..uninstall import Uninstall
@@ -187,6 +188,10 @@ def main():
     parser.add_argument(
         '-q', '--quiet', action='store_true', default=False,
         help='No output unless combined with `-l\'')
+
+    parser.add_argument(
+        '-v', '--version', action='version',
+        version='%(prog)s {0}'.format(__version__))
 
     subparsers = parser.add_subparsers()
     add_parser_install(subparsers)
