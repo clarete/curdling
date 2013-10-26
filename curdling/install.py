@@ -174,30 +174,48 @@ class Install(SignalEmitter):
         service.queue(requester, **data)
 
     def load_installer(self):
-        maestro = Mapping()
-        package_names = set()
-
+        # Load all the wheels we built so far into the mapping, so
+        # we'll be able to narrow down all the versions collected for
+        # each single package to the best one.
+        mapping = Mapping()
+        installable_packages = set()
         for requirement in self.wheels:
-            maestro.file_requirement(requirement, self.dependencies[requirement])
-            maestro.set_data(requirement, 'wheel', self.wheels[requirement])
-            package_names.add(parse_requirement(requirement).name)
+            mapping.file_requirement(requirement, self.dependencies[requirement])
+            mapping.set_data(requirement, 'wheel', self.wheels[requirement])
+            installable_packages.add(parse_requirement(requirement).name)
 
+        # Look for the best version collected for each package.
+        # Failures will be collected and forwarded to the caller.
         errors = defaultdict(list)
-        for package_name in package_names:
+        for package_name in installable_packages:
             try:
-                _, chosen_requirement = maestro.best_version(package_name)
+                _, chosen_requirement = mapping.best_version(package_name)
             except Exception as exc:
-                for requirement in maestro.get_requirements_by_package_name(package_name):
+                for requirement in mapping.get_requirements_by_package_name(package_name):
                     errors[package_name].append({
                         'requirement': requirement,
-                        'exception': maestro.get_data(requirement, 'exception') or exc,
-                        'dependency_of': maestro.get_data(requirement, 'dependency_of'),
+                        'exception': mapping.get_data(requirement, 'exception') or exc,
+                        'dependency_of': mapping.get_data(requirement, 'dependency_of'),
                     })
             else:
-                wheel = maestro.get_data(chosen_requirement, 'wheel')
+                # It's OK to queue all the packages without being sure
+                # about the availability of all the required packages
+                # because the installer service is not actually
+                # installed. It won't happen until we check for errors.
                 self.installer.queue('main',
-                    requirement=chosen_requirement, wheel=wheel)
-        return package_names, errors
+                    requirement=chosen_requirement,
+                    wheel=mapping.get_data(chosen_requirement, 'wheel'))
+
+        # Check if the number of packages to install is the same as
+        # the number of packages initially requested. If it's not
+        # true, it means that a few packages could not be built.  We
+        # might have valuable information about the possible failures
+        # in the `self.errors` dictionary.
+        initial_requirements = \
+            set(parse_requirement(r).name for r in self.requirements)
+        if installable_packages != initial_requirements:
+            errors.update(self.errors)
+        return installable_packages, errors
 
     def retrieve_and_build(self):
         # Wait until all the packages have the chance to be processed

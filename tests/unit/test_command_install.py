@@ -2,7 +2,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 from mock import call, patch, Mock
 from nose.tools import nottest
 
-from curdling.exceptions import VersionConflict
+from curdling.exceptions import VersionConflict, ReportableError
 from curdling.index import Index, PackageNotFound
 from curdling.install import Install
 from curdling import install
@@ -451,6 +451,45 @@ def test_load_installer_handle_version_conflicts():
     errors['package'][1]['exception'].should.be.a(VersionConflict)
     str(errors['package'][1]['exception']).should.equal(
         'Requirement: package (0.2, 0.1), Available versions: 0.2, 0.1')
+
+
+def test_load_installer_forward_errors():
+    "Install#load_installer() Should forward errors from other services when `installable_packages` != `initial_requirements`"
+
+    # Given that I have the install command with an empty index
+    index = Index('')
+    index.storage = {}
+    install = Install(conf={'index': index})
+    install.pipeline()
+
+    # And I feed the installer with a requirement
+    install.feed('tests', requirement='package')
+
+    # And I cause an error in the download worker
+    install.downloader.handle = Mock(side_effect=Exception('Beep-Bop'))
+
+    # And I mock the installer queue
+    install.installer.queue = Mock(__name__=str('queue'))
+
+    # When I try to retrieve and build all the requirements
+    install.start()
+    install.retrieve_and_build()
+
+    # And When I load the installer
+    names, errors = install.load_installer()
+
+    # Then I see the list of all successfully processed packages
+    names.should.be.empty
+
+    # And Then I see that the error list was filled properly
+    errors.should.have.length_of(1)
+    errors.should.have.key('package').with_value.being.a(list)
+    errors['package'].should.have.length_of(1)
+
+    errors['package'][0]['dependency_of'].should.equal([None])
+    errors['package'][0]['exception'].should.be.a(ReportableError)
+    str(errors['package'][0]['exception']).should.equal(
+        'Requirement `package\' not found')
 
 
 def test_count():
