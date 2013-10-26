@@ -398,8 +398,11 @@ def test_load_installer():
     names.should.equal(set(['package', 'another-package']))
 
     # And Then I see that the installer should be loaded will all the
-    # requested packages
-    list(install.installer.queue.call_args_list).should.equal([
+    # requested packages; This nasty `sorted` call is here to make it
+    # work on python3. The order of the call list I build manually to
+    # compare doesn't match the order of `call_args_list` from our
+    # mock on py3 :/
+    sorted(install.installer.queue.call_args_list, key=lambda i: i[0], reverse=True).should.equal([
         call('main',
              wheel='another_package-0.1-py27-none-any.whl',
              requirement='another-package (0.1)'),
