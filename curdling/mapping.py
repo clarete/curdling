@@ -12,10 +12,6 @@ def list_constraints(requirement):
         or None)
 
 
-def format_requirement(requirement):
-    return util.parse_requirement(requirement).requirement.replace('== ', '')
-
-
 def wheel_version(path):
     """Retrieve the version inside of a package data slot
 
@@ -50,15 +46,6 @@ class Mapping(object):
             entry = self.requirement_structure()
             self.mapping[requirement] = entry
         entry['dependency_of'].append(dependency_of)
-
-    def set_status(self, requirement, status):
-        self.mapping[requirement]['status'] = status
-
-    def add_status(self, requirement, status):
-        self.set_status(requirement, self.get_status(requirement) | status)
-
-    def get_status(self, requirement):
-        return self.mapping[requirement]['status']
 
     def set_data(self, requirement, field, value):
         self.mapping[requirement][field] = value
