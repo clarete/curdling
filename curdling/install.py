@@ -16,8 +16,10 @@ from .services.installer import Installer
 from .services.uploader import Uploader
 
 import os
+import sys
 import time
 import threading
+import traceback
 
 
 PACKAGE_BLACKLIST = (
@@ -40,7 +42,7 @@ def unique(func, install):
         if tarball not in install.downloader.processing_packages:
             return func(requester, **data)
         else:
-            install.repeated += 1
+            install.mapping.repeated.append(data['requirement'])
     return wrapper
 
 
@@ -59,9 +61,6 @@ class Install(SignalEmitter):
         self.update_install = Signal()
         self.update_upload = Signal()
         self.finished = Signal()
-
-        # Used to count how many packages we skip
-        self.repeated = 0
 
         # Track dependencies and requirements to be installed
         self.mapping = Mapping()
@@ -187,6 +186,8 @@ class Install(SignalEmitter):
             try:
                 _, chosen_requirement = self.mapping.best_version(package_name)
             except Exception as exc:
+                self.logger.exception("best_version('%s'): %s:%d (%s) %s",
+                    package_name, *traceback.extract_tb(sys.exc_info()[2])[0])
                 for requirement in self.mapping.get_requirements_by_package_name(package_name):
                     errors[package_name].append({
                         'requirement': requirement,
@@ -215,8 +216,8 @@ class Install(SignalEmitter):
         # Wait until all the packages have the chance to be processed
         while True:
             total = len(self.mapping.requirements)
-            retrieved = self.mapping.count('downloader') + self.repeated
-            built = self.mapping.count('dependencer') + self.repeated
+            retrieved = self.mapping.count('downloader') + len(self.mapping.repeated)
+            built = self.mapping.count('dependencer') + len(self.mapping.repeated)
             failed = len(self.mapping.errors)
             self.emit('update_retrieve_and_build',
                 total, retrieved, built, failed)

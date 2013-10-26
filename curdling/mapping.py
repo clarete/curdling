@@ -37,6 +37,7 @@ class Mapping(object):
         self.stats = defaultdict(int)
         self.errors = defaultdict(list)
         self.wheels = {}
+        self.repeated = []
 
     def count(self, service):
         return self.stats[service]
@@ -94,7 +95,7 @@ class Mapping(object):
         all_versions = []
         all_constraints = []
         primary_versions = []
-        for requirement in requirements:
+        for requirement in set(requirements).difference(self.repeated):
             version = wheel_version(self.wheels[requirement])
             requirements_by_version[version] = requirement
             if self.is_primary_requirement(requirement):
