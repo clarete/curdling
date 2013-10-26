@@ -66,7 +66,7 @@ def get_packages_from_args(args):
 
 
 def progress_bar(prefix, percent):
-    percent_count = percent / 10
+    percent_count = int(percent / 10)
     progress_bar = ('#' * percent_count) + (' ' * (10 - percent_count))
     return "\r\033[K{0}: [{1}] {2:>2}% ".format(prefix, progress_bar, percent)
 
