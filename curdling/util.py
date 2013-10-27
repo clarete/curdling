@@ -90,10 +90,10 @@ def split_name(fname):
     return name, ext[1:], frag
 
 
-def expand_requirements(file_name):
+def expand_requirements(open_file):
     requirements = []
 
-    for req in io.open(file_name).read().splitlines():
+    for req in open_file.read().splitlines():
         req = req.split('#', 1)[0].strip()
         if not req:
             continue
@@ -102,7 +102,7 @@ def expand_requirements(file_name):
         # including other files.
         include = INCLUDE_PATTERN.findall(req)
         if include:
-            requirements.extend(expand_requirements(include[0]))
+            requirements.extend(expand_requirements(io.open(include[0])))
             continue
 
         # Finally, we're sure that it's just a package description

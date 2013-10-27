@@ -22,7 +22,7 @@ def add_parser_install(subparsers):
     parser = subparsers.add_parser(
         'install', help='Locate and install packages')
     parser.add_argument(
-        '-r', '--requirements',
+        '-r', '--requirements', type=argparse.FileType('r'),
         help='A requirements file')
     parser.add_argument(
         '-i', '--index', action='append',
@@ -47,7 +47,7 @@ def add_parser_uninstall(subparsers):
     parser = subparsers.add_parser(
         'uninstall', help='Uninstall packages')
     parser.add_argument(
-        '-r', '--requirements',
+        '-r', '--requirements', type=argparse.FileType('r'),
         help='A file listing requirements to be uninstalled')
     parser.add_argument(
         'packages', metavar='PKG', nargs='*',

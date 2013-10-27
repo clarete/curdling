@@ -8,55 +8,57 @@ import io
 def test_expand_requirements(open_func):
     "It should be possible to include other files inside"
 
-    # Given that I have two files, called `development.txt` and
-    # `requirements.txt` with the following content:
-    open_func.return_value.read.side_effect = (
-        '-r requirements.txt\nsure==0.2.1\n',  # development.txt
-        'gherkin==0.1.0\n\n\n',                # requirements.txt
-    )
+    # Given that I have a file called "development.txt"
+    development_txt = Mock()
+    development_txt.read.return_value = \
+        '-r requirements.txt\nsure==0.2.1\n'
 
-    # When I expand the requirements
-    requirements = util.expand_requirements('development.txt')
+    # And a file called "requirements_txt"
+    open_func.return_value.read.return_value = 'gherkin==0.1.0\n\n\n'
 
-    # Then I see that all the required files were retrieved
+    # When I expand the file "development.txt"
+    requirements = util.expand_requirements(development_txt)
+
+    # Then I see that the requirement present in "development.txt" was
+    # included, as well as the one present in "requirements.txt",
+    # referenced using the '-r' option
     requirements.should.equal([
         'gherkin (0.1.0)',
         'sure (0.2.1)',
     ])
 
 
-@patch('io.open')
-def test_expand_commented_requirements(open_func):
+def test_expand_commented_requirements():
     "expand_requirements() should skip commented lines"
 
-    # Given that I have a file `development.txt` and with the following
-    # content:
-    open_func.return_value.read.return_value = (
-        '# -r requirements.txt\n\n\n'   # comment
-        'gherkin==0.1.0\n\n\n'          # requirements.txt
+    # Given the file "development.txt"
+    development_txt = Mock()
+    development_txt.read.return_value = (
+        '# -r requirements.txt\n\n'
+        'gherkin==0.1.0\n\n\n'
     )
 
-    # When I expand the requirements
-    requirements = util.expand_requirements('development.txt')
+    # When I expand the file
+    requirements = util.expand_requirements(development_txt)
 
-    # Then I see that all the required files were retrieved
+    # Then I see that all the required files were retrieved and the
+    # comments were omitted
     requirements.should.equal([
         'gherkin (0.1.0)',
     ])
 
 
-@patch('io.open')
-def test_expand_requirements_ignore_http_links(open_func):
+def test_expand_requirements_parse_http_links():
     "It should be possible to parse files with http links"
 
-    # Given that I have a file `development.txt` and with the following
-    # content:
-    open_func.return_value.read.return_value = (
+    # Given the file "development.txt"
+    development_txt = Mock()
+    development_txt.read.return_value = (
         'sure==0.2.1\nhttp://python.org'
     )
 
-    # When I expand the requirements
-    requirements = util.expand_requirements('development.txt')
+    # When I expand the file
+    requirements = util.expand_requirements(development_txt)
 
     # Then I see that all the required files were retrieved
     requirements.should.equal([
