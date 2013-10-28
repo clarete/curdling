@@ -45,18 +45,34 @@ Noticeable Features
 * Usage of bleeding edge technology available in the Python community;
 * Concurrent and Parallel, but :kbd:`Ctrl`-:kbd:`C` still works;
 
-Motivation
-~~~~~~~~~~
+Why writing curdling instead of using pip?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Almost every Python developer knows how to install a third party
-library in a `virtualenv <http://www.virtualenv.org/en/latest/>`_ with
-`pip <http://pip-installer.org>`_. It works fairly well, but it could
-be faster.
+Pip is awesome! I've been using it for managing my Python packages for
+a while now. However, its code base is just too complex, which makes
+it hard to iterate fast on its development and implement exciting new
+features in a reasonable time.
 
-Curdling was born to decrease the time taken by dependency
-installation in the Continuous Integration Server that tests software
-at `Yipit <http://yipit.com>`_. We managed to decrease the build in
-*~70%* by replacing **pip** by Curdling.
+Curdling was initially developed to decrease the time taken by
+dependency installation in the Continuous Integration Server that
+tests software at `Yipit <http://yipit.com>`_. We managed to decrease
+the build time *~70%* by replacing *pip* with *Curdling*.
+
+The improvements were so noticeable because, among the 167 libraries
+we depend to build our software we have ``lxml``, ``numpy``,
+``pygmagic``, ``pycrypto``, ``gevent`` etc.
+
+*Curdling* is faster than *pip* because it caches the binary packages
+compiled when the ``setup.py`` script is ran. *Curdling* also provides
+a :ref:`distributed-cache`, so you can share your compiled packages
+with other environments.
+
+So, when we add a new dependency to our ``requirements.txt`` file,
+*curdling* will just try to retrieve the new package from the
+cache. If the package is not cached in the first run, curdling will
+build it *on the CI* and upload to the cache and the package will be
+cached and we'll just use the cached version the next time we need to
+install it.
 
 
 Installation

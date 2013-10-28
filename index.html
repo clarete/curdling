@@ -89,16 +89,29 @@ how curdling works.</p>
 <li>Concurrent and Parallel, but <tt class="kbd docutils literal"><span class="pre">Ctrl</span></tt>-<tt class="kbd docutils literal"><span class="pre">C</span></tt> still works;</li>
 </ul>
 </div>
-<div class="section" id="motivation">
-<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
-<p>Almost every Python developer knows how to install a third party
-library in a <a class="reference external" href="http://www.virtualenv.org/en/latest/">virtualenv</a> with
-<a class="reference external" href="http://pip-installer.org">pip</a>. It works fairly well, but it could
-be faster.</p>
-<p>Curdling was born to decrease the time taken by dependency
-installation in the Continuous Integration Server that tests software
-at <a class="reference external" href="http://yipit.com">Yipit</a>. We managed to decrease the build in
-<em>~70%</em> by replacing <strong>pip</strong> by Curdling.</p>
+<div class="section" id="why-writing-curdling-instead-of-using-pip">
+<h2>Why writing curdling instead of using pip?<a class="headerlink" href="#why-writing-curdling-instead-of-using-pip" title="Permalink to this headline">¶</a></h2>
+<p>Pip is awesome! I&#8217;ve been using it for managing my Python packages for
+a while now. However, its code base is just too complex, which makes
+it hard to iterate fast on its development and implement exciting new
+features in a reasonable time.</p>
+<p>Curdling was initially developed to decrease the time taken by
+dependency installation in the Continuous Integration Server that
+tests software at <a class="reference external" href="http://yipit.com">Yipit</a>. We managed to decrease
+the build time <em>~70%</em> by replacing <em>pip</em> with <em>Curdling</em>.</p>
+<p>The improvements were so noticeable because, among the 167 libraries
+we depend to build our software we have <tt class="docutils literal"><span class="pre">lxml</span></tt>, <tt class="docutils literal"><span class="pre">numpy</span></tt>,
+<tt class="docutils literal"><span class="pre">pygmagic</span></tt>, <tt class="docutils literal"><span class="pre">pycrypto</span></tt>, <tt class="docutils literal"><span class="pre">gevent</span></tt> etc.</p>
+<p><em>Curdling</em> is faster than <em>pip</em> because it caches the binary packages
+compiled when the <tt class="docutils literal"><span class="pre">setup.py</span></tt> script is ran. <em>Curdling</em> also provides
+a <a class="reference internal" href="distributed-cache.html#distributed-cache"><em>Distributed Cache</em></a>, so you can share your compiled packages
+with other environments.</p>
+<p>So, when we add a new dependency to our <tt class="docutils literal"><span class="pre">requirements.txt</span></tt> file,
+<em>curdling</em> will just try to retrieve the new package from the
+cache. If the package is not cached in the first run, curdling will
+build it <em>on the CI</em> and upload to the cache and the package will be
+cached and we&#8217;ll just use the cached version the next time we need to
+install it.</p>
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
