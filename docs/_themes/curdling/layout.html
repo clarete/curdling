@@ -1,0 +1,51 @@
+{# Based on the flask sphinx theme. See the copyright notice in the
+   curdling.css_t file #}
+{%- extends "basic/layout.html" %}
+{%- block extrahead %}
+    {{ super() }}
+    {% if theme_opengraph_image %}
+        <link rel="image_src" href="{{ pathto(theme_opengraph_image, 1) }}" />
+    {% endif %}
+    {% if theme_touch_icon %}
+        <link rel="apple-touch-icon" href="{{ pathto('_static/' ~ theme_touch_icon, 1) }}" />
+    {% endif %}
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+{% endblock %}
+{%- block relbar2 %}{% endblock %}
+{% block header %}
+    {{ super() }}
+    {% if pagename == 'index' %}
+        <div class="indexwrapper">
+    {% endif %}
+{% endblock %}
+{%- block footer %}
+    <div class="footer">
+        &copy; Copyright {{ copyright }}.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+    {% if pagename == 'index' %}
+        </div>
+    {% endif %}
+    {% if theme_google_analytics %}
+        <script>
+         var domainMatch = /https?:\/\/([^\/]+)/.exec(location.href);
+         var _gaq = _gaq || [];
+         _gaq.push(['_setAccount', '{{ theme_google_analytics }}']);
+         if (domainMatch) {
+             _gaq.push(['_setDomainName', domainMatch[1]]);
+         }
+         _gaq.push(['_trackPageview']);
+         (function() {
+             var isHTTPS = 'https:' == document.location.protocol;
+             var ga = document.createElement('script');
+             ga.type = 'text/javascript';
+             ga.async = true;
+             var url = isHTTPS ? 'https://ssl' : 'http://www';
+             url += '.google-analytics.com/ga.js';
+             ga.src = url;
+             var s = document.getElementsByTagName('script')[0];
+             s.parentNode.insertBefore(ga, s);
+         })();
+        </script>
+    {% endif %}
+{%- endblock %}
