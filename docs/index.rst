@@ -32,7 +32,7 @@ Motivation
 
 Almost every Python developer knows how to install a third party
 library in a `virtualenv <http://www.virtualenv.org/en/latest/>`_ with
-`pip <http://pip-installer.org>`_. It works fairly well, but it could
+`PIP <http://pip-installer.org>`_. It works fairly well, but it could
 be faster.
 
 Curdling was born to decrease the time taken by dependency

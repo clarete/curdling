@@ -39,7 +39,13 @@ Python developer in the world and attract as many contributors as
 possible, we still have to ensure quality and stability in the
 product.
 
-Changes to the subsystems, like the ref:`curdling.services.Downloader`
+Although, if a reasonable change contains proper tests, it will likely
+be merged. It's strongly suggested for developers willing to send pull
+requests to read
+`a <https://github.com/clarete/curdling/blob/master/tests/unit/test_signals.py>`_
+`few <https://github.com/clarete/curdling/blob/master/tests/unit/test_command_install.py#L245>`_
+`tests <https://github.com/clarete/curdling/blob/master/tests/unit/test_mapping.py#L118>`_
+already present in the code base.
 
 
 How the Install command works
