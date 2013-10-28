@@ -24,7 +24,7 @@
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Curdling 0.3.4 documentation" href="index.html" />
-    <link rel="next" title="Error Reporting" href="error-reporting.html" />
+    <link rel="next" title="Error Handling" href="error-handling.html" />
     <link rel="prev" title="Welcome to Curdling" href="index.html" />
      
     
@@ -43,7 +43,7 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="error-reporting.html" title="Error Reporting"
+          <a href="error-handling.html" title="Error Handling"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="index.html" title="Welcome to Curdling"
@@ -153,16 +153,15 @@ Requirements</em>.</p>
 process are called <em>Secondary Requirements</em>.</p>
 <p>If a package is requested more than once, curdling will <strong>always</strong>
 prefer the <em>Primary Requirements</em>.</p>
+</div>
 <div class="section" id="declaring-pypi-repositories">
-<h4>Declaring PyPi repositories<a class="headerlink" href="#declaring-pypi-repositories" title="Permalink to this headline">¶</a></h4>
+<h3>Declaring PyPi repositories<a class="headerlink" href="#declaring-pypi-repositories" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">-i</span></tt>, <tt class="docutils literal"><span class="pre">--index=URL</span></tt>: Set which <em>PyPi</em> external repositories the
-install should use. Can be repeated as many times as needed.</li>
+installer should use. Can be repeated as many times as needed.</li>
 </ul>
-</div>
-</div>
 <div class="section" id="default-repository">
-<h3>Default repository<a class="headerlink" href="#default-repository" title="Permalink to this headline">¶</a></h3>
+<h4>Default repository<a class="headerlink" href="#default-repository" title="Permalink to this headline">¶</a></h4>
 <p>If no repositories are specified, curdling will use the official
 <em>PyPi</em> URL: <strong>http://pypi.python.org/simple</strong>. However, if one single
 <tt class="docutils literal"><span class="pre">-i</span></tt> parameter is declared, the default address is removed from the
@@ -177,6 +176,20 @@ together, both addresses have to be manually specified:</p>
 <div class="highlight-python"><pre>$ curd install -i http://localhost/simple -i http://pypi.python.org/simple flask</pre>
 </div>
 <p>So the user can choose which repository the lookup will happen first.</p>
+</div>
+</div>
+<div class="section" id="declaring-curdling-repositories">
+<h3>Declaring Curdling repositories<a class="headerlink" href="#declaring-curdling-repositories" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><tt class="docutils literal"><span class="pre">-c</span></tt>, <tt class="docutils literal"><span class="pre">--curdling-index=CURDLING_INDEX</span></tt>: Set which <em>Curdling</em>
+external repositories the installer should use. Can be repeated as
+many times as needed.</li>
+</ul>
+<p>Precedence over <em>PyPi</em> repositories. The installer will try to
+retrieve binary files from any <tt class="docutils literal"><span class="pre">curdling</span></tt> servers specified before
+accessing the ones declared using the <tt class="docutils literal"><span class="pre">-i</span></tt> parameter.</p>
+<p>Read more about how caching works on curdling in the
+<a class="reference internal" href="distributed-cache.html#distributed-cache"><em>Distributed Cache</em></a> section.</p>
 </div>
 </div>
 <div class="section" id="curd-uninstall">
@@ -215,11 +228,12 @@ section <a class="reference internal" href="#id2"><em>Syntax for declaring requi
 <li><a class="reference internal" href="#vcs-support">VCS support</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#precedence-when-declaring-requirements">Precedence when declaring requirements</a><ul>
-<li><a class="reference internal" href="#declaring-pypi-repositories">Declaring PyPi repositories</a></li>
+<li><a class="reference internal" href="#precedence-when-declaring-requirements">Precedence when declaring requirements</a></li>
+<li><a class="reference internal" href="#declaring-pypi-repositories">Declaring PyPi repositories</a><ul>
+<li><a class="reference internal" href="#default-repository">Default repository</a></li>
 </ul>
 </li>
-<li><a class="reference internal" href="#default-repository">Default repository</a></li>
+<li><a class="reference internal" href="#declaring-curdling-repositories">Declaring Curdling repositories</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#curd-uninstall">curd uninstall</a></li>
@@ -231,8 +245,8 @@ section <a class="reference internal" href="#id2"><em>Syntax for declaring requi
   <p class="topless"><a href="index.html"
                         title="previous chapter">Welcome to Curdling</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="error-reporting.html"
-                        title="next chapter">Error Reporting</a></p>
+  <p class="topless"><a href="error-handling.html"
+                        title="next chapter">Error Handling</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="_sources/usage.txt"

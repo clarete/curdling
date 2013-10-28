@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="top" title="Curdling 0.3.4 documentation" href="index.html" />
     <link rel="next" title="Design and Implementation" href="design-and-implementation.html" />
-    <link rel="prev" title="Error Reporting" href="error-reporting.html" />
+    <link rel="prev" title="Error Handling" href="error-handling.html" />
      
     
     
@@ -46,7 +46,7 @@
           <a href="design-and-implementation.html" title="Design and Implementation"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="error-reporting.html" title="Error Reporting"
+          <a href="error-handling.html" title="Error Handling"
              accesskey="P">previous</a> |</li>
         <li><a href="index.html">Curdling 0.3.4 documentation</a> &raquo;</li> 
       </ul>
@@ -81,15 +81,15 @@ separately. The following command will do the job:</p>
 <p>That&#8217;s right, your cache server is running and all the computers that
 have access to this machine through HTTP can use your cache.</p>
 <p>Available command line arguments:</p>
-<div class="highlight-python"><pre>$ curd-server [-h] [-d] [-H HOST] [-p PORT] [-u USER_DATABASE_PATH]
-              DIRECTORY</pre>
+<div class="highlight-python"><pre>$ curd-server [-h] [-d] [-H HOST] [-p PORT] [-u USER_DB] DIRECTORY</pre>
 </div>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">-h</span></tt>, <tt class="docutils literal"><span class="pre">--help</span></tt>: Shows a friendly help text;</li>
 <li><tt class="docutils literal"><span class="pre">-d</span></tt>, <tt class="docutils literal"><span class="pre">--debug</span></tt>: Runs a pure <a class="reference external" href="http://flask.pocoo.org">Flask</a>
 app with the <cite>debug</cite> flag set to True. Do not use in production;</li>
-<li><tt class="docutils literal"><span class="pre">-H</span></tt>, <tt class="docutils literal"><span class="pre">--host=HOST</span></tt>: Which interface to bind the server;</li>
-<li><tt class="docutils literal"><span class="pre">-p</span></tt>, <tt class="docutils literal"><span class="pre">--port=PORT</span></tt>: Port number;</li>
+<li><tt class="docutils literal"><span class="pre">-H</span></tt>, <tt class="docutils literal"><span class="pre">--host=HOST</span></tt>: Which interface to bind the server;
+Defaults to <tt class="docutils literal"><span class="pre">0.0.0.0</span></tt>;</li>
+<li><tt class="docutils literal"><span class="pre">-p</span></tt>, <tt class="docutils literal"><span class="pre">--port=PORT</span></tt>: Port number; Defaults to <tt class="docutils literal"><span class="pre">8000</span></tt>;</li>
 <li><tt class="docutils literal"><span class="pre">-u</span></tt>, <tt class="docutils literal"><span class="pre">--user-db=USER_DB</span></tt>: Path to an <a class="reference external" href="http://httpd.apache.org/docs/2.2/programs/htpasswd.html">htpasswd</a>
 compatible file. Notice that the only currently supported algorithm
 is <tt class="docutils literal"><span class="pre">crypto</span></tt>.</li>
@@ -157,8 +157,8 @@ with anyone else.</p>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="error-reporting.html"
-                        title="previous chapter">Error Reporting</a></p>
+  <p class="topless"><a href="error-handling.html"
+                        title="previous chapter">Error Handling</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="design-and-implementation.html"
                         title="next chapter">Design and Implementation</a></p>

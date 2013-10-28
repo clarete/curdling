@@ -134,28 +134,28 @@ install &lt;packages&gt;). Let&#8217;s imagine the following call:</p>
 <p><strong>What should happen</strong></p>
 <ol class="arabic simple">
 <li>Find out which packages we want to install (read more about command
-line parsing in the file curdling/tool/__init__.py)</li>
-<li>Feed the &#8220;Requirement Producer&#8221; with the package found in the
-command line</li>
-<li>The requirement will be sent to the &#8220;Finder&#8221; component;</li>
+line parsing in the file <tt class="docutils literal"><span class="pre">curdling/tool/__init__.py</span></tt>);</li>
+<li>Feed the <strong>Requirement Bucket</strong> with the package found in the
+command line;</li>
+<li>The requirement will be sent to the Finder component;</li>
 <li>The finder component uses a modified version of the
-<cite>distlib.locators.SimpleScraperLocator</cite> to find packages on PyPi
+<tt class="docutils literal"><span class="pre">distlib.locators.SimpleScraperLocator</span></tt> to find packages on PyPi
 compatible repos;</li>
-<li>If the package was found, its link will be sent to the downloader;</li>
-<li>The downloader <em>do not</em> download duplicated items. They&#8217;ll be
-discarded.</li>
-<li>If the downloader finds the package, it will send to the curdler
-component</li>
-<li>The curdler (builder) will uncompress the package and run its
-<cite>setup.py</cite>.</li>
+<li>If the package was found, its link will be sent to the Downloader;</li>
+<li>The Downloader <em>does not</em> download duplicated items. They&#8217;ll be
+discarded;</li>
+<li>If the Downloader finds the package, it will send it to the curdler
+component;</li>
+<li>The Curdler (builder) will uncompress the package and run its
+<tt class="docutils literal"><span class="pre">setup.py</span></tt>;</li>
 <li>After building the package, we&#8217;ll actually generate the wheel
-calling <cite>setup.py</cite> again using the <cite>bdist_wheel</cite> subcommand.</li>
-<li>So we finally, have a wheel file. The path for this file will be
-sent to the &#8220;Dependency Checker&#8221;;</li>
-<li>The dependency checker will yield each dependency found and it
-will start the same process for the next package;</li>
-<li>After finding all the dependencies, the checker will forward the
-wheel to the installer queue;</li>
+calling <tt class="docutils literal"><span class="pre">setup.py</span></tt> again using the <tt class="docutils literal"><span class="pre">bdist_wheel</span></tt> subcommand.</li>
+<li>So we finally, have a <tt class="docutils literal"><span class="pre">wheel</span></tt> file. The path for this file will
+be sent to the Dependency Checker;</li>
+<li>The Dependency Checker will yield each dependency found and it
+will start the whole process for the next package;</li>
+<li>After finding and yielding all the dependencies, the checker will
+forward the wheel to the installer queue;</li>
 <li>The installer queue contains packages, not requirements. So, every
 time we need to add a new package to that queue, we have to find a
 compatible version among all the ones downloaded for that specific

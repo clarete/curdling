@@ -1,8 +1,8 @@
-.. _error-reporting:
+.. _error-handling:
 
-===============
-Error Reporting
-===============
+==============
+Error Handling
+==============
 
 Lots of tasks are executed simultaneously the whole time on
 curdling. There's currently 4 subservices running multiple threads the
@@ -40,7 +40,7 @@ to install `gevent <gevent.org>`_ without `libevent
 
 
 Errors on Curdling
-------------------
+~~~~~~~~~~~~~~~~~~
 
 `Even Knuth wrote broken software
 <http://en.wikipedia.org/wiki/Knuth_reward_check>`_ at least once, so

@@ -1,0 +1,154 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Error Handling &mdash; Curdling 0.3.4 documentation</title>
+    
+    <link rel="stylesheet" href="_static/curdling.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.3.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Curdling 0.3.4 documentation" href="index.html" />
+    <link rel="next" title="Distributed Cache" href="distributed-cache.html" />
+    <link rel="prev" title="Usage" href="usage.html" />
+     
+    
+    
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>
+    
+    
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="distributed-cache.html" title="Distributed Cache"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="usage.html" title="Usage"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Curdling 0.3.4 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="error-handling">
+<span id="id1"></span><h1>Error Handling<a class="headerlink" href="#error-handling" title="Permalink to this headline">¶</a></h1>
+<p>Lots of tasks are executed simultaneously the whole time on
+curdling. There&#8217;s currently 4 subservices running multiple threads the
+whole time:</p>
+<ul class="simple">
+<li><strong>Finder:</strong> receives requirements and finds URLs;</li>
+<li><strong>Downloader:</strong> receives URLs and download them whenever ;</li>
+<li><strong>Curdler:</strong> Builds the package (it forks a process per thread);</li>
+<li><strong>Dependencer:</strong> Reads the dependencies of a wheel and feeds the
+<em>Requirement Bucket</em> in the <a class="reference internal" href="design-and-implementation.html#retrieve-and-build"><em>Retrieve and build process</em></a>;</li>
+</ul>
+<p>Errors might happen in all the above steps, because of broken packages
+or resource unavailability. Whenever an error occurs on one of those
+services, a <a class="reference external" href="https://github.com/clarete/curdling/blob/master/tests/unit/test_services.py">signal will be emitted</a>
+and the error will be collected.</p>
+<p>However, curdling won&#8217;t stop on the first error. Maybe, in the same
+requirement set, there&#8217;s another requirement of the same package but
+with a different version that actually meets the initial
+requirements. If curdling manages to recover from that failure, the
+error will be logged, but won&#8217;t be shown to the user unless explicitly
+requested.</p>
+<p>On the other hand, if curdling can&#8217;t recover from an error on those
+services, it will try to give the most meaningful error report for the
+user.</p>
+<p>Here&#8217;s an example of a failure in the <strong>Curdler</strong> when the user tries
+to install <a class="reference external" href="gevent.org">gevent</a> without <a class="reference external" href="http://libevent.org/">libevent</a> installed:</p>
+<img alt="_images/error1.png" src="_images/error1.png" />
+<div class="section" id="errors-on-curdling">
+<h2>Errors on Curdling<a class="headerlink" href="#errors-on-curdling" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="http://en.wikipedia.org/wiki/Knuth_reward_check">Even Knuth wrote broken software</a> at least once, so
+don&#8217;t expect curdling to be bug free. There are two very important
+things on Curdling about errors in its code base:</p>
+<ol class="arabic simple">
+<li>They must be properly logged, so we&#8217;ll be able to investigate its
+cause;</li>
+<li>A bug can&#8217;t be considered closed unless a test that reproduces the
+error can be written;</li>
+</ol>
+<p>The installer command is the most complex part of curdling, so users
+might face instability under certain environments until Curdling gets
+enough field experience.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Error Handling</a><ul>
+<li><a class="reference internal" href="#errors-on-curdling">Errors on Curdling</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="usage.html"
+                        title="previous chapter">Usage</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="distributed-cache.html"
+                        title="next chapter">Distributed Cache</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/error-handling.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Lincoln Clarete.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+    
+    
+  </body>
+</html>

@@ -112,13 +112,13 @@ prefer the *Primary Requirements*.
 
 
 Declaring PyPi repositories
----------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 * ``-i``, ``--index=URL``: Set which *PyPi* external repositories the
-  install should use. Can be repeated as many times as needed.
+  installer should use. Can be repeated as many times as needed.
 
 Default repository
-~~~~~~~~~~~~~~~~~~
+------------------
 
 If no repositories are specified, curdling will use the official
 *PyPi* URL: **http://pypi.python.org/simple**. However, if one single
@@ -137,6 +137,20 @@ together, both addresses have to be manually specified::
   $ curd install -i http://localhost/simple -i http://pypi.python.org/simple flask
 
 So the user can choose which repository the lookup will happen first.
+
+Declaring Curdling repositories
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* ``-c``, ``--curdling-index=CURDLING_INDEX``: Set which *Curdling*
+  external repositories the installer should use. Can be repeated as
+  many times as needed.
+
+Precedence over *PyPi* repositories. The installer will try to
+retrieve binary files from any ``curdling`` servers specified before
+accessing the ones declared using the ``-i`` parameter.
+
+Read more about how caching works on curdling in the
+:ref:`distributed-cache` section.
 
 curd uninstall
 ==============

@@ -18,7 +18,7 @@ packages. The :ref:`design-and-implementation` section shows in depth
 how curdling works.
 
 See it rolling
---------------
+~~~~~~~~~~~~~~
 
 Click the terminal to play (also available at `asciinema
 <http://asciinema.org/a/6122>`_)
@@ -35,10 +35,10 @@ Click the terminal to play (also available at `asciinema
 
 
 Noticeable Features
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 * Robust Concurrent model: it's **FAST**!
-* Really good :ref:`error-reporting`;
+* Really good :ref:`error-handling` and Report;
 * Conflict resolution for repeated requirements;
 * Distributed Cache System that includes a built-in cache server;
 * Simple command line interface;
@@ -46,7 +46,7 @@ Noticeable Features
 * Concurrent and Parallel, but :kbd:`Ctrl`-:kbd:`C` still works;
 
 Motivation
-----------
+~~~~~~~~~~
 
 Almost every Python developer knows how to install a third party
 library in a `virtualenv <http://www.virtualenv.org/en/latest/>`_ with
@@ -60,7 +60,7 @@ at `Yipit <http://yipit.com>`_. We managed to decrease the build in
 
 
 Installation
-------------
+~~~~~~~~~~~~
 ::
 
   $ easy_install curdling
@@ -73,7 +73,7 @@ Contents
    :maxdepth: 3
 
    usage
-   error-reporting
+   error-handling
    distributed-cache
    design-and-implementation
    next-steps
