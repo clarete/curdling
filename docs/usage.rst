@@ -61,8 +61,10 @@ command above.
   requirements the user wants to install. This option can be repeated
   as many times as needed and needs to point to a readable file.
 
-Syntax for the requirements file
---------------------------------
+.. _declaring-requirements:
+
+Syntax for declaring requirements
+---------------------------------
 
 * Each line should contain a separate requirement
 * Each requirement must be specified as either a URL or a
@@ -134,3 +136,19 @@ together, both addresses have to be manually specified::
   $ curd install -i http://localhost/simple -i http://pypi.python.org/simple flask
 
 So the user can choose which repository the lookup will happen first.
+
+curd uninstall
+==============
+
+Uninstall packages from your environment. General command::
+
+  $ curd uninstall [-h] [-r REQUIREMENTS] [PKG [PKG ...]]
+
+
+* ``-r``, ``--requirements=FILE``: File containing all the
+  requirements the user wants to uninstall. This option can be
+  repeated as many times as needed and needs to point to a readable
+  file.
+
+* ``PKG`` is a requirement in the same format as described in the
+  section :ref:`declaring-requirements`.

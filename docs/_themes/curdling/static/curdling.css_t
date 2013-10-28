@@ -575,3 +575,8 @@ a:hover tt {
 .revsys-inline {
     display: none!important;
 }
+
+/* curdling stuff */
+.c-gh-star-badge {
+    padding: 10px 0;
+}
