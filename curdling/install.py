@@ -177,8 +177,8 @@ class Install(SignalEmitter):
             if requirement in self.mapping.requirements:
                 return
             # Filter previously primarily required packages
-            if self.mapping.was_directly_required(requirement):
-                return
+            # if self.mapping.was_directly_required(requirement):
+            #     return
             # Save the requirement and its requester for later
             self.mapping.requirements.add(requirement)
             self.mapping.dependencies[requirement].append(data.get('dependency_of'))
