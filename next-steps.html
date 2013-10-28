@@ -1,0 +1,126 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Next steps &mdash; Curdling 0.3.4 documentation</title>
+    
+    <link rel="stylesheet" href="_static/curdling.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.3.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Curdling 0.3.4 documentation" href="index.html" />
+    <link rel="prev" title="Design and Implementation" href="design-and-implementation.html" />
+     
+    
+    
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>
+    
+    
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="design-and-implementation.html" title="Design and Implementation"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Curdling 0.3.4 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="next-steps">
+<span id="id1"></span><h1>Next steps<a class="headerlink" href="#next-steps" title="Permalink to this headline">¶</a></h1>
+<p>Although curdling was born to be fast and stable, there will still be
+issues and new features to add, that will recursively bring us more
+bugs.</p>
+<p>With that in mind, curdling was written on top of a very robust test
+structure so we are definitely prepared to move forward fast with less
+problems.</p>
+<div class="section" id="ideas-for-the-near-future">
+<h2>Ideas for the near future<a class="headerlink" href="#ideas-for-the-near-future" title="Permalink to this headline">¶</a></h2>
+<p>There&#8217;s still a list of very important features that were not
+implemented so far. Here&#8217;s a list of some remarkable ones:</p>
+<ul class="simple">
+<li>The cache system doesn&#8217;t take the <a class="reference external" href="http://www.python.org/dev/peps/pep-0425/">PEP 0425</a> into account. Meaning
+that remote cache servers can&#8217;t be shared among users running
+different OS&#8217;s for example.</li>
+<li>Curdling can&#8217;t be ran more than once simultaneously on the same
+computer. The cache present on <tt class="docutils literal"><span class="pre">$HOME/.curds</span></tt> is not prepared to
+be accessed by more than one process at the same time. It would lead
+to corrupted files and other IO failures.</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Next steps</a><ul>
+<li><a class="reference internal" href="#ideas-for-the-near-future">Ideas for the near future</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="design-and-implementation.html"
+                        title="previous chapter">Design and Implementation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/next-steps.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Lincoln Clarete.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+    
+    
+  </body>
+</html>

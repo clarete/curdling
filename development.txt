@@ -1,8 +1,0 @@
--r requirements.txt
-coverage==3.6
-mock==1.0.1
-nose==1.2.1
-pep8==1.4
-pyflakes==0.5.0
-sure==1.2.2
-tox==1.4.3

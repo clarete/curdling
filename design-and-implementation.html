@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Design and Implementation &mdash; Curdling 0.3.4 documentation</title>
+    
+    <link rel="stylesheet" href="_static/curdling.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.3.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Curdling 0.3.4 documentation" href="index.html" />
+    <link rel="next" title="Next steps" href="next-steps.html" />
+    <link rel="prev" title="Distributed Cache" href="distributed-cache.html" />
+     
+    
+    
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body>
+    
+    
+
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="next-steps.html" title="Next steps"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="distributed-cache.html" title="Distributed Cache"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">Curdling 0.3.4 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="design-and-implementation">
+<span id="id1"></span><h1>Design and Implementation<a class="headerlink" href="#design-and-implementation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="philosophy">
+<h2>Philosophy<a class="headerlink" href="#philosophy" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>The code must first be correct (as defined by tests);</li>
+<li>then it should be a clear statement of the design (what
+J.B.Rainsberger calls &#8220;no bad names&#8221;);</li>
+<li>then it should contain no duplication (of text, of ideas, or of
+responsibility);</li>
+<li>and finally it must be the smallest code that meets all of the
+above.</li>
+</ul>
+<p>Kent Beck&#8217;s rules of simple design reworded by Kevin Rutherford on
+<a class="reference external" href="http://www.informit.com/articles/article.aspx?p=1402446">Refactoring in Ruby</a></p>
+<div class="section" id="tests">
+<h3>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h3>
+<p>To provide a reliable concurrency model, curdling needs to be
+<strong>simple</strong> and <strong>well tested</strong>. Writing good tests is also an
+excellent technique to keep your code simple. So we can say that tests
+are twice important for us.</p>
+<p>Curdling currently has nearly 90% of test coverage and almost 50% of
+the code base is basically our <tt class="docutils literal"><span class="pre">tests</span></tt> directory. This number will
+eventually increase.</p>
+</div>
+<div class="section" id="applying-suggested-changes">
+<h3>Applying suggested changes<a class="headerlink" href="#applying-suggested-changes" title="Permalink to this headline">¶</a></h3>
+<p>While curdling is born in the highest hopes to reach every single
+Python developer in the world and attract as many contributors as
+possible, we still have to ensure quality and stability in the
+product.</p>
+<p>Changes to the subsystems, like the ref:<cite>curdling.services.Downloader</cite></p>
+</div>
+</div>
+<div class="section" id="how-the-install-command-works">
+<h2>How the Install command works<a class="headerlink" href="#how-the-install-command-works" title="Permalink to this headline">¶</a></h2>
+<p>Curdling&#8217;s most noticeable feature is the package installer. Just like
+<cite>pip install</cite>, the command <cite>curd install</cite> will find requirements in
+external repositories, build and install packages for you. But
+blazingly fast.</p>
+<p>The install command is focused on both speed and accuracy. Curdling
+will always try to find the best version for a requirement set.</p>
+<p>The <strong>Retrieve and Build</strong> stage will do the find, build and
+dependency check. This initial cycle won’t finish until we ensure that
+all the requested requirements were processed.</p>
+<p>In the sequence, the <strong>Wheel Installer</strong> will ensure that all the
+requirements initially requested by the user were found during the
+<em>R&amp;B</em> process; then it will install everything for you. These and all
+the other subsystems of the installer are going to be studied in depth
+in the next sections.</p>
+<div class="section" id="retrieve-and-build-process">
+<span id="retrieve-and-build"></span><h3>Retrieve and build process<a class="headerlink" href="#retrieve-and-build-process" title="Permalink to this headline">¶</a></h3>
+<p>Partial representation of the <em>R&amp;B</em> flow:</p>
+<a class="reference internal image-reference" href="_images/pnet.svg"><img alt="Petri Net representation of the &quot;Retrieve and Build&quot; process" src="_images/pnet.svg" width="600px" /></a>
+<p>This process basically reads requirements from both the <cite>-r
+requirements.txt</cite> file and from the command line arguments (curd
+install &lt;packages&gt;). Let&#8217;s imagine the following call:</p>
+<div class="highlight-python"><pre>$ curd install Flask</pre>
+</div>
+<p><strong>What we want</strong></p>
+<ul class="simple">
+<li>Flask is the package you want to install in your environment.</li>
+<li>We&#8217;re also interested in the package dependencies</li>
+</ul>
+<p><strong>Problems we have</strong></p>
+<ul class="simple">
+<li>We have to build the package before retrieving the dependency list.</li>
+</ul>
+<p><strong>What should happen</strong></p>
+<ol class="arabic simple">
+<li>Find out which packages we want to install (read more about command
+line parsing in the file curdling/tool/__init__.py)</li>
+<li>Feed the &#8220;Requirement Producer&#8221; with the package found in the
+command line</li>
+<li>The requirement will be sent to the &#8220;Finder&#8221; component;</li>
+<li>The finder component uses a modified version of the
+<cite>distlib.locators.SimpleScraperLocator</cite> to find packages on PyPi
+compatible repos;</li>
+<li>If the package was found, its link will be sent to the downloader;</li>
+<li>The downloader <em>do not</em> download duplicated items. They&#8217;ll be
+discarded.</li>
+<li>If the downloader finds the package, it will send to the curdler
+component</li>
+<li>The curdler (builder) will uncompress the package and run its
+<cite>setup.py</cite>.</li>
+<li>After building the package, we&#8217;ll actually generate the wheel
+calling <cite>setup.py</cite> again using the <cite>bdist_wheel</cite> subcommand.</li>
+<li>So we finally, have a wheel file. The path for this file will be
+sent to the &#8220;Dependency Checker&#8221;;</li>
+<li>The dependency checker will yield each dependency found and it
+will start the same process for the next package;</li>
+<li>After finding all the dependencies, the checker will forward the
+wheel to the installer queue;</li>
+<li>The installer queue contains packages, not requirements. So, every
+time we need to add a new package to that queue, we have to find a
+compatible version among all the ones downloaded for that specific
+package;</li>
+</ol>
+<p>Steps from 2 to 13 will be repeated for each dependency found.</p>
+</div>
+<div class="section" id="install-wheels">
+<h3>Install Wheels<a class="headerlink" href="#install-wheels" title="Permalink to this headline">¶</a></h3>
+<p>This is the second step after populating the installer queue. When
+this queue is full and the previous step is finished. We&#8217;ll just
+consume the whole list and install the wheels required by the user and
+all its dependencies collected during the R&amp;B process.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Design and Implementation</a><ul>
+<li><a class="reference internal" href="#philosophy">Philosophy</a><ul>
+<li><a class="reference internal" href="#tests">Tests</a></li>
+<li><a class="reference internal" href="#applying-suggested-changes">Applying suggested changes</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#how-the-install-command-works">How the Install command works</a><ul>
+<li><a class="reference internal" href="#retrieve-and-build-process">Retrieve and build process</a></li>
+<li><a class="reference internal" href="#install-wheels">Install Wheels</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="distributed-cache.html"
+                        title="previous chapter">Distributed Cache</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="next-steps.html"
+                        title="next chapter">Next steps</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/design-and-implementation.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, Lincoln Clarete.
+        Created using <a href="http://sphinx.pocoo.org/">Sphinx</a>.
+    </div>
+    
+    
+  </body>
+</html>
