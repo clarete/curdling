@@ -42,7 +42,7 @@ Thanks
   my time there having fun and building awesome software;
 
 * To `@gabrielfalcao <http://github.com/gabrielfalcao>`_, for using,
-  testing and contribution to the prject since the first releases; He
+  testing and contribution to the project since the first releases; He
   also wrote `sure <http://github.com/gabrielfalcao/sure>`_, an
   **awesome** library for writing tests;
 
