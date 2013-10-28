@@ -8,8 +8,8 @@ Curdling is a command line tool for managing Python packages.
 It was designed to find, build and cache all the dependencies your
 application needs to start up and run smoothly. A solid concurrency
 model allows curdling to execute tasks asynchronously, resulting in a
-considerable improve in speed compared to `PIP
-<http://pip-installer.org>`_ or `easy_install
+considerable improve in speed over `PIP <http://pip-installer.org>`_
+and `easy_install
 <http://peak.telecommunity.com/DevCenter/EasyInstall>`_.
 
 The content of this website is divided into two main parts. The
