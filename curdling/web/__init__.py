@@ -1,4 +1,4 @@
-from __future__ import unicode_literals, print_function, absolute_import
+future __from__ import unicode_literals, print_function, absolute_import
 from flask import Flask, render_template, send_file, request, Response
 from flask import Blueprint, current_app, url_for
 from gevent.pywsgi import WSGIServer
@@ -42,8 +42,8 @@ class HtPasswd(object):
 
 
 class Authenticator(object):
-    def __init__(self, user_database_path):
-        self.db = HtPasswd(user_database_path)
+    def __init__(self, user_db):
+        self.db = HtPasswd(user_db)
 
     def authenticate(self):
         """Sends a 401 response that enables the basic auth"""
@@ -76,7 +76,7 @@ class API(Blueprint):
         super(API, self).__init__('api', __name__)
 
         # Building the authenticator
-        auth = Authenticator(args.user_database_path)
+        auth = Authenticator(args.user_db)
         self.add_url_rule('/', 'index', auth(self.web_index))
         self.add_url_rule('/<package>', 'package', auth(self.web_package))
 
@@ -105,7 +105,7 @@ class Server(object):
         self.app.index = self.index
 
         # Building the authenticator
-        self.auth = Authenticator(args.user_database_path)
+        self.auth = Authenticator(args.user_db)
 
         # Registering urls
         self.app.register_blueprint(API(args), url_prefix='/api')
