@@ -45,6 +45,26 @@ Noticeable Features
 * Usage of bleeding edge technology available in the Python community;
 * Concurrent and Parallel, but :kbd:`Ctrl`-:kbd:`C` still works;
 
+Why curdling and not pip?
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Pip is awesome! I've been using it for managing my Python packages for
+a while now. However, its code base is just too complex, which makes
+it hard to iterate fast on its development and implement exciting new
+features in a reasonable time.
+
+Cache for binary packages
+-------------------------
+
+Among other features listed in this documentation, I also wrote
+curdling because I work on a project that depends on 167 external
+libraries, including ``lxml``, ``numpy`` and ``pygmagic``. Curdling is
+faster than pip because it caches the binary packages compiled when
+the ``setup.py`` script is ran. Curdling also provides a
+:ref:`distributed-cache`, so you can share your compiled packages with
+other environments. Build once, use everywhere we can!
+
+
 Motivation
 ~~~~~~~~~~
 
@@ -55,8 +75,8 @@ be faster.
 
 Curdling was born to decrease the time taken by dependency
 installation in the Continuous Integration Server that tests software
-at `Yipit <http://yipit.com>`_. We managed to decrease the build in
-*~70%* by replacing **pip** by Curdling.
+at `Yipit <http://yipit.com>`_. We managed to decrease the build time
+*~70%* by replacing **pip** with Curdling.
 
 
 Installation
