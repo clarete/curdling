@@ -41,10 +41,7 @@ dummypypi_stop:
 
 setup: clean
 	@if [ -z $$VIRTUAL_ENV ]; then                                       \
-		echo "===================================================="; \
-		echo "You're not running this from a virtualenv, wtf dude?"; \
-		echo "ಠ_ಠ";                                                  \
-		echo "===================================================="; \
+		echo "Cowardly refusing to run out of a virtualenv";         \
 		exit 1;                                                      \
 	fi
 	@if [ -z $$SKIP_DEPS ]; then                                         \
@@ -58,9 +55,7 @@ run_test:
 		if [ "`ls tests/$(suite)/*.py`" = "tests/$(suite)/__init__.py" ] ; then \
 			echo "No \033[0;32m$(suite)\033[0m tests...";                   \
 		else                                                                    \
-			printf "=======================================\n";             \
 			printf "|\033[0;32m Running $(suite) test suite \033[0m|\n";    \
-			printf "=======================================\n";             \
 			nosetests                                                       \
                           --stop                                                        \
                           --with-coverage                                               \
@@ -76,6 +71,21 @@ clean:
 	@echo "Removing garbage..."
 	@find . -name '*.pyc' -delete
 	@rm -rf .coverage *.egg-info *.log build dist MANIFEST
+
+
+deploy-docs:
+	@echo "Deploying docs to GH-Pages"
+	@(cd docs && make html)
+	@mv docs/_build/html /tmp/curdling-documentation
+	@git checkout gh-pages
+	@rm -rf *
+	@mv /tmp/curdling-documentation/* .
+	@rm -rf /tmp/curdling-documentation
+	@touch .nojekyll
+	@git add --all .
+	@git commit -m 'make deploy-docs at your service'
+	@git push origin gh-pages
+	@git checkout master
 
 
 publish:
