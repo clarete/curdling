@@ -99,28 +99,28 @@ install <packages>). Let's imagine the following call::
 **What should happen**
 
 1) Find out which packages we want to install (read more about command
-   line parsing in the file curdling/tool/__init__.py)
-2) Feed the "Requirement Producer" with the package found in the
-   command line
-3) The requirement will be sent to the "Finder" component;
+   line parsing in the file ``curdling/tool/__init__.py``);
+2) Feed the **Requirement Bucket** with the package found in the
+   command line;
+3) The requirement will be sent to the Finder component;
 4) The finder component uses a modified version of the
-   `distlib.locators.SimpleScraperLocator` to find packages on PyPi
+   ``distlib.locators.SimpleScraperLocator`` to find packages on PyPi
    compatible repos;
-5) If the package was found, its link will be sent to the downloader;
-6) The downloader *do not* download duplicated items. They'll be
-   discarded.
-7) If the downloader finds the package, it will send to the curdler
-   component
-8) The curdler (builder) will uncompress the package and run its
-   `setup.py`.
+5) If the package was found, its link will be sent to the Downloader;
+6) The Downloader *does not* download duplicated items. They'll be
+   discarded;
+7) If the Downloader finds the package, it will send it to the curdler
+   component;
+8) The Curdler (builder) will uncompress the package and run its
+   ``setup.py``;
 9) After building the package, we'll actually generate the wheel
-   calling `setup.py` again using the `bdist_wheel` subcommand.
-10) So we finally, have a wheel file. The path for this file will be
-    sent to the "Dependency Checker";
-11) The dependency checker will yield each dependency found and it
-    will start the same process for the next package;
-12) After finding all the dependencies, the checker will forward the
-    wheel to the installer queue;
+   calling ``setup.py`` again using the ``bdist_wheel`` subcommand.
+10) So we finally, have a ``wheel`` file. The path for this file will
+    be sent to the Dependency Checker;
+11) The Dependency Checker will yield each dependency found and it
+    will start the whole process for the next package;
+12) After finding and yielding all the dependencies, the checker will
+    forward the wheel to the installer queue;
 13) The installer queue contains packages, not requirements. So, every
     time we need to add a new package to that queue, we have to find a
     compatible version among all the ones downloaded for that specific
