@@ -101,6 +101,7 @@ class Install(SignalEmitter):
     def pipeline(self):
         # Building the pipeline to [find -> download -> build -> find deps]
         self.finder.connect('finished', unique(self.downloader.queue, self))
+        self.downloader.connect('finished', only(self.curdler.queue, 'directory'))
         self.downloader.connect('finished', only(self.curdler.queue, 'tarball'))
         self.downloader.connect('finished', only(self.dependencer.queue, 'wheel'))
         self.curdler.connect('finished', self.dependencer.queue)

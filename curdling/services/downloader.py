@@ -257,10 +257,10 @@ class Downloader(Service):
         super(Downloader, self).queue(requester, **data)
 
     def handle(self, requester, data):
-        field_name = 'wheel' if data['url'].endswith('.whl') else 'tarball'
+        field_name, location = self.download(data['url'], data.get('locator_url'))
         return {
             'requirement': data['requirement'],
-            field_name: self.download(data['url'], data.get('locator_url'))
+            field_name: location,
         }
 
     def download(self, url, locator_url=None):
@@ -315,24 +315,27 @@ class Downloader(Service):
                     compat.httplib.responses[response.status],
                 ))
 
+        # Define what kind of package we've got
+        field_name = 'wheel' if url.endswith('.whl') else 'tarball'
+
         # Now that we're sure that our request was successful
         header = response.headers.get('content-disposition', '')
         file_name = re.findall(r'filename=\"?([^;\"]+)', header)
-        return self.index.from_data(
+        return field_name, self.index.from_data(
             file_name and file_name[0] or url,
             response.read(cache_content=True, decode_content=False))
 
     def _download_git(self, url):
         destination = tempfile.mkdtemp()
         util.execute_command('git', 'clone', url, destination)
-        return destination
+        return 'directory', destination
 
     def _download_hg(self, url):
         destination = tempfile.mkdtemp()
         util.execute_command('hg', 'clone', url, destination)
-        return destination
+        return 'directory', destination
 
     def _download_svn(self, url):
         destination = tempfile.mkdtemp()
         util.execute_command('svn', 'co', url, destination)
-        return destination
+        return 'directory', destination
