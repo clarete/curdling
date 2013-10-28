@@ -97,18 +97,19 @@ Everything after the ``vcs+`` prefix will be forward to the respective
 command line tool that **must** be installed before requesting any
 *VCS* links for curdling.
 
-Order matters when declaring requirements
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Precedence when declaring requirements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The requirements declared separate files referred by the ``-r``
-parameter have precedence over the ones found during the
-:ref:`retrieve-and-build` process. In order to override the version of
-any packages found in that stage, the user can just hardcode the
-desired version in the requirements file.
+Requirements specified directly by the user from either the command
+line or from a requirements file are special. They're called *Primary
+Requirements*.
 
-On the other hand, if the user needs to override versions declared
-inside of the file, all he/she has to do is to inform the desired
-version in the command line.
+The ones found by curdling during the :ref:`retrieve-and-build`
+process are called *Secondary Requirements*.
+
+If a package is requested more than once, curdling will **always**
+prefer the *Primary Requirements*.
+
 
 Declaring PyPi repositories
 ---------------------------

@@ -3,32 +3,50 @@
 Welcome to Curdling
 ===================
 
-Curdling is a command line tool for managing Python packages. It was
-designed to find, build and cache all the dependencies your app needs
-to start up and run smoothly. A solid concurrency model allows
-curdling to find, download and build software faster than any other
-package installer we currently have.
+Curdling is a command line tool for managing Python packages.
+
+It was designed to find, build and cache all the dependencies your
+application needs to start up and run smoothly. A solid concurrency
+model allows curdling to execute tasks asynchronously, resulting in a
+considerable improve in speed compared to `PIP
+<http://pip-installer.org>`_ or `easy_install
+<http://peak.telecommunity.com/DevCenter/EasyInstall>`_.
 
 The content of this website is divided into two main parts. The
 :ref:`usage` teaches you how to use with curdling to manage your
 packages. The :ref:`design-and-implementation` section shows in depth
 how curdling works.
 
-Quick Start
------------
+Noticeable Features
+-------------------
 
-If you just want to install curdling and trying out. Try the following
-commands
+* Robust Concurrent model: it's **FAST**!
+* Conflict resolution for repeated requirements;
+* Distributed Cache System that includes a built-in cache server;
+* Simple command line interface;
+* Usage of bleeding edge technology available in the Python community;
 
-**To install curdling**
+
+Motivation
+----------
+
+Almost every Python developer knows how to install a third party
+library in a `virtualenv <http://www.virtualenv.org/en/latest/>`_ with
+`pip <http://pip-installer.org>`_. It works fairly well, but it could
+be faster.
+
+Curdling was born to decrease the time taken by dependency
+installation in the Continuous Integration Server that tests software
+at `Yipit <http://yipit.com>`_. We managed to decrease the build in
+*~70%* by replacing **PIP** by Curdling.
+
+
+Installation
+------------
 ::
 
   $ easy_install curdling
 
-**To use curdling**
-::
-
-  $ curd install flask
 
 Contents
 ========
@@ -39,3 +57,4 @@ Contents
    usage
    distributed-cache
    design-and-implementation
+   next-steps

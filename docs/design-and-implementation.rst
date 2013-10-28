@@ -4,10 +4,51 @@
 Design and Implementation
 =========================
 
-Curdling is a concurrent package manager for Python. Its most
-noticeable feature is the package installer. Just like `pip install`,
-the command `curd install` will find requirements in external
-repositories, build and install packages for you. But blazingly fast.
+Philosophy
+==========
+
+* The code must first be correct (as defined by tests);
+* then it should be a clear statement of the design (what
+  J.B.Rainsberger calls "no bad names");
+* then it should contain no duplication (of text, of ideas, or of
+  responsibility);
+* and finally it must be the smallest code that meets all of the
+  above.
+
+Kent Beck's rules of simple design reworded by Kevin Rutherford on
+`Refactoring in Ruby <http://www.informit.com/articles/article.aspx?p=1402446>`_
+
+Tests
+-----
+
+To provide a reliable concurrency model, curdling needs to be
+**simple** and **well tested**. Writing good tests is also an
+excellent technique to keep your code simple. So we can say that tests
+are twice important for us.
+
+Curdling currently has nearly 90% of test coverage and almost 50% of
+the code base is basically our ``tests`` directory. This number will
+eventually increase.
+
+
+Applying suggested changes
+--------------------------
+
+While curdling is born in the highest hopes to reach every single
+Python developer in the world and attract as many contributors as
+possible, we still have to ensure quality and stability in the
+product.
+
+Changes to the subsystems, like the ref:`curdling.services.Downloader`
+
+
+How the Install command works
+=============================
+
+Curdling's most noticeable feature is the package installer. Just like
+`pip install`, the command `curd install` will find requirements in
+external repositories, build and install packages for you. But
+blazingly fast.
 
 The install command is focused on both speed and accuracy. Curdling
 will always try to find the best version for a requirement set.

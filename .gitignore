@@ -5,6 +5,7 @@
 *.whl
 
 # Directories
+docs/_build/
 build/
 dist/
 .tox/
