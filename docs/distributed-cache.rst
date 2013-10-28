@@ -42,7 +42,8 @@ Available command line arguments::
 * ``-d``, ``--debug``: Runs a pure `Flask <http://flask.pocoo.org>`_
   app with the `debug` flag set to True. Do not use in production;
 * ``-H``, ``--host=HOST``: Which interface to bind the server;
-* ``-p``, ``--port=PORT``: Port number;
+  Defaults to ``0.0.0.0``;
+* ``-p``, ``--port=PORT``: Port number; Defaults to ``8000``;
 * ``-u``, ``--user-db=USER_DB``: Path to an `htpasswd
   <http://httpd.apache.org/docs/2.2/programs/htpasswd.html>`_
   compatible file. Notice that the only currently supported algorithm
