@@ -77,7 +77,7 @@ if __name__ == '__main__':
         name="curdling",
         version=read_version(),
         description='Concurrent package manager for Python',
-        long_description=local_file('README.md'),
+        long_description=local_file('README.rst'),
         author='Lincoln Clarete',
         author_email='lincoln@clarete.li',
         url='https://github.com/clarete/curdling',

@@ -1,6 +1,6 @@
 include requirements.txt
 include requirements-server.txt
 include development.txt
-include README.md
+include README.rst
 
 recursive-include curdling/web/templates *.html
