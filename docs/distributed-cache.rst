@@ -17,7 +17,7 @@ Curdling provides a built-in cache server for `binary packages
 runs curdling is a potential cache server.
 
 Extra dependencies
-------------------
+~~~~~~~~~~~~~~~~~~
 
 The dependencies for the built-in server must be installed
 separately. The following command will do the job::
@@ -25,7 +25,7 @@ separately. The following command will do the job::
   $ curd install curdling[server]
 
 Running the cache server
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 ::
 
   $ curd-server /path/to/a/folder/full/of/wheels
@@ -35,8 +35,7 @@ have access to this machine through HTTP can use your cache.
 
 Available command line arguments::
 
-  $ curd-server [-h] [-d] [-H HOST] [-p PORT] [-u USER_DATABASE_PATH]
-                DIRECTORY
+  $ curd-server [-h] [-d] [-H HOST] [-p PORT] [-u USER_DB] DIRECTORY
 
 * ``-h``, ``--help``: Shows a friendly help text;
 * ``-d``, ``--debug``: Runs a pure `Flask <http://flask.pocoo.org>`_
@@ -55,7 +54,7 @@ Cache Client
 
 
 Retrieving wheels from the cache server
----------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In order to retrieve wheels from the remote caching server, the client
 needs to inform the server address through the ``-c`` parameter. E.g::
@@ -66,7 +65,7 @@ Notice that the password will be exposed through commands like ``ps``,
 be careful.
 
 Automatic upload of built packages
-----------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As mentioned before, Curdling was initially designed to speed up tests
 on CI servers. So, the built-in cache server was written. However,

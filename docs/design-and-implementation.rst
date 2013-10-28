@@ -19,7 +19,7 @@ Kent Beck's rules of simple design reworded by Kevin Rutherford on
 `Refactoring in Ruby <http://www.informit.com/articles/article.aspx?p=1402446>`_
 
 Tests
------
+~~~~~
 
 To provide a reliable concurrency model, curdling needs to be
 **simple** and **well tested**. Writing good tests is also an
@@ -32,7 +32,7 @@ eventually increase.
 
 
 Applying suggested changes
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 While curdling is born in the highest hopes to reach every single
 Python developer in the world and attract as many contributors as
@@ -73,7 +73,7 @@ in the next sections.
 .. _retrieve-and-build:
 
 Retrieve and build process
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Partial representation of the *R&B* flow:
 
@@ -129,7 +129,7 @@ install <packages>). Let's imagine the following call::
 Steps from 2 to 13 will be repeated for each dependency found.
 
 Install Wheels
---------------
+~~~~~~~~~~~~~~
 
 This is the second step after populating the installer queue. When
 this queue is full and the previous step is finished. We'll just
