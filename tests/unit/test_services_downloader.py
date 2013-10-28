@@ -342,7 +342,7 @@ def test_downloader_handle():
 
     # Given that I have a Downloader instance
     service = downloader.Downloader(index=Mock())
-    service._download_http = Mock(return_value='package-0.1.zip')
+    service._download_http = Mock(return_value=('tarball', 'package-0.1.zip'))
 
     # When I call the service handler with a URL requirement
     tarball = service.handle('tests', {
@@ -362,7 +362,8 @@ def test_downloader_handle_return_wheel():
 
     # Given that I have a Downloader instance
     service = downloader.Downloader(index=Mock())
-    service._download_http = Mock(return_value='package-0.1-cp27-none-macosx_10_8_x86_64.whl')
+    service._download_http = Mock(
+        return_value=('wheel', 'package-0.1-cp27-none-macosx_10_8_x86_64.whl'))
 
     # When I call the service handler with a URL requirement
     tarball = service.handle('tests', {
