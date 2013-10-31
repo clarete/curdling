@@ -12,6 +12,9 @@ import logging
 import os
 import sys
 
+# Number of threads that a service will spawn by default.
+DEFAULT_CONCURRENCY = 10
+
 
 DEFAULT_PYPI_INDEX_LIST = [
     'http://pypi.python.org/simple/',
@@ -128,6 +131,7 @@ def get_install_command(args):
         'force': args.force,
         'upload': args.upload,
         'index': index,
+        'concurrency': args.concurrency
     })
 
     initial_requirements = get_packages_from_args(args)
@@ -177,6 +181,14 @@ def main():
     parser.add_argument(
         '--log-file', type=argparse.FileType('w'), default=sys.stderr,
         help='File to write the log')
+
+    parser.add_argument(
+        '-c', '--concurrency',
+        type=int,
+        default=DEFAULT_CONCURRENCY,
+        dest='concurrency',
+        help='Number of threads that a service will spawn'
+    )
 
     parser.add_argument(
         '--log-name', default=None,
