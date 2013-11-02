@@ -131,7 +131,6 @@ def test_feed_link_download():
         url='http://srv/pkgs/curdling-0.1.tar.gz')
 
 
-@nottest
 def test_feed_filter_compatible_requirements():
     "Install#feed() Should skip requirements that already have compatible matches in the mapping"
 
