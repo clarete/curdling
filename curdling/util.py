@@ -136,7 +136,8 @@ def get_auth_info_from_url(url, proxy=False):
             return urllib3.util.make_headers(basic_auth=auth)
 
         # Proxy-Authentication support
-        return {'proxy-authorization': 'Basic {0}'.format(b64encode(auth))}
+        return {'proxy-authorization':
+            'Basic ' + b64encode(auth.encode('utf-8')).decode('ascii')}
     return {}
 
 
