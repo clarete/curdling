@@ -13,18 +13,6 @@ class TestPyPiLocator(downloader.PyPiLocator):
         self.opener = Mock()
 
 
-class TestPool(downloader.Pool):
-    def __init__(self, response):
-        self.response = response
-
-    def request(self,  method, url, **params):
-        response = self.response
-        response.params = params
-        response.method = method
-        response.url = url
-        return response
-
-
 @patch('curdling.services.downloader.distlib')
 def test_find_packages(distlib):
     ("find_packages should use the scheme from the "
@@ -104,21 +92,24 @@ def test_pool_retrieve_no_redirect(util):
     util.get_auth_info_from_url.return_value = {'foo': 'bar'}
 
     # Given a mocked response
-    response = Mock()
-    response.get_redirect_location.return_value = None
+    pool = Mock()
+    pool.request.return_value = \
+        Mock(get_redirect_location=
+            Mock(return_value=None))
 
     # When I retrieve a URL
-    pool = TestPool(response)
-    response, url = pool.retrieve('http://github.com')
+    _, url = downloader.http_retrieve(pool, 'http://github.com')
 
     # Then the url should be the same as requested
     url.should.equal('http://github.com')
-
-    # And the response should be the mocked one
-    response.should.be.property("params").being.equal({u'headers': {'foo': 'bar'}, u'preload_content': False})
-    response.should.be.property("method").being.equal("GET")
-    response.should.be.property("url").being.equal("http://github.com")
     util.get_auth_info_from_url.assert_called_once_with('http://github.com')
+
+    # And that the request should be executed with the correct
+    # parameters
+    pool.request.assert_called_once_with(
+        'GET', 'http://github.com',
+        headers={'foo': 'bar'},
+        preload_content=False)
 
 
 @patch('curdling.services.downloader.util')
@@ -130,22 +121,19 @@ def test_pool_retrieve(util):
     util.get_auth_info_from_url.return_value = {'foo': 'bar'}
 
     # Given a mocked response
-    response = Mock()
-    response.get_redirect_location.return_value = "http://bitbucket.com"
+    pool = Mock()
+    pool.request.return_value = \
+        Mock(get_redirect_location=
+            Mock(return_value="http://bitbucket.com"))
 
     # When I retrieve a URL
-    pool = TestPool(response)
-    response, url = pool.retrieve('http://github.com')
+    response, url = downloader.http_retrieve(pool, 'http://github.com')
 
-    # Then the url should be the same as requested
+    # Then the url should be the output of the redirect
     url.should.equal('http://bitbucket.com')
 
-    # And the response should be the mocked one
-    response.should.be.property("params").being.equal({u'headers': {'foo': 'bar'}, u'preload_content': False})
-    response.should.be.property("method").being.equal("GET")
-    response.should.be.property("url").being.equal("http://github.com")
+    # Even though we originally requested a different one
     util.get_auth_info_from_url.assert_called_once_with('http://github.com')
-
 
 
 @patch('curdling.services.downloader.util')
@@ -440,7 +428,8 @@ def test_downloader_download_bad_url():
     $ curd install git+ssh://github.com/clarete/curdling.git''')
 
 
-def test_downloader_download_http_handler():
+@patch('curdling.services.downloader.http_retrieve')
+def test_downloader_download_http_handler(http_retrieve):
     "Downloader#_download_http() should download HTTP links"
 
     # Given that I have a Downloader instance
@@ -449,7 +438,7 @@ def test_downloader_download_http_handler():
     # And I patch the opener so we'll just pretend the HTTP IO is happening
     response = Mock(status=200)
     response.headers.get.return_value = ''
-    service.opener.retrieve = Mock(return_value=(response, None))
+    http_retrieve.return_value = (response, None)
 
     # When I download an HTTP link
     service._download_http('http://blah/package.tar.gz')
@@ -465,7 +454,8 @@ def test_downloader_download_http_handler():
         cache_content=True, decode_content=False)
 
 
-def test_downloader_download_http_handler_blow_up_on_error():
+@patch('curdling.services.downloader.http_retrieve')
+def test_downloader_download_http_handler_blow_up_on_error(http_retrieve):
     "Downloader#_download_http() should handle HTTP status != 200"
 
     # Given that I have a Downloader instance
@@ -474,7 +464,7 @@ def test_downloader_download_http_handler_blow_up_on_error():
     # And I patch the opener so we'll just pretend the HTTP IO is happening
     response = Mock(status=500)
     response.headers.get.return_value = ''
-    service.opener.retrieve = Mock(return_value=(response, None))
+    http_retrieve.return_value = response, None
 
     # When I download an HTTP link
     service._download_http.when.called_with('http://blah/package.tar.gz').should.throw(
@@ -483,7 +473,8 @@ def test_downloader_download_http_handler_blow_up_on_error():
     )
 
 
-def test_downloader_download_http_handler_use_content_disposition():
+@patch('curdling.services.downloader.http_retrieve')
+def test_downloader_download_http_handler_use_content_disposition(http_retrieve):
     "Downloader#_download_http() should know how to use the header Content-Disposition to name the new file"
 
     # Given that I have a Downloader instance
@@ -492,7 +483,7 @@ def test_downloader_download_http_handler_use_content_disposition():
     # And I patch the opener so we'll just pretend the HTTP IO is happening
     response = Mock(status=200)
     response.headers.get.return_value = 'attachment; filename=sure-0.1.1.tar.gz'
-    service.opener.retrieve = Mock(return_value=(response, None))
+    http_retrieve.return_value = response, None
 
     # When I download an HTTP link
     service._download_http('http://blah/package.tar.gz')
@@ -502,7 +493,8 @@ def test_downloader_download_http_handler_use_content_disposition():
         'sure-0.1.1.tar.gz', response.read.return_value)
 
 
-def test_downloader_download_http_handler_use_content_disposition_with_quotes():
+@patch('curdling.services.downloader.http_retrieve')
+def test_downloader_download_http_handler_use_content_disposition_with_quotes(http_retrieve):
     "Downloader#_download_http() should know how to use the header Content-Disposition to name the new file and strip the quotes"
 
     # Given that I have a Downloader instance
@@ -511,7 +503,7 @@ def test_downloader_download_http_handler_use_content_disposition_with_quotes():
     # And I patch the opener so we'll just pretend the HTTP IO is happening
     response = Mock(status=200)
     response.headers.get.return_value = 'attachment; filename="sure-0.1.1.tar.gz"'
-    service.opener.retrieve = Mock(return_value=(response, None))
+    http_retrieve.return_value = response, None
 
     # When I download an HTTP link
     service._download_http('http://blah/package.tar.gz')

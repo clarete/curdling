@@ -63,19 +63,33 @@ def parse_url_and_revision(url):
     return parsed_url.geturl(), revision
 
 
-class Pool(urllib3.PoolManager):
+def http_retrieve(pool, url):
+    # Params to be passed to request. The `preload_content` must be set to
+    # False, otherwise `read()` wont honor `decode_content`.
+    params = {
+        'headers': util.get_auth_info_from_url(url),
+        'preload_content': False,
+    }
 
-    def retrieve(self, url):
-        # Params to be passed to request. The `preload_content` must be set to
-        # False, otherwise `read()` wont honor `decode_content`.
-        params = {
-            'headers': util.get_auth_info_from_url(url),
-            'preload_content': False,
-        }
+    # Request the url and ensure we've reached the final location
+    response = pool.request('GET', url, **params)
+    return response, response.get_redirect_location() or url
 
-        # Request the url and ensure we've reached the final location
-        response = self.request('GET', url, **params)
-        return response, response.get_redirect_location() or url
+
+def get_opener():
+    http_proxy = os.getenv('http_proxy')
+    if http_proxy:
+        parsed_url = compat.urlparse(http_proxy)
+        netloc = parsed_url.netloc.split('@', 1)[1] \
+            if '@' in parsed_url.netloc \
+            else parsed_url.netloc
+        proxy_url = parsed_url._replace(netloc=netloc).geturl()
+        proxy_headers = util.get_auth_info_from_url(
+            http_proxy, proxy=True)
+        return urllib3.ProxyManager(
+            proxy_url=proxy_url,
+            proxy_headers=proxy_headers)
+    return urllib3.PoolManager()
 
 
 class AggregatingLocator(locators.AggregatingLocator):
@@ -92,7 +106,7 @@ class AggregatingLocator(locators.AggregatingLocator):
 class PyPiLocator(locators.SimpleScrapingLocator):
     def __init__(self, url, **kwargs):
         super(PyPiLocator, self).__init__(url, **kwargs)
-        self.opener = Pool(maxsize=POOL_MAX_SIZE)
+        self.opener = get_opener()
 
     def _get_project(self, name):
         # It sounds lame, but we're trying to match requirements with more than
@@ -153,7 +167,7 @@ class PyPiLocator(locators.SimpleScrapingLocator):
         # The `retrieve()` method follows any eventual redirects, so the
         # initial url might be different from the final one
         try:
-            response, final_url = self.opener.retrieve(url)
+            response, final_url = http_retrieve(self.opener, url)
         except urllib3.exceptions.MaxRetryError:
             return
 
@@ -181,19 +195,19 @@ class CurdlingLocator(locators.Locator):
         super(CurdlingLocator, self).__init__(**kwargs)
         self.base_url = url
         self.url = url
-        self.opener = Pool(maxsize=POOL_MAX_SIZE)
+        self.opener = get_opener()
         self.requirements_not_found = []
 
     def get_distribution_names(self):
         return json.loads(
-            self.opener.retrieve(
+            http_retrieve(self.opener,
                 compat.urljoin(self.url, 'api'))[0].data)
 
     def _get_project(self, name):
         # Retrieve the info
         url = compat.urljoin(self.url, 'api/' + name)
         try:
-            response, _ = self.opener.retrieve(url)
+            response, _ = http_retrieve(self.opener, url)
         except urllib3.exceptions.MaxRetryError:
             return None
 
@@ -223,7 +237,7 @@ class Finder(Service):
 
     def __init__(self, *args, **kwargs):
         super(Finder, self).__init__(*args, **kwargs)
-        self.opener = Pool(maxsize=POOL_MAX_SIZE)
+        self.opener = get_opener()
         self.locator = get_locator(self.conf)
 
     def handle(self, requester, data):
@@ -251,7 +265,7 @@ class Downloader(Service):
 
     def __init__(self, *args, **kwargs):
         super(Downloader, self).__init__(*args, **kwargs)
-        self.opener = Pool(maxsize=POOL_MAX_SIZE)
+        self.opener = get_opener()
         self.locator = get_locator(self.conf)
 
         # List of packages that we're aware of, so people that want to send
@@ -312,7 +326,7 @@ class Downloader(Service):
         return protocol_mapping[handler](url)
 
     def _download_http(self, url):
-        response, _ = self.opener.retrieve(url)
+        response, _ = http_retrieve(self.opener, url)
         if response.status != 200:
             raise ReportableError(
                 'Failed to download url `{0}\': {1} ({2})'.format(
