@@ -198,6 +198,10 @@ def main():
     add_parser_uninstall(subparsers)
     args = parser.parse_args()
 
+    # Let's not read the command if the user didn't inform one
+    if not hasattr(args, 'command'):
+        parser.error('too few arguments')
+
     # Set the log level for the requested logger
     handler = logging.StreamHandler(stream=args.log_file)
     handler.setLevel(args.log_level)
