@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from ..exceptions import ReportableError, UnknownURL
+from ..exceptions import ReportableError, UnknownURL, TooManyRedirects
 from .. import util
 from .base import Service
 from distlib import database, metadata, compat, locators
@@ -16,6 +16,9 @@ import distlib.version
 # module. Not the perfect place, though might fix the ClosedPoolError we're
 # getting eventually.
 POOL_MAX_SIZE = 10
+
+# Number of max redirect follows. See `http_retrieve()` for details.
+REDIRECT_LIMIT = 20
 
 
 def get_locator(conf):
@@ -63,17 +66,24 @@ def parse_url_and_revision(url):
     return parsed_url.geturl(), revision
 
 
-def http_retrieve(pool, url):
+def http_retrieve(pool, url, attempt=0):
+    if attempt >= REDIRECT_LIMIT:
+        raise TooManyRedirects('Too many redirects')
+
     # Params to be passed to request. The `preload_content` must be set to
     # False, otherwise `read()` wont honor `decode_content`.
     params = {
         'headers': util.get_auth_info_from_url(url),
         'preload_content': False,
+        'redirect': False,
     }
 
     # Request the url and ensure we've reached the final location
     response = pool.request('GET', url, **params)
-    return response, response.get_redirect_location() or url
+    if 'location' in response.headers:
+        url = response.headers['location']
+        return http_retrieve(pool, url, attempt=attempt + 1)
+    return response, url
 
 
 def get_opener():
@@ -330,7 +340,9 @@ class Downloader(Service):
         return protocol_mapping[handler](url)
 
     def _download_http(self, url):
-        response, _ = http_retrieve(self.opener, url)
+        response, final_url = http_retrieve(self.opener, url)
+        if final_url:
+            url = final_url
         if response.status != 200:
             raise ReportableError(
                 'Failed to download url `{0}\': {1} ({2})'.format(

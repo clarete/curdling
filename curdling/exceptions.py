@@ -41,9 +41,12 @@ class UnknownURL(ReportableError):
     """Raised when the user feeds in the installer with an unknown URL"""
 
 
+class TooManyRedirects(ReportableError):
+    """Raised when a download exceeds the maximum number of redirects"""
+
+
 class UnpackingError(ReportableError):
     """Raised when a package can't be unpacked"""
-
 
 class BuildError(ReportableError):
     """Raised when a package can't be built using the setup.py script"""

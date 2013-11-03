@@ -3,7 +3,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 from mock import Mock, patch, call
 from distlib import database
 
-from curdling.exceptions import UnknownURL, ReportableError
+from curdling.exceptions import UnknownURL, TooManyRedirects, ReportableError
 from curdling.services import downloader
 
 import urllib3
@@ -152,8 +152,8 @@ def test_update_url_credentials_not_from_the_same_server():
 
 @patch('curdling.services.downloader.util')
 def test_pool_retrieve_no_redirect(util):
-    ("Pool#retrieve should make a request and return a tuple "
-     "containing the response and the actual url of the retrieved resource")
+    ("http_retrieve() Should retrieve a URL and return a tuple "
+     "containing the response and the final URL of the retrieved resource")
 
     # Background:
     # util.get_auth_info_from_url returns a fake dictionary
@@ -161,9 +161,7 @@ def test_pool_retrieve_no_redirect(util):
 
     # Given a mocked response
     pool = Mock()
-    pool.request.return_value = \
-        Mock(get_redirect_location=
-            Mock(return_value=None))
+    pool.request.return_value = Mock(headers={})
 
     # When I retrieve a URL
     _, url = downloader.http_retrieve(pool, 'http://github.com')
@@ -177,22 +175,25 @@ def test_pool_retrieve_no_redirect(util):
     pool.request.assert_called_once_with(
         'GET', 'http://github.com',
         headers={'foo': 'bar'},
-        preload_content=False)
+        preload_content=False,
+        redirect=False,
+    )
 
 
 @patch('curdling.services.downloader.util')
-def test_pool_retrieve(util):
-    ("Pool#retrieve should follows the redirect and "
-     "returns the action resource url")
+def test_http_retrieve(util):
+    "http_retrieve() Should follow redirects and return the final URL"
+
     # Background:
     # util.get_auth_info_from_url returns a fake dictionary
-    util.get_auth_info_from_url.return_value = {'foo': 'bar'}
+    util.get_auth_info_from_url.return_value = {}
 
     # Given a mocked response
     pool = Mock()
-    pool.request.return_value = \
-        Mock(get_redirect_location=
-            Mock(return_value="http://bitbucket.com"))
+    pool.request.side_effect = [
+        Mock(headers={'location': 'http://bitbucket.com'}),
+        Mock(headers={}),
+    ]
 
     # When I retrieve a URL
     response, url = downloader.http_retrieve(pool, 'http://github.com')
@@ -201,7 +202,33 @@ def test_pool_retrieve(util):
     url.should.equal('http://bitbucket.com')
 
     # Even though we originally requested a different one
-    util.get_auth_info_from_url.assert_called_once_with('http://github.com')
+    list(pool.request.call_args_list).should.equal([
+        call('GET', 'http://github.com', redirect=False, headers={}, preload_content=False),
+        call('GET', 'http://bitbucket.com', redirect=False, headers={}, preload_content=False),
+    ])
+
+
+@patch('curdling.services.downloader.util')
+def test_http_retrieve_max_redirects(util):
+    "http_retrieve() Should limit the number of redirects"
+
+    # Background:
+    # util.get_auth_info_from_url returns a fake dictionary
+    util.get_auth_info_from_url.return_value = {}
+
+    # Given a mocked response that *always* returns a resource that
+    # redirects to a different URL
+    pool = Mock()
+    pool.request.return_value = Mock(headers={'location': 'http://see-the-other-side.com'})
+
+    # When I retrieve a URL with an infinite redirect flow; I see that
+    # the downloader notices that and raises the proper exception
+    downloader.http_retrieve.when.called_with(pool, 'http://see-the-other-side.com').should.throw(
+        TooManyRedirects, 'Too many redirects'
+    )
+
+    # And that the limit of redirects is fixed manually to
+    pool.request.call_args_list.should.have.length_of(20)
 
 
 @patch('curdling.services.downloader.util')
@@ -538,6 +565,28 @@ def test_downloader_download_http_handler_blow_up_on_error(http_retrieve):
     service._download_http.when.called_with('http://blah/package.tar.gz').should.throw(
         ReportableError,
         'Failed to download url `http://blah/package.tar.gz\': 500 (Internal Server Error)'
+    )
+
+
+@patch('curdling.services.downloader.http_retrieve')
+def test_downloader_download_http_handler_use_right_url_on_redirect(http_retrieve):
+    "Downloader#_download_http() should handle HTTP status = 302"
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader(index=Mock())
+
+    # And I patch the opener so we'll just pretend the HTTP IO is happening
+    response = Mock(status=200)
+    response.headers.get.side_effect = {}.get
+    http_retrieve.return_value = response, 'pkg-0.1.tar.gz'
+
+    # When I download an HTTP link that redirects to another location
+    service._download_http('http://pkg.io/download')
+
+    # Then I see the package name being read from the redirected URL,
+    # not from the original one.
+    service.index.from_data.assert_called_once_with(
+        'pkg-0.1.tar.gz', response.read.return_value,
     )
 
 
