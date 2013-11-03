@@ -50,11 +50,8 @@ def update_url_credentials(base_url, other_url):
     if base.hostname != other.hostname or base.port != other.port:
         return other.geturl()
 
-    # Since I can't change the `ParseResult` object returned by `urlparse`,
-    # I'll have to do that manually and that stinks.
-    scheme, netloc, path, params, query, fragment = list(other)
-    return compat.urlunparse(
-        (scheme, base.netloc, path, params, query, fragment))
+    # Update the `netloc` field and return the `other` url
+    return other._replace(netloc=base.netloc).geturl()
 
 
 def parse_url_and_revision(url):
