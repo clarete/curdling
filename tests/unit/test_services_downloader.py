@@ -540,5 +540,5 @@ def test_downloader_download_vcs_handlers(util, tempfile):
     list(util.execute_command.call_args_list).should.equal([
         call('git', 'clone', 'git-url', 'tmp'),
         call('hg', 'clone', 'hg-url', 'tmp'),
-        call('svn', 'co', 'svn-url', 'tmp'),
+        call('svn', 'co', '-q', 'svn-url', 'tmp'),
     ])

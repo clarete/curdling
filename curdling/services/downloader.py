@@ -337,5 +337,5 @@ class Downloader(Service):
 
     def _download_svn(self, url):
         destination = tempfile.mkdtemp()
-        util.execute_command('svn', 'co', url, destination)
+        util.execute_command('svn', 'co', '-q', url, destination)
         return 'directory', destination
