@@ -168,8 +168,8 @@ def main():
         description='Curdles your cheesy code and extracts its binaries')
 
     # General arguments. All the commands have access to the following options
-
-    levels = filter(lambda x: not isinstance(x, int), logging._levelNames.keys())
+    levels = [i for i in logging._levelNames.keys()
+        if not isinstance(i, int) and i != 'NOTSET']
     parser.add_argument(
         '-l', '--log-level', default='CRITICAL', choices=levels,
         help='Log verbosity level (for nerds): {0}'.format(', '.join(levels)))
