@@ -6,6 +6,74 @@ from distlib import database
 from curdling.exceptions import UnknownURL, ReportableError
 from curdling.services import downloader
 
+import urllib3
+
+
+def test_locators_should_be_comparable():
+    "PyPiLocator() and CurdlingLocator() Should be comparable between each other"
+
+    # When I compare locators from the same type with the same URL,
+    # they should equal
+    downloader.PyPiLocator('url1').should.equal(downloader.PyPiLocator('url1'))
+    downloader.PyPiLocator('url1').should_not.equal(downloader.PyPiLocator('url2'))
+
+    # And the same is true for the CurdlingLocator class
+    downloader.CurdlingLocator('url1').should.equal(downloader.CurdlingLocator('url1'))
+    downloader.CurdlingLocator('url1').should_not.equal(downloader.CurdlingLocator('url2'))
+
+    # When I compare locators from different types; they should not equal
+    downloader.CurdlingLocator('url1').should_not.equal(downloader.PyPiLocator('url1'))
+
+
+def test_get_locator():
+    "get_locator() Should an AggregatingLocator fed with all curd and pypi locators informed in `conf`"
+
+    # Given the following configuration
+    conf = {
+        'pypi_urls': ['http://pypi.py.o/simple'],
+        'curdling_urls': ['http://curd.clarete.li', 'http://curd.falcao.it'],
+    }
+
+    # When I try to retrieve a locator
+    locator = downloader.get_locator(conf)
+
+    # Than I see all the above locator URLs present inside of the main
+    # one
+    locator.should.be.a(downloader.AggregatingLocator)
+    locator.locators.should.equal((
+        downloader.CurdlingLocator('http://curd.clarete.li'),
+        downloader.CurdlingLocator('http://curd.falcao.it'),
+        downloader.PyPiLocator('http://pypi.py.o/simple'),
+    ))
+
+
+def test_get_opener():
+    "get_opener() Should return an HTTP retriever class from urllib3"
+
+    # When I need a regular opener; Then I should get a Pool Manager
+    downloader.get_opener().should.be.a(urllib3.PoolManager)
+
+
+@patch('os.getenv')
+def test_get_opener_with_proxy(getenv):
+    "get_opener() Should return a Proxy Manager from urllib3 when `http_proxy` is available"
+
+    # Given the following proxy server set in the http_proxy variable
+    getenv.return_value = 'http://user:pwd@srv.prx:8123'
+
+    # When I request the opener
+    opener = downloader.get_opener()
+
+    # Then I get a Proxy Manager
+    opener.should.be.a(urllib3.ProxyManager)
+
+    # And I check that the proxy URL is right
+    '{0}://{1}@{2}:{3}'.format(*tuple(opener.proxy)).should.equal('http://user:pwd@srv.prx:8123')
+
+    # And that the authentication header is present
+    opener.proxy_headers.should.equal(
+        {'proxy-authorization': 'Basic dXNlcjpwd2Q='})
+
 
 class TestPyPiLocator(downloader.PyPiLocator):
     def __init__(self, *args, **kw):

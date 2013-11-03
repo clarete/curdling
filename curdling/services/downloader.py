@@ -80,16 +80,20 @@ def get_opener():
     http_proxy = os.getenv('http_proxy')
     if http_proxy:
         parsed_url = compat.urlparse(http_proxy)
-        netloc = parsed_url.netloc.split('@', 1)[1] \
-            if '@' in parsed_url.netloc \
-            else parsed_url.netloc
-        proxy_url = parsed_url._replace(netloc=netloc).geturl()
         proxy_headers = util.get_auth_info_from_url(
             http_proxy, proxy=True)
         return urllib3.ProxyManager(
-            proxy_url=proxy_url,
+            proxy_url=parsed_url.geturl(),
             proxy_headers=proxy_headers)
     return urllib3.PoolManager()
+
+
+class ComparableLocator(object):
+    def __eq__(self, other):
+        return self.base_url == other.base_url
+
+    def __repr__(self):
+        return '{0}(\'{1}\')'.format(self.__class__.__name__, self.base_url)
 
 
 class AggregatingLocator(locators.AggregatingLocator):
@@ -103,7 +107,7 @@ class AggregatingLocator(locators.AggregatingLocator):
                 return packages
 
 
-class PyPiLocator(locators.SimpleScrapingLocator):
+class PyPiLocator(locators.SimpleScrapingLocator, ComparableLocator):
     def __init__(self, url, **kwargs):
         super(PyPiLocator, self).__init__(url, **kwargs)
         self.opener = get_opener()
@@ -189,7 +193,7 @@ class PyPiLocator(locators.SimpleScrapingLocator):
             return locators.Page(data, final_url)
 
 
-class CurdlingLocator(locators.Locator):
+class CurdlingLocator(locators.Locator, ComparableLocator):
 
     def __init__(self, url, **kwargs):
         super(CurdlingLocator, self).__init__(**kwargs)
