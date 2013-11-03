@@ -57,6 +57,15 @@ def update_url_credentials(base_url, other_url):
         (scheme, base.netloc, path, params, query, fragment))
 
 
+def parse_url_and_revision(url):
+    parsed_url = compat.urlparse(url)
+    revision = None
+    if '@' in parsed_url.path:
+        path, revision = parsed_url.path.rsplit('@', 1)
+        parsed_url = parsed_url._replace(path=path)
+    return parsed_url.geturl(), revision
+
+
 class Pool(urllib3.PoolManager):
 
     def retrieve(self, url):
@@ -327,15 +336,29 @@ class Downloader(Service):
 
     def _download_git(self, url):
         destination = tempfile.mkdtemp()
+        url, revision = parse_url_and_revision(url)
         util.execute_command('git', 'clone', url, destination)
+        if revision:
+            util.execute_command('git', 'reset', '--hard', revision,
+                cwd=destination)
         return 'directory', destination
 
     def _download_hg(self, url):
         destination = tempfile.mkdtemp()
+        url, revision = parse_url_and_revision(url)
         util.execute_command('hg', 'clone', url, destination)
+        if revision:
+            util.execute_command('hg', 'update', '-q', revision,
+                cwd=destination)
         return 'directory', destination
 
     def _download_svn(self, url):
         destination = tempfile.mkdtemp()
-        util.execute_command('svn', 'co', '-q', url, destination)
+        url, revision = parse_url_and_revision(url)
+        params = ['svn', 'co', '-q']
+        if revision:
+            params.append('-r')
+            params.append(revision)
+        params += [url, destination]
+        util.execute_command(*params)
         return 'directory', destination

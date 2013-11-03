@@ -97,6 +97,17 @@ Everything after the ``vcs+`` prefix will be forward to the respective
 command line tool that **must** be installed before requesting any
 *VCS* links for curdling.
 
+Install specific revisions
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Curdling also supports installing a specific revision of the package
+available in the VCS. To inform the revision, use ``@`` and the
+revision ID, E.g.::
+
+  $ curd install git+http://github.com/clarete/forbiddenfruit.git@aeebca4cae6c656046c7223b418faf463d4c68ef
+
+It works for all currently supported VCS systems.
+
 Precedence when declaring requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

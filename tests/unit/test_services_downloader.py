@@ -542,3 +542,28 @@ def test_downloader_download_vcs_handlers(util, tempfile):
         call('hg', 'clone', 'hg-url', 'tmp'),
         call('svn', 'co', '-q', 'svn-url', 'tmp'),
     ])
+
+
+@patch('curdling.services.downloader.tempfile')
+@patch('curdling.services.downloader.util')
+def test_downloader_download_vcs_handlers_with_rev(util, tempfile):
+    "Downloader#_download_{git,hg,svn}() Should find the revision informed in the URL and point the retrieved code to it"
+
+    tempfile.mkdtemp.return_value = 'tmp'
+
+    # Given that I have a Downloader instance
+    service = downloader.Downloader()
+
+    # When I call the VCS handlers with a revision
+    service._download_git('git-url@rev')
+    service._download_hg('hg-url@rev')
+    service._download_svn('svn-url@rev')
+
+    # Then I see that all the calls for the shell commands were done properly
+    list(util.execute_command.call_args_list).should.equal([
+        call('git', 'clone', 'git-url', 'tmp'),
+        call('git', 'reset', '--hard', 'rev', cwd='tmp'),
+        call('hg', 'clone', 'hg-url', 'tmp'),
+        call('hg', 'update', '-q', 'rev', cwd='tmp'),
+        call('svn', 'co', '-q', '-r', 'rev', 'svn-url', 'tmp'),
+    ])
