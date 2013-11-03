@@ -16,6 +16,7 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 from distlib import compat, util
+from base64 import b64encode
 
 import io
 import os
@@ -125,11 +126,17 @@ def spaces(count, text):
         for line in text.splitlines())
 
 
-def get_auth_info_from_url(url):
+def get_auth_info_from_url(url, proxy=False):
     parsed = compat.urlparse(url)
     if parsed.username:
         auth = '{0}:{1}'.format(parsed.username, parsed.password)
-        return urllib3.util.make_headers(basic_auth=auth)
+
+        # The caller is not interested in proxy headers
+        if not proxy:
+            return urllib3.util.make_headers(basic_auth=auth)
+
+        # Proxy-Authentication support
+        return {'proxy-authorization': 'Basic {0}'.format(b64encode(auth))}
     return {}
 
 

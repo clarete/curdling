@@ -124,6 +124,20 @@ def test_get_auth_info_from_url_no_auth_info():
     authentication_information.should.equal({})
 
 
+def test_get_auth_info_from_url_for_proxy():
+    "get_auth_info_from_url() Should return the Proxy-Authorization header when proxy=True"
+
+    # Given that I have a URL that contains authentication info
+    url = "http://user:password@domain.org"
+
+    # When I try to get the authentication information for a proxy
+    authentication_information = util.get_auth_info_from_url(url, proxy=True)
+
+    # Then I see both user and password are correct
+    authentication_information.should.equal({
+        'proxy-authorization': 'Basic dXNlcjpwYXNzd29yZA=='})
+
+
 @patch('curdling.util.subprocess')
 def test_execute_command(subprocess):
     "execute_command() Should return None when the subprocess runs successfully"
