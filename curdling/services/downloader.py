@@ -81,7 +81,11 @@ def http_retrieve(pool, url, attempt=0):
     # Request the url and ensure we've reached the final location
     response = pool.request('GET', url, **params)
     if 'location' in response.headers:
-        url = response.headers['location']
+        location = response.headers['location']
+        if location.startswith('/'):
+            url = compat.urljoin(url, location)
+        else:
+            url = location
         return http_retrieve(pool, url, attempt=attempt + 1)
     return response, url
 

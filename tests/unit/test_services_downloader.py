@@ -232,6 +232,30 @@ def test_http_retrieve_max_redirects(util):
 
 
 @patch('curdling.services.downloader.util')
+def test_http_retrieve_relative_location(util):
+    "http_retrieve() Should deal with relative paths on Location"
+
+    # Background:
+    # util.get_auth_info_from_url returns a fake dictionary
+    util.get_auth_info_from_url.return_value = {}
+
+    # Given a mocked response that returns a relative Location URL
+    pool = Mock()
+    pool.request.side_effect = [
+        Mock(headers={'location': '/a/relative/url'}),
+        Mock(headers={}),
+    ]
+
+    # When I check that
+    downloader.http_retrieve(pool, 'http://bitbucket.com/')
+
+    list(pool.request.call_args_list).should.equal([
+        call('GET', 'http://bitbucket.com/', headers={}, preload_content=False, redirect=False),
+        call('GET', 'http://bitbucket.com/a/relative/url', headers={}, preload_content=False, redirect=False),
+    ])
+
+
+@patch('curdling.services.downloader.util')
 @patch('curdling.services.downloader.find_packages')
 def test_aggregating_locator_locate(find_packages, util):
     ("AggregatingLocator#locate should return the first package "
