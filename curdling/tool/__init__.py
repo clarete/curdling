@@ -17,7 +17,6 @@ DEFAULT_PYPI_INDEX_LIST = [
     'http://pypi.python.org/simple/',
 ]
 
-
 def add_parser_install(subparsers):
     parser = subparsers.add_parser(
         'install', help='Locate and install packages')
@@ -53,6 +52,19 @@ def add_parser_uninstall(subparsers):
         'packages', metavar='PKG', nargs='*',
         help='list of files to uninstall')
     parser.set_defaults(command='uninstall')
+    return parser
+
+
+def add_parser_bootstrap(subparsers):
+    parser = subparsers.add_parser(
+        'bootstrap', help='Returns the wheels needed to install curdling')
+    parser.add_argument(
+        '-i', '--index', action='append',
+        help='PyPi compatible index url. Repeat as many times as you need')
+    parser.add_argument(
+        '-c', '--curdling-index', action='append', default=[],
+        help='Curdling compatible index url. Repeat as many times as you need')
+    parser.set_defaults(command='bootstrap')
     return parser
 
 
@@ -163,6 +175,48 @@ def get_uninstall_command(args):
     return cmd
 
 
+def get_bootstrap_command(args):
+    index = Index(os.path.expanduser('~/.curds'))
+    index.scan()
+
+    cmd = Install({
+        'log_level': args.log_level,
+        'pypi_urls': args.index or DEFAULT_PYPI_INDEX_LIST,
+        'curdling_urls': args.curdling_index,
+        'index': index,
+        'only_build': True,
+        'ignore_extra': True,
+    })
+
+    # Callbacks that show feedback for the user
+    if not args.quiet:
+        cmd.connect('update_retrieve_and_build', build_and_retrieve_progress)
+        cmd.connect('finished', show_report)
+
+    def print_bootstrap_wheels(failed=False):
+        if not failed:
+            deps, _ = cmd.load_installer()
+            # Make sure curdling is last, for pip
+            deps = list(deps)
+            deps.remove('curdling')
+            deps.append('curdling')
+            print(' '.join(index.get(pkg) for pkg in deps))
+
+    cmd.connect('finished', print_bootstrap_wheels)
+
+    # This is the last thing called in the software. It will raise a
+    # SystemExit to return the right code to the OS depending on the
+    # value of received by the callback below:
+    cmd.connect('finished', handle_install_exit)
+
+    # Let's start the required services and request the installation of the
+    # received packages before returning the command instance
+    cmd.pipeline()
+    cmd.start()
+    cmd.feed('main', requirement='curdling')
+    return cmd
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Curdles your cheesy code and extracts its binaries')
@@ -196,6 +250,7 @@ def main():
     subparsers = parser.add_subparsers()
     add_parser_install(subparsers)
     add_parser_uninstall(subparsers)
+    add_parser_bootstrap(subparsers)
     args = parser.parse_args()
 
     # Let's not read the command if the user didn't inform one
@@ -216,6 +271,7 @@ def main():
     command = {
         'install': get_install_command,
         'uninstall': get_uninstall_command,
+        'bootstrap': get_bootstrap_command,
     }[args.command](args)
 
     try:
