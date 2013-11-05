@@ -13,14 +13,15 @@ import traceback
 SENTINEL = (None, {})
 
 # Number of threads that a service will spawn by default.
-DEFAULT_CONCURRENCY = 10
+DEFAULT_CONCURRENCY = 2
 
 
 class Service(SignalEmitter):
 
-    def __init__(self, **args):
+    def __init__(self, size=DEFAULT_CONCURRENCY, **args):
         super(Service, self).__init__()
 
+        self.size = size
         self.env = args.get('env')
         self.conf = args.pop('conf', {})
         self.index = args.pop('index', None)
@@ -42,7 +43,7 @@ class Service(SignalEmitter):
 
     def start(self):
         self.logger.debug('%s.start()', self.name)
-        for _ in range(self.conf.get('concurrency', DEFAULT_CONCURRENCY)):
+        for _ in range(self.size):
             worker = threading.Thread(target=self._worker)
             worker.daemon = True
             worker.start()

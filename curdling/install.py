@@ -36,6 +36,8 @@ import sys
 import time
 import threading
 import traceback
+import math
+import multiprocessing
 
 
 PACKAGE_BLACKLIST = (
@@ -91,12 +93,15 @@ class Install(SignalEmitter):
             'conf': self.conf,
         })
 
-        self.finder = Finder(**args)
-        self.downloader = Downloader(**args)
-        self.curdler = Curdler(**args)
-        self.dependencer = Dependencer(**args)
-        self.installer = Installer(**args)
-        self.uploader = Uploader(**args)
+        cpu_count = multiprocessing.cpu_count()
+        p = lambda n: max(int(math.floor((cpu_count / 8.0) * n)), 1)
+
+        self.finder = Finder(size=p(1), **args)
+        self.downloader = Downloader(size=p(2), **args)
+        self.curdler = Curdler(size=p(4), **args)
+        self.dependencer = Dependencer(size=p(1), **args)
+        self.installer = Installer(size=cpu_count, **args)
+        self.uploader = Uploader(size=cpu_count, **args)
 
     def pipeline(self):
         # Building the pipeline to [find -> download -> build -> find deps]
