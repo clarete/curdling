@@ -9,6 +9,7 @@ class Dependencer(Service):
 
     def __init__(self, *args, **kwargs):
         super(Dependencer, self).__init__(*args, **kwargs)
+        self.ignore_extra = kwargs.get('ignore_extra')
         self.dependency_found = Signal()
 
     def handle(self, requester, data):
@@ -19,6 +20,8 @@ class Dependencer(Service):
         for spec in run_time_dependencies:
             # Packages might declare their "extras" here, so let's split it
             dependency, extra = (';' in spec and spec or spec + ';').split(';')
+            if extra and self.ignore_extra:
+                continue
             self.emit('dependency_found', self.name,
                       requirement=util.safe_name(dependency),
                       dependency_of=requirement)

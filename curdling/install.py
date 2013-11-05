@@ -74,6 +74,7 @@ class Install(SignalEmitter):
         self.index = self.conf.get('index')
         self.database = Database()
         self.logger = logger(__name__)
+        self.only_build = self.conf.get('only_build')
 
         # Used by the CLI tool
         self.update_retrieve_and_build = Signal()
@@ -295,7 +296,7 @@ class Install(SignalEmitter):
 
     def run(self):
         packages = self.retrieve_and_build()
-        if packages:
+        if packages and not self.only_build:
             self.install(packages)
         if not self.mapping.errors and self.conf.get('upload'):
             self.upload()
