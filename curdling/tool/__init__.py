@@ -88,8 +88,8 @@ def progress(phrase, total, installed):
     percent = int((installed) / float(total) * 100.0)
     msg = [progress_bar(phrase, percent)]
     msg.append("({0}/{1})".format(installed, total))
-    sys.stdout.write(''.join(msg))
-    sys.stdout.flush()
+    sys.stderr.write(''.join(msg))
+    sys.stderr.flush()
 
 
 def build_and_retrieve_progress(total, retrieved, built, failed):
@@ -102,23 +102,23 @@ def build_and_retrieve_progress(total, retrieved, built, failed):
     else:
         msg.append("({0} requested, {1} retrieved, {2} processed)".format(
             total, retrieved, built))
-    sys.stdout.write(''.join(msg))
-    sys.stdout.flush()
+    sys.stderr.write(''.join(msg))
+    sys.stderr.flush()
 
 
 def show_report(failed=None):
     if failed:
-        sys.stdout.write('\nSome milk was spilled in the process:\n')
+        sys.stderr.write('\nSome milk was spilled in the process:\n')
     else:
-        sys.stdout.write('\n')
+        sys.stderr.write('\n')
     for package, errors in list((failed or {}).items()):
-        sys.stdout.write('{0}\n'.format(package))
+        sys.stderr.write('{0}\n'.format(package))
         for data in errors:
             exception = data['exception']
             parents = ', '.join(
                 ('from {0}'.format(d) if d else 'explicit requirement')
                 for d in data['dependency_of'])
-            sys.stdout.write(' * {0} ({1}): {2}:\n{3}\n'.format(
+            sys.stderr.write(' * {0} ({1}): {2}:\n{3}\n'.format(
                 data['requirement'],
                 parents,
                 exception.__class__.__name__,
@@ -200,7 +200,8 @@ def get_bootstrap_command(args):
             deps = list(deps)
             deps.remove('curdling')
             deps.append('curdling')
-            print(' '.join(index.get(pkg) for pkg in deps))
+            sys.stdout.write(' '.join(index.get(pkg) for pkg in deps))
+            sys.stdout.write('\n')
 
     cmd.connect('finished', print_bootstrap_wheels)
 
