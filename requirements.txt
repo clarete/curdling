@@ -1,4 +1,4 @@
 setuptools>=0.9.8
-wheel==0.21.0
+wheel>=0.21.0
 distlib==0.1.2
 urllib3>=1.7

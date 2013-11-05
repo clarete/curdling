@@ -36,7 +36,7 @@ dummypypi_start:
 
 
 dummypypi_stop:
-	-@ps aux | grep SimpleHTTPServer | grep -v grep | awk '{ print $$2 }' | xargs kill -9 2>/dev/null
+	-@ps aux | grep $(PYTHON_SERVER_MODULE) | grep -v grep | awk '{ print $$2 }' | xargs kill -9 2>/dev/null
 
 
 setup: clean
