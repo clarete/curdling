@@ -77,7 +77,8 @@ class Mapping(object):
     def available_versions(self, package_name):
         return sorted(set(wheel_version(self.wheels[requirement])
             for requirement in self.requirements
-                if util.parse_requirement(requirement).name == package_name),
+                if self.wheels.get(requirement) and
+                    util.parse_requirement(requirement).name == package_name),
                       reverse=True)
 
     def matching_versions(self, requirement):
@@ -112,6 +113,8 @@ class Mapping(object):
         all_constraints = []
         primary_versions = []
         for requirement in requirements:
+            if not self.wheels.get(requirement):
+                continue
             version = wheel_version(self.wheels[requirement])
             requirements_by_version[version] = requirement
             if self.is_primary_requirement(requirement):
