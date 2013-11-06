@@ -244,7 +244,9 @@ class Install(Service):
             total = len(self.mapping.requirements)
             retrieved = self.mapping.count('downloader') + len(self.mapping.repeated)
             built = self.mapping.count('dependencer')
-            failed = len(self.mapping.errors)
+
+            # Each package might have more than one requirement
+            failed = sum(len(x) for x in self.mapping.errors.values())
             self.emit('update_retrieve_and_build',
                 total, retrieved, built, failed)
             if total == built + failed:
