@@ -229,13 +229,18 @@ class Install(Service):
     def retrieve_and_build(self):
         # Wait until all the packages have the chance to be processed
         while True:
-            try:
-                # Check if there's any requirement to be routed
-                requester, sender_data = self._queue.get_nowait()
-                self.handle(requester, **sender_data)
-            except queue.Empty:
-                pass
+            # Walking over the whole list of requirements to
+            # process.
+            while True:
+                try:
+                    requester, sender_data = self._queue.get_nowait()
+                    self.handle(requester, **sender_data)
+                except queue.Empty:
+                    break
 
+            # No more requirements to process, let's take a look in
+            # the current situation and see if we're finally ready to
+            # bail out.
             total = len(self.mapping.requirements)
             retrieved = self.mapping.count('downloader') + len(self.mapping.repeated)
             built = self.mapping.count('dependencer')

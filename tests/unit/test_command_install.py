@@ -518,7 +518,6 @@ def test_load_installer_forward_errors():
 
     # And I handle the installer with a requirement
     install.queue('tests', requirement='package')
-    install.queue(None)
 
     # And I cause an error in the download worker
     install.downloader.handle = Mock(side_effect=Exception('Beep-Bop'))

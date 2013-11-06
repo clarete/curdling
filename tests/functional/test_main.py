@@ -175,7 +175,6 @@ def test_retrieve_and_build():
 
     # And I handle the installer with a requirement
     installer.queue('tests', requirement='gherkin')
-    installer.queue(None)
 
     # And start the installer
     installer.start()
