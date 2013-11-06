@@ -119,11 +119,10 @@ class Install(Service):
         # Error report, let's just remember what happened
         def update_error_list(name, **data):
             package_name = parse_requirement(data['requirement']).name
-            self.mapping.errors[package_name].append({
+            self.mapping.errors[package_name][data['requirement']] = {
                 'exception': data['exception'],
-                'requirement': data['requirement'],
                 'dependency_of': [data.get('dependency_of')],
-            })
+            }
 
         # Count how many packages we have in each place
         def update_count(name, **data):
@@ -194,7 +193,7 @@ class Install(Service):
     def load_installer(self):
         # Look for the best version collected for each package.
         # Failures will be collected and forwarded to the caller.
-        errors = defaultdict(list)
+        errors = defaultdict(dict)
         installable_packages = self.mapping.installable_packages()
         for package_name in installable_packages:
             try:
@@ -203,11 +202,12 @@ class Install(Service):
                 self.logger.exception("best_version('%s'): %s:%d (%s) %s",
                     package_name, *traceback.extract_tb(sys.exc_info()[2])[0])
                 for requirement in self.mapping.get_requirements_by_package_name(package_name):
-                    errors[package_name].append({
-                        'requirement': requirement,
-                        'exception': self.mapping.errors.get(requirement, exc),
+                    previous_error = self.mapping.errors[package_name].get(requirement)
+                    exception = previous_error['exception'] if previous_error else exc
+                    errors[package_name][requirement] = {
+                        'exception': exception,
                         'dependency_of': self.mapping.dependencies[requirement],
-                    })
+                    }
             else:
                 # It's OK to queue all the packages without being sure
                 # about the availability of all the required packages

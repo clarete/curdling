@@ -101,13 +101,13 @@ def show_report(failed=None):
         sys.stdout.write('\n')
     for package, errors in list((failed or {}).items()):
         sys.stdout.write('{0}\n'.format(package))
-        for data in errors:
+        for requirement, data in errors.items():
             exception = data['exception']
             parents = ', '.join(
                 ('from {0}'.format(d) if d else 'explicit requirement')
                 for d in data['dependency_of'])
-            sys.stdout.write(' * {0} ({1}): {2}:\n{3}\n'.format(
-                data['requirement'],
+            sys.stdout.write(' * {0} {1}: {2}:\n{3}\n'.format(
+                requirement,
                 parents,
                 exception.__class__.__name__,
                 spaces(5, str(exception))))

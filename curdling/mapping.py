@@ -51,7 +51,7 @@ class Mapping(object):
         self.requirements = set()
         self.dependencies = defaultdict(list)
         self.stats = defaultdict(int)
-        self.errors = defaultdict(list)
+        self.errors = defaultdict(dict)
         self.wheels = {}
         self.repeated = []
 
@@ -133,11 +133,13 @@ class Mapping(object):
         compatible_versions = [v for v in all_versions
             if all_versions.count(v) == len(requirements)]
 
+        # if self.errors[package_name]
         if not compatible_versions:
+            constraints = ', '.join(sorted(filter(None, all_constraints), reverse=True))
             raise VersionConflict(
-                'Requirement: {0} ({1}), Available versions: {2}'.format(
+                'Requirement: {0}{1}, Available versions: {2}'.format(
                     package_name,
-                    ', '.join(sorted(filter(None, all_constraints), reverse=True)),
+                    constraints and ' ({0})'.format(constraints) or '',
                     ', '.join(sorted(self.available_versions(package_name), reverse=True)),
                 ))
 

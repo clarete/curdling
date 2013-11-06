@@ -239,7 +239,7 @@ def test_pipeline_update_mapping_errors():
     install.finder._worker()
 
     install.mapping.errors.should.have.length_of(1)
-    str(install.mapping.errors['pkg'][0]['exception']).should.equal('P0wned!')
+    str(install.mapping.errors['pkg']['pkg (0.1)']['exception']).should.equal('P0wned!')
 
 
 def test_pipeline_update_mapping_wheels():
@@ -492,18 +492,17 @@ def test_load_installer_handle_version_conflicts():
 
     # And Then I see that the error list was filled properly
     errors.should.have.length_of(1)
-    errors.should.have.key('package').with_value.being.a(list)
-    errors['package'].sort(key=lambda i: i['requirement'], reverse=True)
+    errors.should.have.key('package').with_value.being.a(dict)
     errors['package'].should.have.length_of(2)
 
-    errors['package'][0]['dependency_of'].should.equal(['bleh'])
-    errors['package'][0]['exception'].should.be.a(VersionConflict)
-    str(errors['package'][0]['exception']).should.equal(
+    errors['package']['package (0.1)']['dependency_of'].should.equal(['blah'])
+    errors['package']['package (0.1)']['exception'].should.be.a(VersionConflict)
+    str(errors['package']['package (0.1)']['exception']).should.equal(
         'Requirement: package (0.2, 0.1), Available versions: 0.2, 0.1')
 
-    errors['package'][1]['dependency_of'].should.equal(['blah'])
-    errors['package'][1]['exception'].should.be.a(VersionConflict)
-    str(errors['package'][1]['exception']).should.equal(
+    errors['package']['package (0.2)']['dependency_of'].should.equal(['bleh'])
+    errors['package']['package (0.2)']['exception'].should.be.a(VersionConflict)
+    str(errors['package']['package (0.2)']['exception']).should.equal(
         'Requirement: package (0.2, 0.1), Available versions: 0.2, 0.1')
 
 
@@ -537,10 +536,10 @@ def test_load_installer_forward_errors():
 
     # And Then I see that the error list was filled properly
     errors.should.have.length_of(1)
-    errors.should.have.key('package').with_value.being.a(list)
+    errors.should.have.key('package').with_value.being.a(dict)
     errors['package'].should.have.length_of(1)
 
-    errors['package'][0]['dependency_of'].should.equal([None])
-    errors['package'][0]['exception'].should.be.a(ReportableError)
-    str(errors['package'][0]['exception']).should.equal(
+    errors['package']['package']['dependency_of'].should.equal([None])
+    errors['package']['package']['exception'].should.be.a(ReportableError)
+    str(errors['package']['package']['exception']).should.equal(
         'Requirement `package\' not found')
