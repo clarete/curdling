@@ -45,6 +45,10 @@ class TooManyRedirects(ReportableError):
     """Raised when a download exceeds the maximum number of redirects"""
 
 
+class RequirementNotFound(ReportableError):
+    """Raised when a requirement is not found by the finder"""
+
+
 class UnpackingError(ReportableError):
     """Raised when a package can't be unpacked"""
 

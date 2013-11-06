@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from ..exceptions import ReportableError, UnknownURL, TooManyRedirects
+from ..exceptions import RequirementNotFound, UnknownURL, TooManyRedirects, ReportableError
 from .. import util
 from .base import Service
 from distlib import database, metadata, compat, locators
@@ -263,8 +263,8 @@ class Finder(Service):
         prereleases = self.conf.get('prereleases', True)
         distribution = self.locator.locate(requirement, prereleases)
         if not distribution:
-            raise ReportableError('Requirement `{0}\' not found'.format(
-                requirement))
+            raise RequirementNotFound(
+                'Requirement `{0}\' not found'.format(requirement))
         return {
             'requirement': data['requirement'],
             'url': distribution.metadata.download_url,
