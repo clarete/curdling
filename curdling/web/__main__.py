@@ -32,8 +32,9 @@ def parse_args():
 
 
 def main():
-    server = Server(parse_args())
-    server.start()
+    args = parse_args()
+    server = Server(args.curddir, args.user_db)
+    server.start(args.host, args.port, args.debug)
 
 
 if __name__ == '__main__':

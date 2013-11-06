@@ -72,11 +72,11 @@ class Authenticator(object):
 
 
 class API(Blueprint):
-    def __init__(self, args):
+    def __init__(self, user_db):
         super(API, self).__init__('api', __name__)
 
         # Building the authenticator
-        auth = Authenticator(args.user_db)
+        auth = Authenticator(user_db)
         self.add_url_rule('/', 'index', auth(self.web_index))
         self.add_url_rule('/<package>', 'package', auth(self.web_package))
 
@@ -95,9 +95,8 @@ class API(Blueprint):
 
 
 class Server(object):
-    def __init__(self, args):
-        self.args = args
-        self.index = Index(args.curddir)
+    def __init__(self, curddir, user_db):
+        self.index = Index(curddir)
         self.index.scan()
 
         # Setting up the app
@@ -105,21 +104,21 @@ class Server(object):
         self.app.index = self.index
 
         # Building the authenticator
-        self.auth = Authenticator(args.user_db)
+        self.auth = Authenticator(user_db)
 
         # Registering urls
-        self.app.register_blueprint(API(args), url_prefix='/api')
+        self.app.register_blueprint(API(user_db), url_prefix='/api')
         self.app.add_url_rule('/', 'index', self.auth(self.web_index))
         self.app.add_url_rule('/s/<query>', 'search', self.auth(self.web_search))
         self.app.add_url_rule('/p/<package>', 'download', self.auth(self.web_download))
         self.app.add_url_rule('/p/<package>', 'upload', self.auth(self.web_upload),
                               methods=('PUT',))
 
-    def start(self):
-        if self.args.debug:
-            self.app.run(host=self.args.host, port=self.args.port, debug=True)
+    def start(self, host='0.0.0.0', port=8000, debug=False):
+        if debug:
+            self.app.run(host=host, port=port, debug=True)
         else:
-            WSGIServer((self.args.host, self.args.port), self.app).serve_forever()
+            WSGIServer((host, port), self.app).serve_forever()
 
     def web_index(self):
         return render_template('index.html', index=self.index)

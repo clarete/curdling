@@ -17,3 +17,4 @@ dist/
 .coverage
 .DS_Store
 .build.log
+*.sw[op]
