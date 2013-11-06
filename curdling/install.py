@@ -17,6 +17,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from functools import wraps
 from collections import defaultdict
+from distlib.compat import queue
 
 from .database import Database
 from .index import PackageNotFound
@@ -25,6 +26,7 @@ from .signal import SignalEmitter, Signal
 from .util import logger, is_url, parse_requirement, safe_name
 from .exceptions import VersionConflict
 
+from .services.base import Service
 from .services.downloader import Finder, Downloader
 from .services.curdler import Curdler
 from .services.dependencer import Dependencer
@@ -34,7 +36,6 @@ from .services.uploader import Uploader
 import os
 import sys
 import time
-import threading
 import traceback
 import math
 import multiprocessing
@@ -65,7 +66,7 @@ def unique(func, install):
     return wrapper
 
 
-class Install(SignalEmitter):
+class Install(Service):
 
     def __init__(self, conf):
         super(Install, self).__init__()
@@ -79,11 +80,9 @@ class Install(SignalEmitter):
         self.update_retrieve_and_build = Signal()
         self.update_install = Signal()
         self.update_upload = Signal()
-        self.finished = Signal()
 
         # Track dependencies and requirements to be installed
         self.mapping = Mapping()
-        self.lock = threading.RLock()
 
         # General params for all the services
         args = self.conf
@@ -110,7 +109,7 @@ class Install(SignalEmitter):
         self.downloader.connect('finished', only(self.curdler.queue, 'tarball'))
         self.downloader.connect('finished', only(self.dependencer.queue, 'wheel'))
         self.curdler.connect('finished', self.dependencer.queue)
-        self.dependencer.connect('dependency_found', self.feed)
+        self.dependencer.connect('dependency_found', self.queue)
 
         # Save the wheels that reached the end of the flow
         def queue_install(requester, **data):
@@ -165,28 +164,20 @@ class Install(SignalEmitter):
         except PackageNotFound:
             return False
 
-    def feed(self, requester, **data):
+    def handle(self, requester, **data):
         requirement = safe_name(data['requirement'])
         if not is_url(requirement) and parse_requirement(requirement).name in PACKAGE_BLACKLIST:
             return
 
-        # Well, that's a bad thing. We wouldn't really need a lock if
-        # we used the same pattern that we used in the rest of the
-        # system, queuing requirements. Going deeper. It happens
-        # because we have a few `dependencer` instances running and
-        # they might try to write/read from the mapping at the same
-        # time. We'll should get rid of that at some point, creating
-        # more granular services that are part of the main pipeline.
-        with self.lock:
-            # Filter duplicated requirements
-            if requirement in self.mapping.requirements:
-                return
-            # Filter previously primarily required packages
-            if self.mapping.was_directly_required(requirement):
-                return
-            # Save the requirement and its requester for later
-            self.mapping.requirements.add(requirement)
-            self.mapping.dependencies[requirement].append(data.get('dependency_of'))
+        # Filter duplicated requirements
+        if requirement in self.mapping.requirements:
+            return
+        # Filter previously primarily required packages
+        if self.mapping.was_directly_required(requirement):
+            return
+        # Save the requirement and its requester for later
+        self.mapping.requirements.add(requirement)
+        self.mapping.dependencies[requirement].append(data.get('dependency_of'))
 
         # Defining which place we're moving our requirements
         service = self.finder
@@ -238,6 +229,13 @@ class Install(SignalEmitter):
     def retrieve_and_build(self):
         # Wait until all the packages have the chance to be processed
         while True:
+            try:
+                # Check if there's any requirement to be routed
+                requester, sender_data = self._queue.get_nowait()
+                self.handle(requester, **sender_data)
+            except queue.Empty:
+                pass
+
             total = len(self.mapping.requirements)
             retrieved = self.mapping.count('downloader') + len(self.mapping.repeated)
             built = self.mapping.count('dependencer')

@@ -40,7 +40,7 @@ def test_install_feed_when_theres_a_tarball_cached():
     env.curdler.queue = Mock()
 
     # When I request an installation of a package
-    env.feed('main', requirement='gherkin==0.1.0')
+    env.handle('main', requirement='gherkin==0.1.0')
 
     # # Then I see that, since the package was not installed, the locall cache
     # # was queried and returned the right entry
@@ -72,7 +72,7 @@ def test_install_feed_when_theres_a_wheel_cached():
     env.curdler.queue = Mock()
 
     # When I request an installation of a package
-    env.feed('tests', requirement='gherkin==0.1.0')
+    env.handle('tests', requirement='gherkin==0.1.0')
 
     # # Then I see that, since the package was not installed, the locall cache
     # # was queried and returned the right entry
@@ -89,8 +89,8 @@ def test_install_feed_when_theres_a_wheel_cached():
     env.downloader.queue.called.should.be.false
 
 
-def test_feed_requirement_finder():
-    "Install#feed() should route all queued requirements to the finder"
+def test_handle_requirement_finder():
+    "Install#handle() should route all queued requirements to the finder"
 
     # Given that I have the install command
     index = Index('')
@@ -102,15 +102,15 @@ def test_feed_requirement_finder():
     install.finder.queue = Mock()
 
     # When I request the installation of a new requirement
-    install.feed('tests', requirement='curdling')
+    install.handle('tests', requirement='curdling')
 
     # Then I see the finder received a request
     install.finder.queue.assert_called_once_with(
         'tests', requirement='curdling')
 
 
-def test_feed_link_download():
-    "Install#feed() should route all queued links to the downloader"
+def test_handle_link_download():
+    "Install#handle() should route all queued links to the downloader"
 
     # Given that I have the install command
     index = Index('')
@@ -122,7 +122,7 @@ def test_feed_link_download():
     install.downloader.queue = Mock()
 
     # When I request the installation of a new requirement
-    install.feed('tests', requirement='http://srv/pkgs/curdling-0.1.tar.gz')
+    install.handle('tests', requirement='http://srv/pkgs/curdling-0.1.tar.gz')
 
     # I see that the downloader received a request
     install.downloader.queue.assert_called_once_with(
@@ -131,8 +131,8 @@ def test_feed_link_download():
         url='http://srv/pkgs/curdling-0.1.tar.gz')
 
 
-def test_feed_filter_compatible_requirements():
-    "Install#feed() Should skip requirements that already have compatible matches in the mapping"
+def test_handle_filter_compatible_requirements():
+    "Install#handle() Should skip requirements that already have compatible matches in the mapping"
 
     # Given that I have the install command
     index = Index('')
@@ -143,12 +143,12 @@ def test_feed_filter_compatible_requirements():
     install.finder.queue = Mock()
     install.pipeline()
 
-    # When I feed the installer with a requirement *without dependencies*
-    install.feed('tests', requirement='package (1.0)')
+    # When I handle the installer with a requirement *without dependencies*
+    install.handle('tests', requirement='package (1.0)')
 
-    # And I feed the installer with another requirement for the same
+    # And I handle the installer with another requirement for the same
     # package above, requested by `something-else`
-    install.feed('tests', requirement='package (3.0)', dependency_of='something-else')
+    install.handle('tests', requirement='package (3.0)', dependency_of='something-else')
 
     # Then I see that the requirement without any dependencies
     # (primary requirement) is the chosen one
@@ -156,8 +156,8 @@ def test_feed_filter_compatible_requirements():
     install.mapping.requirements.should.equal(set(['package (1.0)']))
 
 
-def test_feed_filter_dups():
-    "Install#feed() Should skip duplicated requirements"
+def test_handle_filter_dups():
+    "Install#handle() Should skip duplicated requirements"
 
     # Given that I have the install command
     index = Index('')
@@ -168,21 +168,21 @@ def test_feed_filter_dups():
     install.finder.queue = Mock()
     install.pipeline()
 
-    # Feed the installer with the requirement
-    install.feed('tests', requirement='package')
+    # Handle the installer with the requirement
+    install.handle('tests', requirement='package')
     install.finder.queue.assert_called_once_with('tests', requirement='package')
     install.mapping.requirements.should.equal(set(['package']))
 
     # When I fire the finder.finished() signal with proper data
-    install.feed('tests', requirement='package')
+    install.handle('tests', requirement='package')
 
-    # Then I see the feed function just skipped this repeated requirement
+    # Then I see the handle function just skipped this repeated requirement
     install.finder.queue.assert_called_once_with('tests', requirement='package')
     install.mapping.requirements.should.equal(set(['package']))
 
 
-def test_feed_filter_blacklisted_packages():
-    "Install#feed() Should skip blacklisted package names"
+def test_handle_filter_blacklisted_packages():
+    "Install#handle() Should skip blacklisted package names"
 
     # Given that I have the install command
     index = Index('')
@@ -193,8 +193,8 @@ def test_feed_filter_blacklisted_packages():
     install.finder.queue = Mock()
     install.pipeline()
 
-    # When I feed the installer with the requirement
-    install.feed('tests', requirement='setuptools')
+    # When I handle the installer with the requirement
+    install.handle('tests', requirement='setuptools')
 
     # Then I see it was just skipped
     install.finder.queue.called.should.be.false
@@ -214,8 +214,8 @@ def test_pipeline_update_mapping_stats():
         'url': 'pkg.tar.gz',
     })
 
-    # When I feed the installer with a requirement
-    install.feed('tests', requirement='pkg')
+    # When I handle the installer with a requirement
+    install.handle('tests', requirement='pkg')
     install.finder.queue(None)
     install.finder._worker()
 
@@ -233,8 +233,8 @@ def test_pipeline_update_mapping_errors():
 
     install.finder.handle = Mock(side_effect=Exception('P0wned!'))
 
-    # When I feed the installer with a requirement
-    install.feed('tests', requirement='pkg (0.1)')
+    # When I handle the installer with a requirement
+    install.handle('tests', requirement='pkg (0.1)')
     install.finder.queue(None)
     install.finder._worker()
 
@@ -276,10 +276,10 @@ def test_pipeline_finder_found_downloader():
     install.downloader.queue = Mock(__name__=str('queue'))
     install.pipeline()
 
-    # Feed the installer with the requirement
+    # Handle the installer with the requirement
     install.finder.queue = Mock()
-    install.feed('tests', requirement='package')
-    install.feed('tests', requirement='package (0.0.1)')
+    install.handle('tests', requirement='package')
+    install.handle('tests', requirement='package (0.0.1)')
 
     # When I fire the finder.finished() signal with proper data
     install.finder.emit('finished',
@@ -324,9 +324,9 @@ def test_pipeline_downloader_tarzip_curdler():
     install.curdler.queue = Mock(__name__=str('queue'))
     install.pipeline()
 
-    # Feed the installer with the requirement
+    # Handle the installer with the requirement
     install.finder.queue = Mock()
-    install.feed('tests', requirement='curdling')
+    install.handle('tests', requirement='curdling')
 
     # When I fire the download.finished() signal with proper data
     install.downloader.emit('finished',
@@ -353,9 +353,9 @@ def test_pipeline_downloader_wheel_dependencer():
     install.dependencer.queue = Mock(__name__=str('queue'))
     install.pipeline()
 
-    # Feed the installer with the requirement
+    # Handle the installer with the requirement
     install.finder.queue = Mock()
-    install.feed('tests', requirement='curdling')
+    install.handle('tests', requirement='curdling')
 
     # When I fire the download.finished() signal with proper data
     install.downloader.emit('finished',
@@ -382,9 +382,9 @@ def test_pipeline_curdler_wheel_dependencer():
     install.dependencer.queue = Mock(__name__=str('queue'))
     install.pipeline()
 
-    # Feed the installer with the requirement
+    # Handle the installer with the requirement
     install.finder.queue = Mock()
-    install.feed('tests', requirement='curdling')
+    install.handle('tests', requirement='curdling')
 
     # When I fire the curdler.finished() signal with proper data
     install.curdler.emit('finished',
@@ -400,7 +400,7 @@ def test_pipeline_curdler_wheel_dependencer():
 
 
 def test_pipeline_dependencer_queue():
-    "Install#pipeline() should route all the requirements from the dependencer to Install#feed()"
+    "Install#pipeline() should route all the requirements from the dependencer to Install#handle()"
 
     # Given that I have the install command
     index = Index('')
@@ -408,14 +408,14 @@ def test_pipeline_dependencer_queue():
     install = Install(conf={'index': index})
 
     # And I mock the curdler service end-point and start all the services
-    install.feed = Mock(__name__=str('feed'))
+    install.queue = Mock(__name__=str('handle'))
     install.pipeline()
 
     # When I fire the download.finished() signal with proper data
     install.dependencer.emit('dependency_found', 'dependencer', requirement='curdling (0.3.0)')
 
     # Than I see that the curdler received a request
-    install.feed.assert_called_once_with(
+    install.queue.assert_called_once_with(
         'dependencer', requirement='curdling (0.3.0)')
 
 
@@ -516,8 +516,9 @@ def test_load_installer_forward_errors():
     install = Install(conf={'index': index})
     install.pipeline()
 
-    # And I feed the installer with a requirement
-    install.feed('tests', requirement='package')
+    # And I handle the installer with a requirement
+    install.queue('tests', requirement='package')
+    install.queue(None)
 
     # And I cause an error in the download worker
     install.downloader.handle = Mock(side_effect=Exception('Beep-Bop'))

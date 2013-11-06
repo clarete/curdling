@@ -173,8 +173,9 @@ def test_retrieve_and_build():
     })
     installer.pipeline()
 
-    # And I feed the installer with a requirement
-    installer.feed('tests', requirement='gherkin')
+    # And I handle the installer with a requirement
+    installer.queue('tests', requirement='gherkin')
+    installer.queue(None)
 
     # And start the installer
     installer.start()

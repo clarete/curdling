@@ -149,7 +149,7 @@ def get_install_command(args):
     cmd.pipeline()
     cmd.start()
     for pkg in initial_requirements:
-        cmd.feed('main', requirement=pkg)
+        cmd.queue('main', requirement=pkg)
     return cmd
 
 
