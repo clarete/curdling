@@ -56,6 +56,15 @@ def add_parser_uninstall(subparsers):
     return parser
 
 
+def initialize_logging(log_file, log_level, log_name):
+    # Set the log level for the requested logger
+    handler = logging.StreamHandler(stream=log_file)
+    handler.setLevel(log_level)
+    handler.setFormatter(logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s'))
+    logging.getLogger(log_name).setLevel(level=log_level)
+    logging.getLogger(log_name).addHandler(handler)
+
+
 def get_packages_from_args(args):
     if not args.packages and not args.requirements:
         return []
@@ -202,12 +211,7 @@ def main():
     if not hasattr(args, 'command'):
         parser.error('too few arguments')
 
-    # Set the log level for the requested logger
-    handler = logging.StreamHandler(stream=args.log_file)
-    handler.setLevel(args.log_level)
-    handler.setFormatter(logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s'))
-    logging.getLogger(args.log_name).setLevel(level=args.log_level)
-    logging.getLogger(args.log_name).addHandler(handler)
+    initialize_logging(args.log_file, args.log_level, args.log_name)
 
     # Here we choose which function will be called to setup the command
     # instance that will be ran. Notice that all the `add_parser_*` functions
