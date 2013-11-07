@@ -18,6 +18,21 @@ DEFAULT_PYPI_INDEX_LIST = [
 ]
 
 
+class StreamHandler(logging.StreamHandler):
+    """Instantiate logging.StreamHandler correctly for Python 2.6
+
+    The version of logging.StreamHandler in Python <2.7 is an old-style class
+    that takes an argument 'strm', whereas modern Python's version is a new-
+    style class that takes an argument 'stream'.
+    """
+
+    def __init__(self, stream=None):
+        if sys.version_info < (2, 7):
+            logging.StreamHandler.__init__(self, strm=stream)
+        else:
+            super(StreamHandler, self).__init__(stream=stream)
+
+
 def add_parser_install(subparsers):
     parser = subparsers.add_parser(
         'install', help='Locate and install packages')
@@ -58,7 +73,7 @@ def add_parser_uninstall(subparsers):
 
 def initialize_logging(log_file, log_level, log_name):
     # Set the log level for the requested logger
-    handler = logging.StreamHandler(stream=log_file)
+    handler = StreamHandler(stream=log_file)
     handler.setLevel(log_level)
     handler.setFormatter(logging.Formatter('%(asctime)s:%(name)s:%(levelname)s:%(message)s'))
     logging.getLogger(log_name).setLevel(level=log_level)
