@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, print_function, absolute_import
+
 from flask import Flask, render_template, send_file, request, Response
 from flask import Blueprint, current_app, url_for
 from gevent.pywsgi import WSGIServer
@@ -94,31 +95,21 @@ class API(Blueprint):
             return json.dumps({'status': 'error'}), 404
 
 
-class Server(object):
-    def __init__(self, curddir, user_db):
-        self.index = Index(curddir)
-        self.index.scan()
+class App(Flask):
 
-        # Setting up the app
-        self.app = Flask(__name__)
-        self.app.index = self.index
+    def __init__(self, index, user_db=None):
+        super(App, self).__init__(__name__)
 
-        # Building the authenticator
-        self.auth = Authenticator(user_db)
+        self.index = index
 
-        # Registering urls
-        self.app.register_blueprint(API(user_db), url_prefix='/api')
-        self.app.add_url_rule('/', 'index', self.auth(self.web_index))
-        self.app.add_url_rule('/s/<query>', 'search', self.auth(self.web_search))
-        self.app.add_url_rule('/p/<package>', 'download', self.auth(self.web_download))
-        self.app.add_url_rule('/p/<package>', 'upload', self.auth(self.web_upload),
-                              methods=('PUT',))
+        auth = Authenticator(user_db)
 
-    def start(self, host='0.0.0.0', port=8000, debug=False):
-        if debug:
-            self.app.run(host=host, port=port, debug=True)
-        else:
-            WSGIServer((host, port), self.app).serve_forever()
+        self.register_blueprint(API(user_db), url_prefix='/api')
+        self.add_url_rule('/', 'index', auth(self.web_index))
+        self.add_url_rule('/s/<query>', 'search', auth(self.web_search))
+        self.add_url_rule('/p/<package>', 'download', auth(self.web_download))
+        self.add_url_rule('/p/<package>', 'upload', auth(self.web_upload),
+                          methods=['PUT'])
 
     def web_index(self):
         return render_template('index.html', index=self.index)
@@ -147,3 +138,18 @@ class Server(object):
         pkg = request.files[package]
         self.index.from_data(package, pkg.read())
         return 'ok'
+
+
+class Server(object):
+
+    def __init__(self, curddir, user_db):
+        index = Index(curddir)
+        index.scan()
+
+        self.app = App(index, user_db)
+
+    def start(self, host='0.0.0.0', port=8000, debug=False):
+        if debug:
+            self.app.run(host=host, port=port, debug=True)
+        else:
+            WSGIServer((host, port), self.app).serve_forever()
