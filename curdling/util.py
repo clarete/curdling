@@ -78,6 +78,7 @@ def parse_requirement(spec):
         requirement.requirement = spec
         requirement.constraints = ()
         requirement.is_link = True
+        requirement.extras = ()
     return requirement
 
 
