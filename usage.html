@@ -144,6 +144,15 @@ command line tool that <strong>must</strong> be installed before requesting any
 <em>VCS</em> links for curdling.</p>
 </div>
 </div>
+<div class="section" id="install-specific-revisions">
+<h3>Install specific revisions<a class="headerlink" href="#install-specific-revisions" title="Permalink to this headline">¶</a></h3>
+<p>Curdling also supports installing a specific revision of the package
+available in the VCS. To inform the revision, use <tt class="docutils literal"><span class="pre">&#64;</span></tt> and the
+revision ID, E.g.:</p>
+<div class="highlight-python"><pre>$ curd install git+http://github.com/clarete/forbiddenfruit.git@aeebca4cae6c656046c7223b418faf463d4c68ef</pre>
+</div>
+<p>It works for all currently supported VCS systems.</p>
+</div>
 <div class="section" id="precedence-when-declaring-requirements">
 <h3>Precedence when declaring requirements<a class="headerlink" href="#precedence-when-declaring-requirements" title="Permalink to this headline">¶</a></h3>
 <p>Requirements specified directly by the user from either the command
@@ -228,6 +237,7 @@ section <a class="reference internal" href="#id2"><em>Syntax for declaring requi
 <li><a class="reference internal" href="#vcs-support">VCS support</a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#install-specific-revisions">Install specific revisions</a></li>
 <li><a class="reference internal" href="#precedence-when-declaring-requirements">Precedence when declaring requirements</a></li>
 <li><a class="reference internal" href="#declaring-pypi-repositories">Declaring PyPi repositories</a><ul>
 <li><a class="reference internal" href="#default-repository">Default repository</a></li>

@@ -49,6 +49,17 @@ Available command line arguments::
   is ``crypto``.
 
 
+Run curd-server under docker
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you like `Docker <http://www.docker.io/>`_, you might prefer to
+spin up your curd server with the following few commands::
+
+  $ sudo docker pull sherzberg/curdserver
+  $ sudo docker run -d -p 8000:8000 sherzberg/curdserver
+
+`Further details <https://github.com/sherzberg/docker-curdserver>`_.
+
 Cache Client
 ============
 

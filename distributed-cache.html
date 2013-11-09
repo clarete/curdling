@@ -95,6 +95,15 @@ compatible file. Notice that the only currently supported algorithm
 is <tt class="docutils literal"><span class="pre">crypto</span></tt>.</li>
 </ul>
 </div>
+<div class="section" id="run-curd-server-under-docker">
+<h3>Run curd-server under docker<a class="headerlink" href="#run-curd-server-under-docker" title="Permalink to this headline">¶</a></h3>
+<p>If you like <a class="reference external" href="http://www.docker.io/">Docker</a>, you might prefer to
+spin up your curd server with the following few commands:</p>
+<div class="highlight-python"><pre>$ sudo docker pull sherzberg/curdserver
+$ sudo docker run -d -p 8000:8000 sherzberg/curdserver</pre>
+</div>
+<p><a class="reference external" href="https://github.com/sherzberg/docker-curdserver">Further details</a>.</p>
+</div>
 </div>
 <div class="section" id="cache-client">
 <h2>Cache Client<a class="headerlink" href="#cache-client" title="Permalink to this headline">¶</a></h2>
@@ -145,6 +154,7 @@ with anyone else.</p>
 <li><a class="reference internal" href="#built-in-server">Built-in Server</a><ul>
 <li><a class="reference internal" href="#extra-dependencies">Extra dependencies</a></li>
 <li><a class="reference internal" href="#running-the-cache-server">Running the cache server</a></li>
+<li><a class="reference internal" href="#run-curd-server-under-docker">Run curd-server under docker</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#cache-client">Cache Client</a><ul>
