@@ -35,15 +35,6 @@ SUPPORTED_FORMATS_MAX_LEN = (max(len(x) for x in SUPPORTED_FORMATS) + 7) & ~7
 EGG_INFO_RE = re.compile(r'(-py\d\.\d)?\.egg-info', re.I)
 
 
-def get_paths(directory='', check=False):
-    paths = {}
-    for sub in "purelib", "platlib", "headers", "data":
-        path = os.path.join(directory, sub)
-        if not check or os.path.exists(path):
-            paths[sub] = path
-    return paths
-
-
 def guess_file_type(filename):
     with io.open(filename, 'rb') as f:
         file_start = f.read(SUPPORTED_FORMATS_MAX_LEN)
@@ -83,7 +74,7 @@ class Script(object):
         return os.path.join(output_dir, os.listdir(output_dir)[0])
 
 
-def unpack(package, destination):
+def unpack(package):
     file_type = guess_file_type(package)
 
     # The only extensions we support currently
@@ -93,22 +84,24 @@ def unpack(package, destination):
     elif file_type in ('gz', 'bz2'):
         fp = tarfile.open(package, 'r')
         get_names = lambda: [x.name for x in fp.getmembers()]
+    return fp, get_names()
 
-    # Find the setup.py script among the other contents
+
+def find_setup_script(names):
+    setup_scripts = [x for x in names if x.endswith('setup.py')]
+    if not setup_scripts:
+        raise NoSetupScriptFound('No setup.py script found')
+    return sorted(setup_scripts, key=lambda e: len(e))[0]
+
+
+def get_setup_from_package(package, destination):
+    fp, namelist = unpack(package=package)
     try:
-        setup_scripts = [x for x in get_names() if x.endswith('setup.py')]
-        if not setup_scripts:
-            raise ValueError
-        else:
-            setup_py = sorted(setup_scripts, key=lambda e: len(e))[0]
-            fp.extractall(destination)
-    except ValueError:
-        msg = 'No setup.py script was found in `{0}\''.format(
-            os.path.basename(package))
-        raise NoSetupScriptFound(msg)
+        setup_py = find_setup_script(namelist)
+        fp.extractall(destination)
     finally:
         fp.close()
-    return Script(os.path.join(destination, setup_py))
+    return os.path.join(destination, setup_py)
 
 
 class Curdler(Service):
@@ -128,10 +121,14 @@ class Curdler(Service):
             if directory:
                 setup_py = Script(os.path.join(directory, 'setup.py'))
             else:
-                setup_py = unpack(package=tarball, destination=destination)
+                # may raise NoSetupScriptFound
+                setup_py = Script(get_setup_from_package(tarball, destination))
+
             wheel_file = setup_py('bdist_wheel')
-            return {'wheel': self.index.from_file(wheel_file),
-                    'requirement': requirement}
+            return {
+                'wheel': self.index.from_file(wheel_file),
+                'requirement': requirement
+            }
         except BaseException as exc:
             raise BuildError(str(exc))
         finally:
