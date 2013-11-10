@@ -29,7 +29,7 @@ SUPPORTED_FORMATS = {
 
 # Must be greater than the length of the biggest key of `SUPPORTED_FORMATS`, to
 # be used as the block size to `file.read()` in `guess_file_type()`
-SUPPORTED_FORMATS_MAX_LEN = max(len(x) for x in SUPPORTED_FORMATS)
+SUPPORTED_FORMATS_MAX_LEN = (max(len(x) for x in SUPPORTED_FORMATS) + 7) & ~7
 
 # Matcher for egg-info directories
 EGG_INFO_RE = re.compile(r'(-py\d\.\d)?\.egg-info', re.I)
