@@ -4,6 +4,12 @@ from curdling import util
 import io
 
 
+def test_is_url():
+    "is_url() Should tell if a given string is a URL or not"
+    util.is_url('http://gnu.org').should.be.true
+    util.is_url('just-a-name').should.be.false
+
+
 def test_safe_name():
     "safe_name() Should normalize the requirement name"
     util.safe_name('package_name 2.0').should.equal('package-name (2.0)')
