@@ -13,16 +13,20 @@ class Dependencer(Service):
 
     def handle(self, requester, data):
         requirement = data['requirement']
-        wheel = Wheel(data['wheel'])
-        run_time_dependencies = wheel.metadata.requires_dist
-        extra_sections = util.parse_requirement(requirement).extras or ()
+        dependencies = Wheel(data['wheel']).metadata.dependencies
+        extra_sections = set(util.parse_requirement(requirement).extras or ())
 
-        for spec in run_time_dependencies:
-            # Packages might declare their "extras" here, so let's split it
-            dependency, extra = (';' in spec and spec or spec + ';').split(';')
-            if extra and extra not in extra_sections:
-                continue
+        # Honor the `extras` section of the requirement we just received
+        found = dependencies.get('install', [])
+        for section, items in dependencies.get('extras', {}).items():
+            if section in extra_sections:
+                found.extend(items)
+
+        # Telling the world about the dependencies we found
+        for dependency in found:
             self.emit('dependency_found', self.name,
                       requirement=util.safe_name(dependency),
                       dependency_of=requirement)
+
+        # Keep the message flowing
         return {'requirement': requirement, 'wheel': data['wheel']}
