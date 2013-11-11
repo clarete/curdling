@@ -1,6 +1,6 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from mock import patch
-from curdling.index import Index, PackageNotFound
+from curdling.index import Index, PackageNotFound, Storage
 import os
 
 
@@ -52,24 +52,22 @@ def test_index_feed_backend():
     index.index('package.name-0.1.0.tar.gz')
 
     # Then I see that the backend structure looks right
-    dict(index.storage).should.equal({
-        'gherkin': {
-            '0.2.0': [
-                'gherkin-0.2.0.tar.gz',
-            ],
-            '0.1.5': [
-                'Gherkin-0.1.5.tar.gz',
-            ],
-            '0.1.0': [
-                'gherkin-0.1.0-py27-none-any.whl',
-                'gherkin-0.1.0.tar.gz',
-            ],
-        },
-        'package.name': {
-            '0.1.0': [
-                'package.name-0.1.0.tar.gz',
-            ]
-        }
+    dict(index.storage.get('gherkin')).should.equal({
+        '0.2.0': [
+            'gherkin-0.2.0.tar.gz',
+        ],
+        '0.1.5': [
+            'Gherkin-0.1.5.tar.gz',
+        ],
+        '0.1.0': [
+            'gherkin-0.1.0-py27-none-any.whl',
+            'gherkin-0.1.0.tar.gz',
+        ],
+    })
+    dict(index.storage.get('package.name')).should.equal({
+        '0.1.0': [
+            'package.name-0.1.0.tar.gz',
+        ]
     })
 
 
@@ -78,7 +76,7 @@ def test_index_get():
 
     # Given that I have an index loaded with a couple package references
     index = Index('')
-    index.storage = {
+    index.storage = Storage({
         'gherkin': {
             '0.2.0': [
                 'gherkin-0.2.0.tar.gz',
@@ -94,7 +92,7 @@ def test_index_get():
                 'gherkin-0.1.0-py27-none-any.whl',
             ],
         }
-    }
+    })
 
     # Let's do some random assertions
 
@@ -147,12 +145,31 @@ def test_index_get_corner_case_pkg_name():
 
     # Given that I have an index loaded with a couple package references
     index = Index('')
-    index.storage = {
+    index.storage = Storage({
         'python-gherkin': {
             '0.1.0': [
                 'python_gherkin-0.1.0.tar.gz',
             ]
         }
-     }
+     })
 
     index.get('python-gherkin==0.1.0;~whl').should.equal('python_gherkin-0.1.0.tar.gz')
+
+
+def test_storage_initialization():
+    "It should be able to initialize Storage with a dictionary"
+
+    storage = Storage({
+        'python-gherkin': {
+            '0.1.0': [
+                'python_gherkin-0.1.0.tar.gz',
+            ]
+        }
+    })
+
+    dict(storage.get('python-gherkin')).should.equal({
+        '0.1.0': [
+            'python_gherkin-0.1.0.tar.gz',
+        ]
+    })
+    storage.list_packages().should.equal(['python-gherkin'])

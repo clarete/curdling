@@ -1,9 +1,8 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from mock import call, patch, Mock
-from nose.tools import nottest
+from mock import call, Mock
 
 from curdling.exceptions import VersionConflict, ReportableError
-from curdling.index import Index, PackageNotFound
+from curdling.index import Index, Storage
 from curdling.install import Install
 from curdling import install
 
@@ -30,7 +29,7 @@ def test_install_feed_when_theres_a_tarball_cached():
 
     # Given that I have a loaded local cache
     index = Index('')
-    index.storage = {'gherkin': {'0.1.0': ['storage1/gherkin-0.1.0.tar.gz']}}
+    index.storage = Storage({'gherkin': {'0.1.0': ['storage1/gherkin-0.1.0.tar.gz']}})
 
     # And that I have an environment associated with that local cache
     env = Install(conf={'index': index})
@@ -62,7 +61,7 @@ def test_install_feed_when_theres_a_wheel_cached():
 
     # Given that I have a loaded local cache
     index = Index('')
-    index.storage = {'gherkin': {'0.1.0': ['storage1/gherkin-0.1.0-py27-none-any.whl']}}
+    index.storage = Storage({'gherkin': {'0.1.0': ['storage1/gherkin-0.1.0-py27-none-any.whl']}})
 
     # And that I have an environment associated with that local cache
     env = Install(conf={'index': index})
@@ -94,7 +93,7 @@ def test_handle_requirement_finder():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
     install.pipeline()
 
@@ -114,7 +113,7 @@ def test_handle_link_download():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
     install.pipeline()
 
@@ -136,7 +135,7 @@ def test_handle_filter_compatible_requirements():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
 
     # And I mock the finder service end-point
@@ -161,7 +160,7 @@ def test_handle_filter_dups():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
 
     # And I mock the finder service end-point
@@ -186,7 +185,7 @@ def test_handle_filter_blacklisted_packages():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
 
     # And I mock the finder service end-point
@@ -205,7 +204,7 @@ def test_pipeline_update_mapping_stats():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
     install.pipeline()
 
@@ -227,7 +226,7 @@ def test_pipeline_update_mapping_errors():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
     install.pipeline()
 
@@ -268,7 +267,7 @@ def test_pipeline_finder_found_downloader():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
 
     # And I mock the downloader service end-point
@@ -317,7 +316,7 @@ def test_pipeline_downloader_tarzip_curdler():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
 
     # And I mock the curdler service end-point and start all the services
@@ -346,7 +345,7 @@ def test_pipeline_downloader_wheel_dependencer():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
 
     # And I mock the curdler service end-point and start all the services
@@ -375,7 +374,7 @@ def test_pipeline_curdler_wheel_dependencer():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
 
     # And I mock the curdler service end-point and start all the services
@@ -404,7 +403,7 @@ def test_pipeline_dependencer_queue():
 
     # Given that I have the install command
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
 
     # And I mock the curdler service end-point and start all the services
@@ -511,7 +510,7 @@ def test_load_installer_forward_errors():
 
     # Given that I have the install command with an empty index
     index = Index('')
-    index.storage = {}
+    index.storage = Storage()
     install = Install(conf={'index': index})
     install.pipeline()
 
