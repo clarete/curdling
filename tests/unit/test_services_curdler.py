@@ -53,7 +53,7 @@ def test_unpack(ZipFile, guess_file_type):
 
 @patch('curdling.services.curdler.guess_file_type')
 @patch('curdling.services.curdler.tarfile.open')
-def test_unpack(tarfile_open, guess_file_type):
+def test_unpack_tar_file(tarfile_open, guess_file_type):
     "unpack() Should unpack zip files and return the names inside of the archive"
 
     # Given a zip package
