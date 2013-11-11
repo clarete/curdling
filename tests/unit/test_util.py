@@ -4,6 +4,13 @@ from curdling import util
 import io
 
 
+def test_safe_name():
+    "safe_name() Should normalize the requirement name"
+    util.safe_name('package_name 2.0').should.equal('package-name (2.0)')
+    util.safe_name('package_name>=2.1,<=3.0').should.equal('package-name (>= 2.1, <= 3.0)')
+    util.safe_name('package[dev,test]==2.0').should.equal('package[dev,test] (2.0)')
+
+
 @patch('io.open')
 def test_expand_requirements(open_func):
     "It should be possible to include other files inside"

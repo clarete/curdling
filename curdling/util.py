@@ -43,16 +43,23 @@ def is_url(requirement):
 
 
 def safe_name(requirement):
-    if is_url(requirement):
-        return requirement
-    safe = requirement.lower().replace('_', '-')
-    return safe_requirement(safe)
+    return requirement if is_url(requirement) \
+        else safe_requirement(requirement)
 
 
 def safe_requirement(requirement):
-    return (util.parse_requirement(requirement).requirement
-            .replace('== ', '')
-            .replace('==', ''))
+    safe = requirement.lower().replace('_', '-')
+    parsed = util.parse_requirement(safe)
+    output = parsed.name
+    if parsed.extras:
+        output += '[{0}]'.format(','.join(parsed.extras))
+    if parsed.constraints:
+        def c(operator, version):
+            return version if operator == '==' \
+                else '{0} {1}'.format(operator, version)
+        output += ' ({0})'.format(
+            ', '.join(c(*i) for i in parsed.constraints))
+    return output
 
 
 def safe_constraints(spec):
