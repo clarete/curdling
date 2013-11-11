@@ -44,36 +44,6 @@ def guess_file_type(filename):
     raise UnpackingError('Unknown compress format for file %s' % filename)
 
 
-class Script(object):
-
-    def __init__(self, path):
-        self.path = path
-
-    def __call__(self, command, *custom_args):
-        # What we're gonna run
-        cwd = os.path.dirname(self.path)
-        script = os.path.basename(self.path)
-
-        # Building the argument list starting from the interpreter path. This
-        # weird we're doing here was copied from `pip` and it basically forces
-        # the usage of setuptools instead of distutils or any other weird
-        # library people might be using.
-        args = ['-c']
-        args.append(
-            r"import setuptools;__file__=%r;"
-            r"exec(compile(open(__file__).read().replace('\r\n', '\n'), __file__, 'exec'))" % script)
-        args.append(command)
-        args.extend(custom_args)
-
-        # Boom! Executing the command.
-        execute_command(PYTHON_EXECUTABLE, *args, cwd=cwd)
-
-        # Directory where the wheel will be saved after building it, returning
-        # the path pointing to the generated file
-        output_dir = os.path.join(cwd, 'dist')
-        return os.path.join(output_dir, os.listdir(output_dir)[0])
-
-
 def unpack(package):
     file_type = guess_file_type(package)
 
@@ -104,6 +74,31 @@ def get_setup_from_package(package, destination):
     return os.path.join(destination, setup_py)
 
 
+def run_setup_script(path, command, *custom_args):
+    # What we're gonna run
+    cwd = os.path.dirname(path)
+    script = os.path.basename(path)
+
+    # Building the argument list starting from the interpreter path. This
+    # weird we're doing here was copied from `pip` and it basically forces
+    # the usage of setuptools instead of distutils or any other weird
+    # library people might be using.
+    args = ['-c']
+    args.append(
+        r"import setuptools;__file__=%r;"
+        r"exec(compile(open(__file__).read().replace('\r\n', '\n'), __file__, 'exec'))" % script)
+    args.append(command)
+    args.extend(custom_args)
+
+    # Boom! Executing the command.
+    execute_command(PYTHON_EXECUTABLE, *args, cwd=cwd)
+
+    # Directory where the wheel will be saved after building it, returning
+    # the path pointing to the generated file
+    output_dir = os.path.join(cwd, 'dist')
+    return os.path.join(output_dir, os.listdir(output_dir)[0])
+
+
 class Curdler(Service):
 
     def handle(self, requester, data):
@@ -118,13 +113,11 @@ class Curdler(Service):
         # us the path for the setup.py script and building the wheel file with
         # the `bdist_wheel` command.
         try:
-            if directory:
-                setup_py = Script(os.path.join(directory, 'setup.py'))
-            else:
-                # may raise NoSetupScriptFound
-                setup_py = Script(get_setup_from_package(tarball, destination))
-
-            wheel_file = setup_py('bdist_wheel')
+            #  may raise NoSetupScriptFound
+            setup_py = (os.path.join(directory, 'setup.py') \
+                if directory
+                else get_setup_from_package(tarball, destination))
+            wheel_file = run_setup_script(setup_py, 'bdist_wheel')
             return {
                 'wheel': self.index.from_file(wheel_file),
                 'requirement': requirement

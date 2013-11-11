@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from mock import patch, Mock
+from mock import patch, Mock, ANY
 from curdling.services import curdler
 
 
@@ -124,3 +124,25 @@ def test_get_setup_from_package(unpack):
     # Then I see that the package was extracted and that the setup
     # script was found
     setup_py.should.equal('/tmp/pkg-0.1/setup.py')
+
+
+
+@patch('curdling.services.curdler.os.listdir')
+@patch('curdling.services.curdler.execute_command')
+def test_run_script(execute_command, listdir):
+    "run_setup_script() Should be able to run the setup.py script"
+
+    # Given a patch for `os.listdir` and `execute_command` (see @patch
+    # usage in this functions signature)
+    listdir.return_value = ['wheel-file']
+
+    # When I run the setup script
+    wheel = curdler.run_setup_script("/tmp/pkg/setup.py", 'bdist_wheel', '-h')
+
+    # Then I see that the execute command was called with the right
+    # parameters
+    execute_command.assert_called_once_with(
+        ANY, '-c', ANY, 'bdist_wheel', '-h', cwd='/tmp/pkg')
+
+    # And that the wheel was generated in the right directory
+    wheel.should.equal('/tmp/pkg/dist/wheel-file')
