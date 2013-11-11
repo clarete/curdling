@@ -55,12 +55,32 @@ class PackageNotFound(Exception):
         super(PackageNotFound, self).__init__(''.join(msg))
 
 
+class Storage(object):
+
+    def __init__(self, _data=None):
+        self._data = defaultdict(lambda: defaultdict(list))
+        if _data is not None:
+            for pkg, versions in _data.items():
+                for v, paths in versions.items():
+                    for p in paths:
+                        self._data[pkg][v].append(p)
+
+    def add(self, pkg_name, version, pkg):
+        self._data[pkg_name][version].append(pkg)
+
+    def list_packages(self):
+        return self._data.keys()
+
+    def get(self, pkg_name, default=None):
+        return self._data.get(pkg_name, default)
+
+
 class Index(object):
 
-    def __init__(self, base_path):
+    def __init__(self, base_path, storage=None, lock=None):
         self.base_path = base_path
-        self.storage = defaultdict(lambda: defaultdict(list))
-        self.lock = RLock()
+        self.storage = storage if storage else Storage()
+        self.lock = lock if lock else RLock()
 
     def scan(self):
         if not os.path.isdir(self.base_path):
@@ -80,7 +100,7 @@ class Index(object):
     def index(self, path):
         pkg = os.path.basename(path)
         name, version = pkg_name(pkg)
-        self.storage[safe_name(name)][version].append(pkg)
+        self.storage.add(safe_name(name), version, pkg)
 
     def from_file(self, path):
         # Moving the file around
@@ -103,7 +123,7 @@ class Index(object):
         shutil.rmtree(self.base_path)
 
     def list_packages(self):
-        return self.storage.keys()
+        return self.storage.list_packages()
 
     def get_urlhash(self, url, fmt):
         """Returns the hash of the file of an internal url
