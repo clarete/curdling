@@ -41,10 +41,10 @@ def add_parser_install(subparsers):
         help='A requirements file')
     parser.add_argument(
         '-i', '--index', action='append',
-        help='PyPi compatible index url. Repeat as many times as you need')
+        help='PyPi compatible index URL. Repeat as many times as you need')
     parser.add_argument(
         '-c', '--curdling-index', action='append', default=[],
-        help='Curdling compatible index url. Repeat as many times as you need')
+        help='Curdling compatible index URL. Repeat as many times as you need')
     parser.add_argument(
         '-u', '--upload', action='store_true', default=False,
         help='Upload packages back to the curdling index')
