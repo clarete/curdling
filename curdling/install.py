@@ -209,10 +209,10 @@ class Install(Service):
                         'dependency_of': self.mapping.dependencies[requirement],
                     }
             else:
-                # It's OK to queue all the packages without being sure
-                # about the availability of all the required packages
-                # because the installer service is not actually
-                # installed. It won't happen until we check for errors.
+                # It's OK to queue each package without being sure
+                # about the availability of all the requirements. The
+                # Installer service will not be started until everything
+                # is checked.
                 self.installer.queue('main',
                     requirement=chosen_requirement,
                     wheel=self.mapping.wheels[chosen_requirement])
