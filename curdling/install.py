@@ -266,10 +266,16 @@ class Install(Service):
         while True:
             total = len(packages)
             installed = self.mapping.count('installer')
-            self.emit('update_install', total, installed)
-            if total == installed:
+            failed = sum(len(x) for x in self.mapping.errors.values())
+            self.emit('update_install', total, installed, failed)
+            if total == installed + failed:
                 break
             time.sleep(0.5)
+
+        # Signaling failures that happened during the installation
+        if self.mapping.errors:
+            self.emit('finished', self.mapping.errors)
+            return []
 
     def load_uploader(self):
         failures = self.finder.get_servers_to_update()

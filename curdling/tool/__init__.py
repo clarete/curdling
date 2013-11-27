@@ -96,10 +96,14 @@ def progress_bar(prefix, percent):
     return "\r\033[K{0}: [{1}] {2:>2}% ".format(prefix, progress_bar, percent)
 
 
-def progress(phrase, total, installed):
+def progress(phrase, total, installed, failed=0):
     percent = int((installed) / float(total) * 100.0)
     msg = [progress_bar(phrase, percent)]
-    msg.append("({0}/{1})".format(installed, total))
+    if failed:
+        msg.append("({0}/{1} - {2} failed)".format(
+            installed, total, failed))
+    else:
+        msg.append("({0}/{1})".format(installed, total))
     sys.stdout.write(''.join(msg))
     sys.stdout.flush()
 
