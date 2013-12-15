@@ -63,10 +63,12 @@ import functools
     names.should.equal(['functools'])
 
 @patch('curdling.freeze.imp')
-def test_get_module_path(imp):
+@patch('curdling.freeze.sys')
+def test_get_module_path(sys, imp):
     "freeze.get_module_path() Should return the file path of a module without importing it"
 
-    imp.find_module.return_value = ['', 'sure']
+    sys.path = ['/u/l/p/site-packages']
+    imp.find_module.return_value = ['', '/u/l/p/site-packages/sure']
 
     # Given a module name
     module = 'sure'

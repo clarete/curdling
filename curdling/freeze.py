@@ -27,9 +27,9 @@ def get_module_path(module_name):
     module_path = imp.find_module(module_name)[1]
     possible_paths = ['']       # Avoid failure in max() if there's no
                                 # prefix at all
-    for path in sys.path:
-        if path in module_path:
-            possible_paths.append(path)
+    possible_paths.extend(path
+        for path in sys.path
+        if path in module_path)
     return module_path.replace(
         '{0}/'.format(max(possible_paths)), '')
 
