@@ -1,4 +1,5 @@
 from curdling import freeze
+from mock import patch, Mock
 
 
 def test_find_imported_modules():
@@ -61,9 +62,11 @@ import functools
     # the code, skipping the local modules (.)
     names.should.equal(['functools'])
 
-
-def test_get_module_path():
+@patch('curdling.freeze.imp')
+def test_get_module_path(imp):
     "freeze.get_module_path() Should return the file path of a module without importing it"
+
+    imp.find_module.return_value = ['', 'sure']
 
     # Given a module name
     module = 'sure'
@@ -75,7 +78,8 @@ def test_get_module_path():
     path.should.equal('sure')
 
 
-def test_get_distribution_from_source_file():
+@patch('curdling.freeze.DistributionPath')
+def test_get_distribution_from_source_file(DistributionPath):
     "freeze.get_distribution_from_source_file(file_path) Should return the Distribution that contains `file_path`"
 
     # Given a path for a package
@@ -84,11 +88,15 @@ def test_get_distribution_from_source_file():
     # When I retrieve the distribution for a given file
     distribution = freeze.get_distribution_from_source_file(path)
 
-    # Then I see the right distribution was found
-    distribution.name.should.equal('sure')
+    # Then I see that the function tried to use the module name as the
+    # package name.
+    DistributionPath.return_value.get_distribution.assert_called_once_with(
+        'sure',
+    )
 
 
-def test_get_distribution_from_source_file_file_path_being_a_directory():
+@patch('curdling.freeze.DistributionPath')
+def test_get_distribution_from_source_file_file_path_being_a_directory(DistributionPath):
     "freeze.get_distribution_from_source_file(file_path) Should support receiving relative directories in `file_path`"
 
     # Given a path for a package
@@ -97,11 +105,16 @@ def test_get_distribution_from_source_file_file_path_being_a_directory():
     # When I retrieve the distribution for a given file
     distribution = freeze.get_distribution_from_source_file(path)
 
-    # Then I see the right distribution was found
-    distribution.name.should.equal('sure')
+    # Then I see that the function tried to use the module name as the
+    # package name.
+    DistributionPath.return_value.get_distribution.assert_called_once_with(
+        'sure',
+    )
 
 
-def test_get_requirements():
+@patch('curdling.freeze.get_module_path', Mock())
+@patch('curdling.freeze.get_distribution_from_source_file')
+def test_get_requirements(get_distribution_from_source_file):
     "freeze.get_requirements() Should return a list of imports in a piece of code"
 
     # Given the following snippet
@@ -110,6 +123,12 @@ from distlib import util
 
 print(util.in_venv())
 '''
+
+    # And a fake distribution
+    distribution = Mock()
+    distribution.name = 'distlib'
+    distribution.version = '0.1.2'
+    get_distribution_from_source_file.return_value = distribution
 
     # When I try to figure out which packages I need to run this
     # piece of code

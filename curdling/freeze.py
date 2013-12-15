@@ -25,7 +25,8 @@ def find_imported_modules(code):
 
 def get_module_path(module_name):
     module_path = imp.find_module(module_name)[1]
-    possible_paths = []
+    possible_paths = ['']       # Avoid failure in max() if there's no
+                                # prefix at all
     for path in sys.path:
         if path in module_path:
             possible_paths.append(path)
@@ -47,6 +48,5 @@ def get_requirements(code):
         return '{0}=={1}'.format(
             distribution.name,
             distribution.version)
-
     return [format_module(m)
         for m in find_imported_modules(code)]
