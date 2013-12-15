@@ -1,5 +1,8 @@
 import ast
 import imp
+import os
+import sys
+from distlib.database import DistributionPath
 
 
 class ImportVisitor(ast.NodeVisitor):
@@ -21,4 +24,29 @@ def find_imported_modules(code):
 
 
 def get_module_path(module_name):
-    return imp.find_module(module_name)[1]
+    module_path = imp.find_module(module_name)[1]
+    possible_paths = []
+    for path in sys.path:
+        if path in module_path:
+            possible_paths.append(path)
+    return module_path.replace(
+        '{0}/'.format(max(possible_paths)), '')
+
+
+def get_distribution_from_source_file(file_name):
+    path = DistributionPath(include_egg=True)
+    distribution = path.get_distribution(
+        os.path.dirname(file_name) or file_name)
+    return distribution
+
+
+def get_requirements(code):
+    def format_module(module_name):
+        path = get_module_path(module_name)
+        distribution = get_distribution_from_source_file(path)
+        return '{0}=={1}'.format(
+            distribution.name,
+            distribution.version)
+
+    return [format_module(m)
+        for m in find_imported_modules(code)]
