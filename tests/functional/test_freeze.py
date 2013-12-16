@@ -90,7 +90,7 @@ def test_find_python_files():
 
     # Then I see the list with all the files present in that given
     # directory
-    python_files.should.equal([
+    sorted(python_files).should.equal(sorted([
         'codebase1/__init__.py',
         'codebase1/hello.py',
-    ])
+    ]))
