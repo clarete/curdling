@@ -6,6 +6,7 @@ from ..version import __version__
 
 from ..install import Install
 from ..uninstall import Uninstall
+from ..freeze import Freeze
 
 import argparse
 import logging
@@ -68,6 +69,17 @@ def add_parser_uninstall(subparsers):
         'packages', metavar='PKG', nargs='*',
         help='list of files to uninstall')
     parser.set_defaults(command='uninstall')
+    return parser
+
+
+def add_parser_freeze(subparsers):
+    parser = subparsers.add_parser(
+        'freeze',
+        help='Find all the dependencies needed to run a Python software')
+    parser.add_argument(
+        'root_path', default=os.getcwd(), nargs='?',
+        help='Root path of the codebase that neds to be analyzed')
+    parser.set_defaults(command='freeze')
     return parser
 
 
@@ -191,6 +203,10 @@ def get_uninstall_command(args):
     return cmd
 
 
+def get_freeze_command(args):
+    return Freeze(args.root_path)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Curdles your cheesy code and extracts its binaries')
@@ -224,6 +240,7 @@ def main():
     subparsers = parser.add_subparsers()
     add_parser_install(subparsers)
     add_parser_uninstall(subparsers)
+    add_parser_freeze(subparsers)
     args = parser.parse_args()
 
     # Let's not read the command if the user didn't inform one
@@ -239,6 +256,7 @@ def main():
     command = {
         'install': get_install_command,
         'uninstall': get_uninstall_command,
+        'freeze': get_freeze_command,
     }[args.command](args)
 
     try:

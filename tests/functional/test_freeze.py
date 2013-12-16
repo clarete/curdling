@@ -1,4 +1,5 @@
 from curdling import freeze
+from . import FIXTURE
 
 
 def test_get_module_path():
@@ -57,3 +58,39 @@ print(util.in_venv())
     # Then I see it found the right version of 'distlib' our only
     # requirement here
     requirements.should.equal(['distlib==0.1.2'])  # Guaranteed in our requirements.txt
+
+
+def test_get_requirements():
+    "freeze.get_requirements() Should return a list of imports in a piece of code"
+
+    # Given the following snippet
+    code = '''
+from mock import Mock
+
+print(Mock())
+'''
+
+    # When I try to figure out which packages I need to run this
+    # piece of code
+    requirements = freeze.get_requirements(code)
+
+    # Then I see it found the right version of 'distlib' our only
+    # requirement here
+    requirements.should.equal(['mock==1.0.1'])  # Guaranteed in our requirements.txt
+
+
+def test_find_python_files():
+    "freeze.find_python_files(path) Should find all the python files under `path`"
+
+    # Given the following directory
+    codebase = FIXTURE('codebase1')
+
+    # When I list all the available python files
+    python_files = freeze.find_python_files(codebase)
+
+    # Then I see the list with all the files present in that given
+    # directory
+    python_files.should.equal([
+        'codebase1/__init__.py',
+        'codebase1/hello.py',
+    ])
