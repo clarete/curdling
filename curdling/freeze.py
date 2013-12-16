@@ -23,11 +23,6 @@ def find_imported_modules(code):
     return list(filter(None, visitor.imports))
 
 
-def filter_modules(modules):
-    return [m for m in modules if not imp.is_builtin(m)
-            and not is_local(m)]
-
-
 def get_module_path(module_name):
     module_path = imp.find_module(module_name)[1]
     possible_paths = ['']       # Avoid failure in max() if there's no

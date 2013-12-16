@@ -63,32 +63,6 @@ import functools
     names.should.equal(['functools'])
 
 
-def test_filter_modules():
-    "freeze.filter_modules() Should filter out built-in modules"
-
-    # Given following imports
-    imports = ['math', 'sure']
-
-    # When I filter the import list
-    modules = freeze.filter_modules(imports)
-
-    # Then I see that the built-in `math` was filtered out
-    modules.should.equal(['sure'])
-
-
-def test_filter_modules():
-    "freeze.filter_modules() Should filter built-in modules"
-
-    # Given following imports
-    imports = ['math', 'sure']
-
-    # When I filter the import list
-    modules = freeze.filter_modules(imports)
-
-    # Then I see that the built-in `math` was filtered out
-    modules.should.equal(['sure'])
-
-
 @patch('curdling.freeze.imp')
 @patch('curdling.freeze.sys')
 def test_get_module_path(sys, imp):
