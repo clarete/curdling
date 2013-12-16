@@ -138,4 +138,4 @@ print(util.in_venv())
 
     # Then I see it found the right version of 'distlib' our only
     # requirement here
-    requirements.should.equal(['distlib==0.1.2'])  # Guaranteed in our requirements.txt
+    requirements.should.equal(['distlib==0.1.2'])
