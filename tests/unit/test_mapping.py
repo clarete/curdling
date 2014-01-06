@@ -257,3 +257,18 @@ def test_best_version_no_strict_requirements_but_strict_version():
     # Then I see that I still got the version number even though my requirement
     # didn't have version info
     version.should.equal(('0.1.0', 'forbiddenfruit'))
+
+
+def test_best_version_with_no_wheels():
+    "Mapping#best_version() Should not take uncompiled packages into account"
+
+    # Given that I have a mapping with a package that was not compiled
+    mapping = Mapping()
+    mapping.requirements.add('pkg (>= 0.1.1)')
+    mapping.dependencies['pkg (>= 0.1.1)'] = ['blah']
+
+    # When I retrieve the best match
+    mapping.best_version.when.called_with('pkg').should.throw(
+        exceptions.VersionConflict,
+        'Requirement: pkg, no available versions were found'
+    )

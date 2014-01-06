@@ -38,16 +38,6 @@ def wheel_version(path):
 class Mapping(object):
 
     def __init__(self):
-        # This is the structure that saves all the meta-data about all the
-        # requested packages. You should take a look in the file
-        # `tests/unit/test_mapping.py`. It contains all the possible
-        # combinations of values stored in this structure.
-        self.requirement_structure = lambda: {
-            'dependency_of': [],
-            'wheel': None,
-            'exception': None,
-        }
-
         self.requirements = set()
         self.dependencies = defaultdict(list)
         self.stats = defaultdict(int)
@@ -133,14 +123,27 @@ class Mapping(object):
         compatible_versions = [v for v in all_versions
             if all_versions.count(v) == len(requirements)]
 
-        # if self.errors[package_name]
         if not compatible_versions:
-            constraints = ', '.join(sorted(filter(None, all_constraints), reverse=True))
-            raise VersionConflict(
-                'Requirement: {0}{1}, Available versions: {2}'.format(
+            # Format the constraints string like this: " (c [, c...])"
+            constraints = ', '.join(sorted(filter(None,
+                all_constraints), reverse=True))
+            constraints = ' ({0})'.format(constraints) if constraints else ''
+            available_versions = ', '.join(sorted(
+                self.available_versions(package_name),
+                reverse=True))
+
+            # Just a nice message depending on finding any versions or
+            # not
+            raise VersionConflict(available_versions
+                and 'Requirement: {0}{1}, Available versions: {2}'.format(
                     package_name,
-                    constraints and ' ({0})'.format(constraints) or '',
-                    ', '.join(sorted(self.available_versions(package_name), reverse=True)),
-                ))
+                    constraints,
+                    available_versions,
+                )
+                or 'Requirement: {0}{1}, no available versions were found'.format(
+                    package_name,
+                    constraints,
+                )
+            )
 
         return get_requirement(newest(compatible_versions))
