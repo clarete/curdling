@@ -4,11 +4,8 @@ Welcome to Curdling
 .. image:: https://travis-ci.org/clarete/curdling.png?branch=master
    :target: https://travis-ci.org/clarete/curdling
 
-.. image:: https://instanc.es/bin/clarete/curdling.png
-   :target: http://instanc.es
-
 .. image:: https://d2weczhvl823v0.cloudfront.net/clarete/curdling/trend.png
-
+   :target: https://bitdeli.com
 
 Curdling is a command line tool for managing Python packages.
 
@@ -34,17 +31,6 @@ Usage
 ::
 
   $ curd install flask
-
-Thanks
-------
-
-* To `Yipit.com <http://yipit.com>`_ for allowing me to invest part of
-  my time there having fun and building awesome software;
-
-* To `@gabrielfalcao <http://github.com/gabrielfalcao>`_, for using,
-  testing and contribution to the project since the first releases; He
-  also wrote `sure <http://github.com/gabrielfalcao/sure>`_, an
-  **awesome** library for writing tests;
 
 License
 -------
