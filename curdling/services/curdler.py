@@ -47,14 +47,14 @@ def guess_file_type(filename):
 def unpack(package):
     file_type = guess_file_type(package)
 
-    # The only extensions we support currently
+    # The only extensions we currently support are `zip', `gz' and `bz2'
+    if file_type in ('gz', 'bz2'):
+        fp = tarfile.open(package, 'r')
+        return fp, [x.name for x in fp.getmembers()]
     if file_type == 'zip':
         fp = zipfile.ZipFile(package)
-        get_names = fp.namelist
-    elif file_type in ('gz', 'bz2'):
-        fp = tarfile.open(package, 'r')
-        get_names = lambda: [x.name for x in fp.getmembers()]
-    return fp, get_names()
+        return fp, fp.namelist()
+    raise UnpackingError('Unknown compress format for file %s' % package)
 
 
 def find_setup_script(names):

@@ -1,5 +1,5 @@
 from __future__ import absolute_import, print_function, unicode_literals
-from mock import patch, Mock, ANY
+from mock import call, patch, Mock, ANY
 from curdling.services import curdler
 
 
@@ -53,8 +53,8 @@ def test_unpack(ZipFile, guess_file_type):
 
 @patch('curdling.services.curdler.guess_file_type')
 @patch('curdling.services.curdler.tarfile.open')
-def test_unpack_tar_file(tarfile_open, guess_file_type):
-    "unpack() Should unpack zip files and return the names inside of the archive"
+def test_unpack_tarball(tarfile_open, guess_file_type):
+    "unpack() Should unpack .gz files and return the names inside of the archive"
 
     # Given a zip package
     guess_file_type.return_value = 'gz'
@@ -70,6 +70,19 @@ def test_unpack_tar_file(tarfile_open, guess_file_type):
 
     # Then I see the right name list being returned
     namelist.should.equal(['file.py', 'setup.py'])
+
+
+
+@patch('curdling.services.curdler.guess_file_type')
+def test_unpack_error(guess_file_type):
+    "unpack() Should raise `UnpackingError` on unknown files"
+
+    guess_file_type.return_value = None
+
+    # When I try to guess the file type; Then I see it raises an exception
+    curdler.unpack.when.called_with('pkg.abc').should.throw(
+        curdler.UnpackingError, 'Unknown compress format for file pkg.abc'
+    )
 
 
 def test_find_setup_script():
@@ -146,3 +159,98 @@ def test_run_script(execute_command, listdir):
 
     # And that the wheel was generated in the right directory
     wheel.should.equal('/tmp/pkg/dist/wheel-file')
+
+
+@patch('curdling.services.curdler.tempfile.mkdtemp')
+@patch('curdling.services.curdler.get_setup_from_package')
+@patch('curdling.services.curdler.run_setup_script')
+@patch('curdling.services.curdler.shutil.rmtree')
+def test_curdler_service(rmtree, run_setup_script, get_setup_from_package, mkdtemp):
+    "Curdler.handle() Should unpack and build packages"
+
+    destination = mkdtemp.return_value
+
+    # Given a curdler service instance
+    service = curdler.Curdler(index=Mock())
+
+    # When I execute the service
+    service.handle('tests', {
+        'requirement': 'pkg',
+        'tarball': 'pkg.tar.gz',
+    })
+
+    # Then I see that the `setup.py` script was retrieved using the
+    # helper `get_setup_from_package()`.
+    get_setup_from_package.assert_called_once_with('pkg.tar.gz', destination)
+
+    # And then I see that the `setup.py` script was run
+    run_setup_script.assert_called_once_with(
+        get_setup_from_package.return_value, 'bdist_wheel')
+
+    # And then I see that the wheel file should indexed
+    service.index.from_file.assert_called_once_with(
+        run_setup_script.return_value)
+
+    # And then the temporary destination is removed afterwards
+    rmtree.assert_called_once_with(destination)
+
+
+@patch('curdling.services.curdler.tempfile.mkdtemp')
+@patch('curdling.services.curdler.run_setup_script')
+@patch('curdling.services.curdler.shutil.rmtree')
+def test_curdler_service_build_directory(rmtree, run_setup_script, mkdtemp):
+    
+    destination = mkdtemp.return_value
+
+    # Given a curdler service instance
+    service = curdler.Curdler(index=Mock())
+
+    # When I execute the service
+    service.handle('tests', {
+        'requirement': 'pkg',
+        'directory': '/tmp/pkg',
+    })
+
+    # And then I see that the `setup.py` script was run
+    run_setup_script.assert_called_once_with(
+        '/tmp/pkg/setup.py', 'bdist_wheel')
+
+    # And then I see that the wheel file should indexed
+    service.index.from_file.assert_called_once_with(
+        run_setup_script.return_value)
+
+    # And then I see that the temporary destination and the package
+    # directory are removed afterwards
+    list(rmtree.call_args_list).should.equal([
+        call(destination),
+        call('/tmp/pkg'),
+    ])
+
+
+@patch('curdling.services.curdler.tempfile.mkdtemp')
+@patch('curdling.services.curdler.run_setup_script')
+@patch('curdling.services.curdler.shutil.rmtree')
+def test_curdler_service_error(rmtree, run_setup_script, mkdtemp):
+
+    destination = mkdtemp.return_value
+
+    # Given a curdler service instance
+    service = curdler.Curdler(index=Mock())
+
+    # And then I create a problem in the `run_setup_script` to
+    # simulate a build error
+    run_setup_script.side_effect = Exception('P0wned!!1')
+
+    # When I execute the service; Then I see that the right exception
+    # is raised
+    service.handle.when.called_with('tests', {
+        'requirement': 'pkg',
+        'directory': '/tmp/pkg',
+    }).should.throw(Exception, 'P0wned!!1')
+
+    # And then I see that the temporary destination and the package
+    # directory are removed afterwards
+    list(rmtree.call_args_list).should.equal([
+        call(destination),
+        call('/tmp/pkg'),
+    ])
