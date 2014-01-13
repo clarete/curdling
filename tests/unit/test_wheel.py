@@ -15,7 +15,7 @@ def test_from_name():
     # attributes
     wheel.distribution.should.equal('curdzz')
     wheel.version.should.equal('0.1.2')
-    wheel.tags.build.should.equal('1x')
+    wheel.build.should.equal('1x')
     wheel.tags.pyver.should.equal('py27')
     wheel.tags.abi.should.be.none
     wheel.tags.arch.should.be.none
@@ -34,7 +34,7 @@ def test_from_name_with_ext():
     # attributes
     wheel.distribution.should.equal('curdzz')
     wheel.version.should.equal('0.1.2')
-    wheel.tags.build.should.equal('1x')
+    wheel.build.should.equal('1x')
     wheel.tags.pyver.should.equal('py27')
     wheel.tags.abi.should.be.none
     wheel.tags.arch.should.be.none
@@ -53,7 +53,7 @@ def test_from_name_with_ext():
     # attributes
     wheel.distribution.should.equal('curdzz')
     wheel.version.should.equal('0.1.2')
-    wheel.tags.build.should.equal('1x')
+    wheel.build.should.equal('1x')
     wheel.tags.pyver.should.equal('py27.py33')
     wheel.tags.abi.should.be.none
     wheel.tags.arch.should.be.none
@@ -66,14 +66,13 @@ def test_name():
     wheel = Wheel()
     wheel.distribution = 'curdzz'
     wheel.version = '0.1.2'
-    wheel.tags.build = '1'
+    wheel.build = '1'
     wheel.tags.pyver = 'py27'
     wheel.tags.abi = None
     wheel.tags.arch = None
 
     # Then I see that the tags property was properly filled out as well
     dict(wheel.tags).should.equal({
-        'build': '1',
         'pyver': 'py27',
         'abi': None,
         'arch': None,

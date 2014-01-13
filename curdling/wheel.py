@@ -34,6 +34,7 @@ class Wheel(object):
     def __init__(self):
         self.distribution = None
         self.version = None
+        self.build = None
         self.tags = TagBag()
 
     @classmethod
@@ -45,7 +46,7 @@ class Wheel(object):
         instance = cls()
         instance.distribution = pieces[0]
         instance.version = pieces[1]
-        instance.tags.build = pieces[2] if not offset else None
+        instance.build = pieces[2] if not offset else None
         instance.tags.pyver = pieces[3 - offset]
         instance.tags.abi = TagBag.from_input(pieces[4 - offset])
         instance.tags.arch = TagBag.from_input(pieces[5 - offset])
@@ -55,7 +56,7 @@ class Wheel(object):
         return '-'.join((
             self.distribution,
             self.version,
-            self.tags.build,
+            self.build,
             self.tags.pyver,
             self.tags.abi or 'none',
             self.tags.arch or 'any',
@@ -73,6 +74,6 @@ class Wheel(object):
             'Wheel-Version': '1.0',  # Shamelessly hardcoded
             'Generator': 'Curdling {0}'.format(__version__),
             'Root-Is-Purelib': 'True',
-            'Build': self.tags.build,
+            'Build': self.build,
             'Tag': self.expand_tags(),
         }
