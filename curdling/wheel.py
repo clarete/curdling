@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import email
+import zipfile
 from .version import __version__
 
 
@@ -37,6 +40,11 @@ class Wheel(object):
         self.build = None
         self.tags = TagBag()
 
+        # Store information about the archive itself. Information in
+        # this field is stored/read from the WHEEL file inside of the
+        # `.whl` archive.
+        self.information = {}
+
     @classmethod
     def from_name(cls, name):
         name = name.replace('.whl', '')
@@ -51,6 +59,13 @@ class Wheel(object):
         instance.tags.abi = TagBag.from_input(pieces[4 - offset])
         instance.tags.arch = TagBag.from_input(pieces[5 - offset])
         return instance
+
+    @classmethod
+    def from_file(cls, path):
+        wheel = cls.from_name(os.path.basename(path))
+        archive = zipfile.ZipFile(path)
+        wheel.information.update(wheel.read_wheel_file(archive))
+        return wheel
 
     def name(self):
         return '-'.join((
@@ -70,10 +85,31 @@ class Wheel(object):
         ]) for pyver in self.tags.pyver.split('.')]
 
     def info(self):
-        return {
+        info = {
             'Wheel-Version': '1.0',  # Shamelessly hardcoded
             'Generator': 'Curdling {0}'.format(__version__),
             'Root-Is-Purelib': 'True',
-            'Build': self.build,
             'Tag': self.expand_tags(),
         }
+
+        # Add the build tag to the WHEEL file as well
+        if self.build:
+            info['Build'] = self.build
+
+        info.update(self.information)
+        return info
+
+    def dist_info_path(self):
+        return '{0}-{1}.dist-info'.format(
+            self.distribution, self.version)
+
+    def read_wheel_file(self, archive):
+        content = archive.read(
+            os.path.join(self.dist_info_path(), 'WHEEL'))
+        message = email.message_from_string(content)
+
+        # Tags might be repeated, dictionaries don't repeat keys
+        fields = dict(message)
+        fields.update({'Tag': message.get_all('Tag')})
+
+        return fields

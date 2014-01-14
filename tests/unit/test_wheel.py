@@ -1,3 +1,4 @@
+from mock import Mock
 from curdling.wheel import Wheel
 from curdling.version import __version__
 
@@ -102,4 +103,29 @@ def test_info():
             'py27-none-any',
             'py33-none-any',
         ],
+    })
+
+
+def test_read_wheel_file():
+    "Wheel.read_wheel_file() Should parse the WHEEL file of an archive into a dictionary"
+
+    # Given the following WHEEL file of a fake archive
+    archive = Mock()
+    archive.read.return_value = '''\
+Wheel-Version: 1.0
+Generator: bdist_wheel (0.21.0)
+Root-Is-Purelib: true
+Tag: py27-none-any
+Tag: py3-none-any
+'''
+
+    # When it is parsed
+    information = Wheel().read_wheel_file(archive)
+
+    # Then I see that the information was parsed correctly
+    information.should.equal({
+        'Wheel-Version': '1.0',
+        'Generator': 'bdist_wheel (0.21.0)',
+        'Root-Is-Purelib': 'true',
+        'Tag': ['py27-none-any', 'py3-none-any']
     })
