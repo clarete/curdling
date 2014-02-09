@@ -8,7 +8,8 @@ def test_guess_file_type(io):
     "guess_file_type() Should return the format of the archive if such is supported by curdling"
 
     # Given an archive
-    io.read.return_value = b"\x1f\x8b\x08"
+    io.open.return_value.__enter__.return_value.read.return_value = \
+        io.open.return_value.read.return_value = b"\x1f\x8b\x08"
 
     # When I try to guess the file type
     file_type = curdler.guess_file_type('pkg.tgz')

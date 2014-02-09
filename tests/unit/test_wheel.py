@@ -111,7 +111,7 @@ def test_read_wheel_file():
 
     # Given the following WHEEL file of a fake archive
     archive = Mock()
-    archive.read.return_value = '''\
+    archive.read.return_value = b'''\
 Wheel-Version: 1.0
 Generator: bdist_wheel (0.21.0)
 Root-Is-Purelib: true

@@ -22,8 +22,9 @@ from .version import __version__
 
 
 class TagBag(dict):
-    __setattr__ = dict.__setitem__
-    __getattr__ = dict.__getitem__
+    def __init__(self, *args, **kwargs):
+        super(TagBag, self).__init__(*args, **kwargs)
+        self.__dict__ = self
 
     @classmethod
     def from_input(cls, value):
@@ -106,7 +107,13 @@ class Wheel(object):
     def read_wheel_file(self, archive):
         content = archive.read(
             os.path.join(self.dist_info_path(), 'WHEEL'))
-        message = email.message_from_string(content)
+
+        # This hacky thing will prevent the `.decode()` method from
+        # being called unless we actually have a bytes instance.
+        # Which will never happen in python2.6, because bytes is just
+        # an alias to `str`.
+        message = email.message_from_string(
+            content if str == bytes else content.decode('ascii'))
 
         # Tags might be repeated, dictionaries don't repeat keys
         fields = dict(message)
