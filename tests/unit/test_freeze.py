@@ -64,6 +64,22 @@ print(curdling)
     names.should.equal(['PIL', 'functools'])
 
 
+def test_find_imported_modules4():
+    "freeze.find_imported_modules() Should filter the module path when it has more than one level"
+
+    # Given the following snipet
+    code = '''
+from .relative import stuff
+'''
+
+    # When I query the imported modules
+    names = freeze.find_imported_modules(code)
+
+    # Then I see that the result names match the imported modules in
+    # the code, skipping the local modules (.)
+    names.should.equal([])
+
+
 def test_find_imported_modules3():
     "freeze.find_imported_modules() Should skip any local imports (from . import x)"
 

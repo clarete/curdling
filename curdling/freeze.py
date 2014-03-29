@@ -20,6 +20,7 @@ import imp
 import os
 import sys
 from distlib.database import DistributionPath
+from .util import logger
 
 
 class ImportVisitor(ast.NodeVisitor):
@@ -31,13 +32,14 @@ class ImportVisitor(ast.NodeVisitor):
         self.imports.append(node.names[0].name)
 
     def visit_ImportFrom(self, node):
-        self.imports.append(node.module)
+        if node.level == 0:
+            self.imports.append(node.module)
 
 
 def find_imported_modules(code):
     visitor = ImportVisitor()
     visitor.visit(ast.parse(code))
-    return list(filter(None, visitor.imports))
+    return visitor.imports
 
 
 def get_module_path(module_name):
@@ -59,11 +61,11 @@ def get_distribution_from_source_file(file_name):
 
 
 def get_requirements(code):
-    def format_module(module_name):
-        try:
-            path = get_module_path(module_name)
-        except ImportError:
-            return
+    requirements = []
+
+    for module_name in find_imported_modules(code):
+        print('module found: {0}'.format(module_name))
+        path = get_module_path(module_name)
 
         # If we do have a module that matches tha name we still need
         # to know if it was installed as a package. If it was not, we
@@ -71,16 +73,15 @@ def get_requirements(code):
         # package to the requirements list, so we just skip it.
         distribution = get_distribution_from_source_file(path)
         if not distribution:
-            return
+            continue
 
         # Let's build the output in a format that everybody
         # understands
-        return '{0}=={1}'.format(
+        requirements.append('{0}=={1}'.format(
             distribution.name,
-            distribution.version)
+            distribution.version))
 
-    return list(filter(None, [format_module(m)
-        for m in find_imported_modules(code)]))
+    return requirements
 
 
 def find_python_files(path):
@@ -98,10 +99,17 @@ class Freeze(object):
 
     def __init__(self, root_path):
         self.root_path = root_path
+        self.logger = logger(__name__)
 
     def run(self):
-        requirements = []
+        requirements = set()
         for file_path in find_python_files(self.root_path):
-            file_requirements = get_requirements(open(file_path).read())
-            requirements.extend(file_requirements)
-        print('\n'.join(list(set(requirements))))
+            self.logger.info('harvesting file %s', file_path)
+            code = open(file_path).read()
+            requirements |= set(find_imported_modules(code))
+
+        for requirement in sorted(set(requirements).difference(sys.builtin_module_names)):
+            print(requirement)
+
+            # all_requirements.extend(file_requirements)
+        # print('\n'.join(list(set(all_requirements))))
