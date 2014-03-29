@@ -4,6 +4,9 @@ Welcome to Curdling
 .. image:: https://travis-ci.org/clarete/curdling.png?branch=master
    :target: https://travis-ci.org/clarete/curdling
 
+.. image:: https://drone.io/github.com/clarete/curdling/status.png
+   :target: https://drone.io/github.com/clarete/curdling/latest
+
 .. image:: https://d2weczhvl823v0.cloudfront.net/clarete/curdling/trend.png
    :target: https://bitdeli.com
 
