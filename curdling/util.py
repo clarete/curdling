@@ -151,6 +151,7 @@ def get_auth_info_from_url(url, proxy=False):
 
 def execute_command(name, *args, **kwargs):
     command = subprocess.Popen((name,) + args,
+        env=os.environ,
         stderr=subprocess.PIPE, stdout=subprocess.PIPE,
         **kwargs)
     _, errors = command.communicate()
