@@ -7,9 +7,6 @@ Welcome to Curdling
 .. image:: https://drone.io/github.com/clarete/curdling/status.png
    :target: https://drone.io/github.com/clarete/curdling/latest
 
-.. image:: https://d2weczhvl823v0.cloudfront.net/clarete/curdling/trend.png
-   :target: https://bitdeli.com
-
 Curdling is a command line tool for managing Python packages.
 
 It was designed to find, build and cache all the dependencies your
