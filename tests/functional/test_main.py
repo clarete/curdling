@@ -17,6 +17,10 @@ from curdling.services.installer import Installer
 
 from . import FIXTURE
 
+DUMMY_PYPI = 'http://localhost:9000/simple/'
+
+DUMMY_PYPI_URL = lambda path: '{0}{1}'.format(DUMMY_PYPI, path)
+
 
 def test_downloader_with_no_sources():
     "It should be possible to download packages from pip repos with no sources"
@@ -36,7 +40,7 @@ def test_downloader():
 
     # Given that I have a finder pointing to our local pypi server
     finder = Finder(**{
-        'conf': {'pypi_urls': ['http://localhost:8000/simple']},
+        'conf': {'pypi_urls': [DUMMY_PYPI]},
     })
 
     # And a downloader pointing to a temporary index
@@ -61,7 +65,7 @@ def test_finder_hyphen_on_pkg_name():
 
     # Given a finder component
     finder = Finder(**{
-        'conf': {'pypi_urls': ['http://localhost:8000/simple']},
+        'conf': {'pypi_urls': [DUMMY_PYPI]},
     })
 
     # When I try to retrieve a package from it
@@ -70,8 +74,8 @@ def test_finder_hyphen_on_pkg_name():
     # Then I see that the package was downloaded correctly to the storage
     url.should.equal({
         'requirement': 'fake-pkg (0.0.0)',
-        'locator_url': 'http://localhost:8000/simple/',
-        'url': 'http://localhost:8000/simple/fake-pkg/fake-pkg-0.0.0.tar.gz',
+        'locator_url': DUMMY_PYPI,
+        'url': DUMMY_PYPI_URL('fake-pkg/fake-pkg-0.0.0.tar.gz'),
     })
 
 
@@ -80,7 +84,7 @@ def test_finder_underscore_on_pkg_name():
 
     # Given a finder component
     finder = Finder(**{
-        'conf': {'pypi_urls': ['http://localhost:8000/simple']},
+        'conf': {'pypi_urls': [DUMMY_PYPI]},
     })
 
     # When I try to retrieve a package from it
@@ -89,8 +93,8 @@ def test_finder_underscore_on_pkg_name():
     # Then I see that the package was downloaded correctly to the storage
     url.should.equal({
         'requirement': 'fake_pkg (0.0.0)',
-        'locator_url': 'http://localhost:8000/simple/',
-        'url': 'http://localhost:8000/simple/fake-pkg/fake-pkg-0.0.0.tar.gz',
+        'locator_url': DUMMY_PYPI,
+        'url': DUMMY_PYPI_URL('fake-pkg/fake-pkg-0.0.0.tar.gz'),
     })
 
 
@@ -99,7 +103,7 @@ def test_finder_not_found():
 
     # Given a finder component
     finder = Finder(**{
-        'conf': {'pypi_urls': ['http://localhost:8000/simple']},
+        'conf': {'pypi_urls': [DUMMY_PYPI]},
     })
 
     # When I try to retrieve a package from it
@@ -168,7 +172,7 @@ def test_retrieve_and_build():
     installer = Install(**{
         'conf': {
             'index': index,
-            'pypi_urls': ['http://localhost:8000/simple']
+            'pypi_urls': [DUMMY_PYPI]
         },
     })
     installer.pipeline()

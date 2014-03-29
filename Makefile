@@ -8,7 +8,7 @@ TESTS_VERBOSITY=2
 
 EXTRA_TEST_TASKS=
 
-DUMMY_PYPI_PORT=8000
+DUMMY_PYPI_PORT=9000
 
 PYTHON_SERVER_MODULE=`python -c 'import sys; print("SimpleHTTPServer" if tuple(sys.version_info)[0] == 2 else "http.server")'`
 
@@ -31,7 +31,7 @@ functional: setup
 
 dummypypi_start:
 	@make dummypypi_stop
-	@(cd tests/dummypypi && python -m $(PYTHON_SERVER_MODULE) >/dev/null 2>&1 &) && \
+	@(cd tests/dummypypi && python -m $(PYTHON_SERVER_MODULE) $(DUMMY_PYPI_PORT) >/dev/null 2>&1 &) && \
 		while :; do `curl http://localhost:$(DUMMY_PYPI_PORT) > /dev/null 2>&1` && break; done
 
 
