@@ -130,7 +130,7 @@ def test_curd_package():
 
     # Then I see it's a wheel package.
     package['wheel'].should.match(
-        FIXTURE('storage1/gherkin-0.1.0-py\d{2}-none-any.whl'))
+        FIXTURE('storage1/gherkin-0.1.0-py\d+-none-any.whl'))
 
     # And that it's present in the index
     package = index.get('gherkin==0.1.0;whl')
