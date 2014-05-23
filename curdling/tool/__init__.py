@@ -1,7 +1,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 from functools import partial
 from ..index import Index
-from ..util import expand_requirements, safe_name, spaces
+from ..util import expand_requirements, safe_name, spaces, logger
 from ..version import __version__
 
 from ..install import Install
@@ -248,6 +248,8 @@ def main():
         parser.error('too few arguments')
 
     initialize_logging(args.log_file, args.log_level, args.log_name)
+
+    logger('main').info('curd {0}'.format(__version__))
 
     # Here we choose which function will be called to setup the command
     # instance that will be ran. Notice that all the `add_parser_*` functions
