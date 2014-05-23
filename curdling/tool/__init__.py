@@ -215,7 +215,7 @@ def main():
     levels = [i for i in logging._levelNames.keys()
         if not isinstance(i, int) and i != 'NOTSET']
     parser.add_argument(
-        '-l', '--log-level', default='CRITICAL', choices=levels,
+        '-l', '--log-level', default='CRITICAL', choices=levels, type=unicode.upper,
         help='Log verbosity level (for nerds): {0}'.format(', '.join(levels)))
 
     parser.add_argument(
