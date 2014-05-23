@@ -1,11 +1,56 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
+import io
 import logging
-
 import mock
-from mock import Mock
 
+from collections import namedtuple
 from curdling import tool
+
+
+def test_get_packages_from_empty_args():
+    "get_packages_from_args() Should return an empty list when no package spec can be found in `args' "
+
+    # Given that I have an argument bag with no package specs
+    args = namedtuple('args', ['packages', 'requirements'])(
+        packages=None, requirements=None)
+
+    # When I expand the package list
+    packages = tool.get_packages_from_args(args)
+
+    # Then I see I've got nothing!
+    packages.should.be.empty
+
+
+def test_get_packages_from_args():
+    "get_packages_from_args() Should find out all the package names specified in `packages`"
+
+    # Given that I have an argument bag with package specs
+    args = namedtuple('args', ['packages', 'requirements'])(
+        packages=['sure', 'milieu'], requirements=None)
+
+    # When I expand the package list
+    packages = tool.get_packages_from_args(args)
+
+    # Then I see I've got the packages I specified
+    packages.should.equal(['sure', 'milieu'])
+
+
+def test_get_packages_requirement_from_args():
+    "get_packages_from_args() Should expand all the packages specified in `requirements`"
+
+    requirements = io.BytesIO(
+        bytes('sure==0.2.1\nmilieu==0.1.7'))
+
+    # Given that I have an argument bag with package specs
+    args = namedtuple('args', ['packages', 'requirements'])(
+        packages=None, requirements=requirements)
+
+    # When I expand the package list
+    packages = tool.get_packages_from_args(args)
+
+    # Then I see I've got the packages I specified
+    packages.should.equal(['sure (0.2.1)', 'milieu (0.1.7)'])
 
 
 def test_initialize_logging():
