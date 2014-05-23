@@ -38,8 +38,8 @@ def add_parser_install(subparsers):
     parser = subparsers.add_parser(
         'install', help='Locate and install packages')
     parser.add_argument(
-        '-r', '--requirements', type=argparse.FileType('r'),
-        help='A requirements file')
+        '-r', '--requirements', type=argparse.FileType('r'), action='append',
+        help='Parse a requirements file. Repeat as many times as you need')
     parser.add_argument(
         '-i', '--index', action='append',
         help='PyPi compatible index URL. Repeat as many times as you need')
@@ -96,8 +96,8 @@ def get_packages_from_args(args):
     if not args.packages and not args.requirements:
         return []
     packages = [safe_name(req) for req in (args.packages or [])]
-    if args.requirements:
-        for pkg in expand_requirements(args.requirements):
+    for requirements in args.requirements or []:
+        for pkg in expand_requirements(requirements):
             packages.append(pkg)
     return packages
 

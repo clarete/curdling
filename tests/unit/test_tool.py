@@ -42,15 +42,19 @@ def test_get_packages_requirement_from_args():
     requirements = io.BytesIO(
         bytes('sure==0.2.1\nmilieu==0.1.7'))
 
+    requirements2 = io.BytesIO(
+        bytes('python-dateutil'))
+
     # Given that I have an argument bag with package specs
     args = namedtuple('args', ['packages', 'requirements'])(
-        packages=None, requirements=requirements)
+        packages=None, requirements=[requirements, requirements2])
 
     # When I expand the package list
     packages = tool.get_packages_from_args(args)
 
     # Then I see I've got the packages I specified
-    packages.should.equal(['sure (0.2.1)', 'milieu (0.1.7)'])
+    packages.should.equal([
+        'sure (0.2.1)', 'milieu (0.1.7)', 'python-dateutil'])
 
 
 def test_initialize_logging():
