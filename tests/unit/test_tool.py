@@ -39,11 +39,8 @@ def test_get_packages_from_args():
 def test_get_packages_requirement_from_args():
     "get_packages_from_args() Should expand all the packages specified in `requirements`"
 
-    requirements = io.BytesIO(
-        bytes('sure==0.2.1\nmilieu==0.1.7'))
-
-    requirements2 = io.BytesIO(
-        bytes('python-dateutil'))
+    requirements = io.StringIO('sure==0.2.1\nmilieu==0.1.7')
+    requirements2 = io.StringIO('python-dateutil')
 
     # Given that I have an argument bag with package specs
     args = namedtuple('args', ['packages', 'requirements'])(
