@@ -3,6 +3,7 @@ from functools import partial
 from ..index import Index
 from ..util import expand_requirements, safe_name, spaces, logger
 from ..version import __version__
+from ..services import curdler
 
 from ..install import Install
 from ..uninstall import Uninstall
@@ -11,6 +12,7 @@ from ..freeze import Freeze
 import argparse
 import logging
 import os
+import pkginfo
 import sys
 
 
@@ -157,6 +159,14 @@ def handle_install_exit(failed=None):
     raise SystemExit(int(failed != None))
 
 
+def acceptable_file_type(filename):
+    try:
+        curdler.guess_file_type(filename)
+        return True
+    except curdler.UnpackingError:
+        return False
+
+
 def get_install_command(args):
     index = Index(os.path.expanduser('~/.curds'))
     index.scan()
@@ -170,6 +180,9 @@ def get_install_command(args):
         'index': index,
     })
 
+    tarballs = [pkg for pkg in args.packages
+                if os.path.isfile(pkg) and acceptable_file_type(pkg)]
+    args.packages = [pkg for pkg in args.packages if pkg not in tarballs]
     initial_requirements = get_packages_from_args(args)
 
     # Callbacks that show feedback for the user
@@ -188,6 +201,10 @@ def get_install_command(args):
     # received packages before returning the command instance
     cmd.pipeline()
     cmd.start()
+    for pkg in tarballs:
+        metadata = pkginfo.SDist(pkg)
+        cmd.queue(
+            'main', tarball=pkg, requirement=metadata.name, directory=None)
     for pkg in initial_requirements:
         cmd.queue('main', requirement=pkg)
     return cmd
