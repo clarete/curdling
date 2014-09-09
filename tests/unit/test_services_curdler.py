@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from __future__ import absolute_import, print_function, unicode_literals
 from mock import call, patch, Mock, ANY
 from curdling.services import curdler
@@ -97,6 +98,7 @@ def test_find_setup_script():
         'pkg-0.1/pkg/__init__.py',
         'pkg-0.1/pkg/setup.py',
         'pkg-0.1/pkg/api.py',
+        'pkg-0.1/pkg/héhé'.encode('utf8'),
     ]
 
     # When I look for the setup.py script
@@ -200,7 +202,7 @@ def test_curdler_service(rmtree, run_setup_script, get_setup_from_package, mkdte
 @patch('curdling.services.curdler.run_setup_script')
 @patch('curdling.services.curdler.shutil.rmtree')
 def test_curdler_service_build_directory(rmtree, run_setup_script, mkdtemp):
-    
+
     destination = mkdtemp.return_value
 
     # Given a curdler service instance
