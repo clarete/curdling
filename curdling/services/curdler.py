@@ -58,7 +58,7 @@ def unpack(package):
 
 
 def find_setup_script(names):
-    setup_scripts = [x for x in names if x.endswith('setup.py')]
+    setup_scripts = [x for x in names if x[-8:] == 'setup.py']
     if not setup_scripts:
         raise NoSetupScriptFound('No setup.py script found')
     return sorted(setup_scripts, key=lambda e: len(e))[0]
