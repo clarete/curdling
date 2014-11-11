@@ -146,11 +146,11 @@ def test_get_setup_from_package(unpack):
 @patch('curdling.services.curdler.os.listdir')
 @patch('curdling.services.curdler.execute_command')
 def test_run_script(execute_command, listdir):
-    "run_setup_script() Should be able to run the setup.py script"
+    "run_setup_script() Should be able to run the setup.py script and return the correct wheel"
 
     # Given a patch for `os.listdir` and `execute_command` (see @patch
     # usage in this functions signature)
-    listdir.return_value = ['wheel-file']
+    listdir.return_value = ['some-other-file', 'wheel-file.whl']
 
     # When I run the setup script
     wheel = curdler.run_setup_script("/tmp/pkg/setup.py", 'bdist_wheel', '-h')
@@ -161,7 +161,7 @@ def test_run_script(execute_command, listdir):
         ANY, '-c', ANY, 'bdist_wheel', '-h', cwd='/tmp/pkg')
 
     # And that the wheel was generated in the right directory
-    wheel.should.equal('/tmp/pkg/dist/wheel-file')
+    wheel.should.equal('/tmp/pkg/dist/wheel-file.whl')
 
 
 @patch('curdling.services.curdler.tempfile.mkdtemp')

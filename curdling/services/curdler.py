@@ -4,6 +4,7 @@ from ..util import execute_command
 from .base import Service
 
 import io
+import fnmatch
 import os
 import re
 import sys
@@ -96,7 +97,8 @@ def run_setup_script(path, command, *custom_args):
     # Directory where the wheel will be saved after building it, returning
     # the path pointing to the generated file
     output_dir = os.path.join(cwd, 'dist')
-    return os.path.join(output_dir, os.listdir(output_dir)[0])
+    wheel = fnmatch.filter(os.listdir(output_dir), "*.whl")[0]
+    return os.path.join(output_dir, wheel)
 
 
 class Curdler(Service):
