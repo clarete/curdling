@@ -64,3 +64,13 @@ def test_initialize_logging():
             log_level=logging.DEBUG,
             log_name=mock.sentinel.log_name,
         )
+
+def test_base_parser_accepts_a_logging_level():
+    "main() should accept a `--log-level` argument"
+    parser = tool.base_parser()
+    try:
+        args = parser.parse_args(['-l', bytes('debug')])
+    except SystemExit:
+        assert False, 'args not parsed correctly'
+
+    assert args.log_level == 'DEBUG'

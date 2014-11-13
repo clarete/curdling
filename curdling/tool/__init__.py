@@ -34,6 +34,40 @@ class StreamHandler(logging.StreamHandler):
             super(StreamHandler, self).__init__(stream=stream)
 
 
+def base_parser():
+    parser = argparse.ArgumentParser(
+        description='Curdles your cheesy code and extracts its binaries')
+
+    # General arguments. All the commands have access to the following options
+    levels = [i for i in logging._levelNames.keys()
+        if not isinstance(i, int) and i != 'NOTSET']
+    parser.add_argument(
+        '-l', '--log-level', default='CRITICAL', choices=levels,
+        type=lambda s: unicode(s).upper(),
+        help='Log verbosity level (for nerds): {0}'.format(', '.join(levels)))
+
+    parser.add_argument(
+        '--log-file', type=argparse.FileType('w'), default=sys.stderr,
+        help='File to write the log')
+
+    parser.add_argument(
+        '--log-name', default=None,
+        help=(
+            'Name of the logger you want to set the level with '
+            '`-l` (for the nerdests)'
+        ))
+
+    parser.add_argument(
+        '-q', '--quiet', action='store_true', default=False,
+        help='No output unless combined with `-l\'')
+
+    parser.add_argument(
+        '-v', '--version', action='version',
+        version='%(prog)s {0}'.format(__version__))
+
+    return parser
+
+
 def add_parser_install(subparsers):
     parser = subparsers.add_parser(
         'install', help='Locate and install packages')
@@ -208,35 +242,7 @@ def get_freeze_command(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Curdles your cheesy code and extracts its binaries')
-
-    # General arguments. All the commands have access to the following options
-    levels = [i for i in logging._levelNames.keys()
-        if not isinstance(i, int) and i != 'NOTSET']
-    parser.add_argument(
-        '-l', '--log-level', default='CRITICAL', choices=levels, type=unicode.upper,
-        help='Log verbosity level (for nerds): {0}'.format(', '.join(levels)))
-
-    parser.add_argument(
-        '--log-file', type=argparse.FileType('w'), default=sys.stderr,
-        help='File to write the log')
-
-    parser.add_argument(
-        '--log-name', default=None,
-        help=(
-            'Name of the logger you want to set the level with '
-            '`-l` (for the nerdests)'
-        ))
-
-    parser.add_argument(
-        '-q', '--quiet', action='store_true', default=False,
-        help='No output unless combined with `-l\'')
-
-    parser.add_argument(
-        '-v', '--version', action='version',
-        version='%(prog)s {0}'.format(__version__))
-
+    parser = base_parser()
     subparsers = parser.add_subparsers()
     add_parser_install(subparsers)
     add_parser_uninstall(subparsers)
