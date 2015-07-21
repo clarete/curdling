@@ -212,8 +212,12 @@ def main():
         description='Curdles your cheesy code and extracts its binaries')
 
     # General arguments. All the commands have access to the following options
-    levels = [i for i in logging._levelNames.keys()
-        if not isinstance(i, int) and i != 'NOTSET']
+    if sys.version_info.major != 3:
+        levels = [i for i in logging._levelNames.keys()
+            if not isinstance(i, int) and i != 'NOTSET']
+    else:
+        levels = [i for i in logging._levelToName.keys()
+            if not isinstance(i, int) and i != 'NOTSET']
     parser.add_argument(
         '-l', '--log-level', default='CRITICAL', choices=levels, type=unicode.upper,
         help='Log verbosity level (for nerds): {0}'.format(', '.join(levels)))
