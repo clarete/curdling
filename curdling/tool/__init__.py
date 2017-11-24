@@ -17,7 +17,7 @@ import sys
 
 
 DEFAULT_PYPI_INDEX_LIST = [
-    'http://pypi.python.org/simple/',
+    'https://pypi.python.org/simple/',
 ]
 
 
