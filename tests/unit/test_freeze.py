@@ -23,7 +23,7 @@ from mock import patch, Mock
 def test_find_imported_modules():
     "freeze.find_imported_modules() Should find all the imported modules in a string with Python code"
 
-    # Given the following snipet
+    # Given the following snippet
     code = '''
 import curdling
 
@@ -45,7 +45,7 @@ print(curdling)
 def test_find_imported_modules2():
     "freeze.find_imported_modules() Should also find imports declared with 'from x import y' syntax"
 
-    # Given the following snipet
+    # Given the following snippet
     code = '''
 from PIL import Image
 
@@ -67,7 +67,7 @@ print(curdling)
 def test_find_imported_modules4():
     "freeze.find_imported_modules() Should filter the module path when it has more than one level"
 
-    # Given the following snipet
+    # Given the following snippet
     code = '''
 from .relative import stuff
 '''
@@ -83,7 +83,7 @@ from .relative import stuff
 def test_find_imported_modules3():
     "freeze.find_imported_modules() Should skip any local imports (from . import x)"
 
-    # Given the following snipet
+    # Given the following snippet
     code = '''
 from . import Image
 import functools
