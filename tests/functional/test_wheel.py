@@ -28,7 +28,7 @@ def test_read_basic_fields():
     # When I parse it
     wheel = Wheel.from_file(wheel_file)
 
-    # Then I see that the wheel file was successfuly read
+    # Then I see that the wheel file was successfully read
     wheel.distribution.should.equal('gherkin')
     wheel.version.should.equal('0.1.0')
     wheel.build.should.be.none

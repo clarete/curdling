@@ -12,7 +12,7 @@ import tempfile
 import distlib.version
 
 
-# Hardcoded vaue for the size of the http pool used a couple times in this
+# Hardcoded value for the size of the http pool used a couple times in this
 # module. Not the perfect place, though might fix the ClosedPoolError we're
 # getting eventually.
 POOL_MAX_SIZE = 10
@@ -161,7 +161,7 @@ class PyPiLocator(locators.SimpleScrapingLocator, ComparableLocator):
         versions = {}
         page = self.get_page(url)
         for link, rel in (page and page.links or []):
-            # Let's instrospect one level down
+            # Let's introspect one level down
             if self._should_queue(link, url, rel) and not subvisit:
                 versions.update(self._fetch(link, project_name, subvisit=True))
 

@@ -61,7 +61,7 @@ def test_available_versions():
     mapping.requirements.add('forbiddenfruit (<= 0.0.9)')
     mapping.wheels['forbiddenfruit (<= 0.0.9)'] = 'forbiddenfruit-0.0.9-cp27-none-macosx_10_8_x86_64.whl'
 
-    # And I add another random package to the maestrro
+    # And I add another random package to the maestro
     mapping.requirements.add('sure')
 
     # When I list all the available versions of forbidden fruit; Then I see it
